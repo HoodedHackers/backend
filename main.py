@@ -1,10 +1,16 @@
+from os import getenv
 from fastapi import FastAPI, Response, Request, Depends
 from sqlalchemy.orm import Session
 
-from database import SessionLocal, Base, engine
+from database import Base, Database
 from model import Player
 
-Base.metadata.create_all(bind=engine)
+db_uri = getenv("DB_URI")
+if db_uri is not None:
+    db = Database(db_uri=db_uri)
+else:
+    db = Database()
+db.create_tables()
 app = FastAPI()
 
 
@@ -12,7 +18,7 @@ app = FastAPI()
 async def db_session_middleware(request: Request, call_next):
     response = Response("Internal server error", status_code=500)
     try:
-        request.state.db = SessionLocal()
+        request.state.db = db.get_session()
         response = await call_next(request)
     finally:
         request.state.db.close()
