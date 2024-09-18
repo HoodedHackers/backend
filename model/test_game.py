@@ -1,5 +1,5 @@
-from game import Game, GameFull
-from player import Player
+from .game import Game, GameFull
+from .player import Player
 
 from asserts import assert_raises, assert_equal
 
@@ -21,8 +21,8 @@ def test_advance_turm():
     g = Game(id=0, name="test game")
     g.add_player(Player(name="0"))
     g.add_player(Player(name="1"))
-    assert_equal(g.current_player, 0)
+    assert_equal(g.current_player_turn, 0)
     g.advance_player()
-    assert_equal(g.current_player, 1)
+    assert_equal(g.current_player_turn, 1)
     g.advance_player()
-    assert_equal(g.current_player, 0)
+    assert_equal(g.current_player_turn, 0)

@@ -1,17 +1,20 @@
-from dataclasses import dataclass, field
+from sqlalchemy import Column
+from sqlalchemy.orm.properties import MappedColumn
+from sqlalchemy.schema import ForeignKey
+from sqlalchemy.types import Boolean, Integer, String
 
-from player import Player
+from database import Base
+from .player import Player
 
 
-@dataclass
 class Game:
-    id: int
-    name: str
-    players: list[Player] = field(default_factory=list)
-    current_player: int = 0
-    max_players: int = 4
-    min_players: int = 2
-    started: bool = False
+    id: Column[int] = Column(Integer, primary_key=True)
+    name: Column[str] = Column(String(64))
+    players: MappedColumn[Player] = MappedColumn(ForeignKey("players.id"))
+    current_player: Column[int] = Column(Integer)
+    max_players: Column[int] = Column(Integer)
+    min_players: Column[int] = Column(Integer)
+    started: Column[bool] = Column(Boolean)
 
     def advance_player(self):
         self.current_player += 1
