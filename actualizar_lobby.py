@@ -1,4 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.testclient import TestClient
 from typing import List, Dict
 
 app = FastAPI()
@@ -48,3 +49,23 @@ async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
 
         await manejador.broadcast(f"Un jugador ha abandonado el lobby {lobby_id}.", lobby_id)
 
+# ------ TEST ------ #
+
+# Los jugadores reciben notificaciones cuando alguien se conecta o se
+# desconecta.
+def test_conectar_y_desconectar():
+    with TestClient(app) as client:
+        with client.websocket_connect("/ws/lobby/1") as clientws1:
+            with client.websocket_connect("/ws/lobby/1") as clientws2:
+                # El jugador 1 se conecta
+                data1 = clientws1.receive_text()
+                assert data1 == "Un nuevo jugador ha ingresado al lobby 1."
+                
+                # El jugador 2 se conecta
+                data2 = clientws2.receive_text()
+                assert data2 == "Un nuevo jugador ha ingresado al lobby 1."
+                
+                # El jugador 1 se desconecta
+                clientws1.close()
+                data3 = clientws2.receive_text()
+                assert data3 == "Un jugador ha abandonado el lobby 1."
