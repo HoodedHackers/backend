@@ -1,5 +1,10 @@
 from fastapi import FastAPI, HTTPException, WebSocket, Form
 from pydantic import BaseModel
+import uuid
+from uuid import UUID
+#from uuid import uuid4
+
+
 #crear partida
 
 app = FastAPI()
@@ -14,7 +19,6 @@ class PartidaOut(BaseModel):
     max_jugadores: int
     min_jugadores: int
     jugadores: list
-    host: str
     #host
 
 class PartidaIn(BaseModel):
@@ -23,32 +27,115 @@ class PartidaIn(BaseModel):
     min_jugadores: int
    # host
 
+class Partida(BaseModel):
+    id_partida: UUID
+    nombre: str
+    jugadores: list
+    turno: int
+
+class Jugador(BaseModel):
+    id_jugador: int
+    nombre: str
+    host: bool = False 
+    en_partida: bool = False
+
+"""
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+"""
+
+
+
 @app.post('/', response_model=PartidaOut)
-async def crear_partida(partida: PartidaIn):
+async def crear_partida(partida: PartidaIn, jugador: Jugador):
     global contador_id
+
     nombre = partida.nombre
     max_jugadores = partida.max_jugadores
     min_jugadores = partida.min_jugadores
 
     if min_jugadores < 2 or max_jugadores > 4:
         raise HTTPException(status_code=412, detail="El número de jugadores debe ser entre 2 y 4")
-    if min_jugadores > max_jugadores:
+    elif min_jugadores > max_jugadores:
         raise HTTPException(status_code=412, detail="El número mínimo de jugadores no puede ser mayor al máximo")
-    if min_jugadores == max_jugadores:
+    elif min_jugadores == max_jugadores:
         raise HTTPException(status_code=412, detail="El número mínimo de jugadores no puede ser igual al máximo")
-    if nombre == "" or min_jugadores == "" or max_jugadores == "":
+    elif nombre == "" or min_jugadores == "" or max_jugadores == "":
         raise HTTPException(status_code=412, detail="No se permiten campos vacíos")
-    if nombre == None and min_jugadores == None and max_jugadores == None:
+    elif nombre == None and min_jugadores == None and max_jugadores == None:
         raise HTTPException(status_code=422, detail="No se permiten campos vacíos")
-    nueva_partida = PartidaOut(id=contador_id, nombre=nombre, max_jugadores=max_jugadores, min_jugadores=min_jugadores, jugadores=[], host=nombre)
+    elif len(partida.nombre) > 64 or len(partida.max_jugadores)>64 or len(partida.min_jugadores) > 64:
+        raise HTTPException(status_code=412, detail="El número de caracteres no puede ser mayor a 64")
+    
+    jugador.host = True
+    jugador.en_partida = True
 
+    nueva_partida = PartidaOut(id=uuid.uuid4(), nombre=nombre, max_jugadores=max_jugadores, min_jugadores=min_jugadores, jugadores=[])
+    
+    """esto se borra"""
     partidas[contador_id] = nueva_partida
+    """esto se borra"""
     contador_id += 1
     return nueva_partida
 
-#uvicorn main:app --reload
 
-"""""
+
+#uvicorn main:app --reload
+#crear endpoint de sali de partida
+
+# Simular una "base de datos" en memoria con UUID como string
+partidas = {
+    str(uuid.uuid4()): {
+        "id_partida": str(uuid.uuid4()),
+        "jugadores": {
+            "jugador_1": {"nombre": "Alice", "host": True, "en_partida": True},
+            "jugador_2": {"nombre": "Bob", "host": False, "en_partida": True},
+            "jugador_3": {"nombre": "Charlie", "host": False, "en_partida": True}
+        }
+    },
+    str(uuid.uuid4()): {
+        "id_partida": str(uuid.uuid4()),
+        "jugadores": {
+            "jugador_4": {"nombre": "Dave", "host": True, "en_partida": True},
+            "jugador_5": {"nombre": "Eve", "host": False, "en_partida": True}
+        }
+    }
+}
+
+@app.delete('/partida/{id_partida}')
+
+#existira una base de datos, hasta entonces simulo que partidas esta en mi base de datos
+async def salir_partida(id_jugador: str , id_partida: str):
+    #simulo que partidas es la base de datos
+    if id_partida not in partidas:
+        raise HTTPException(status_code=404, detail= "la partida no existe")
+    elif id_jugador not in partidas["jugadores"]:
+        raise HTTPException(status_code=404, detail= "el jugador no existe")
+    elif id_partida in partidas and len(partida.jugadores) > 2: 
+        """
+        busco en la base de datos el id del jugador y reseteo su estado
+        tambien busco la base de datos la partida del jugador y la actualizo
+        """
+    elif id_partida in partidas and len(partida.jugadores) == 2 :
+         """
+        busco en la base de datos el id del jugador y reseteo su estado
+        tambien busco la base de datos la partida del jugador y la reseteo 
+        """
+
+
+@app.post('/partida/{id_partida}/jugador')
+async def desbloquear_partida_no_iniciada(id_partida: str):
+
+
+    
+
+
+"""
 
 #Borrar luego, es lo que me envia el front
 class PartidaIn(BaseModel):
@@ -79,4 +166,4 @@ async def crear_partida(websocket:WebSocket, form: PartidaIn):
 
         except HTTPException as e:
             raise HTTPException(status_code=412, detail=str(e))
-"""""
+"""

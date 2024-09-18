@@ -33,3 +33,10 @@ def test_crear_partida_error5():
     response = client.post("/", json={"nombre": '', "max_jugadores": None, "min_jugadores": None})
     assert response.status_code == 422  # El código esperado es 422
     
+
+
+"""Preguntar"""
+
+def test_salir_partida_error():
+    response = client.post("/", json={"id_jugador": "adbcsbdc", "id_partida": "jznciwn"} )
+    assert response.status_code = 
