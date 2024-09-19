@@ -34,7 +34,9 @@ class TestGameRepo(unittest.TestCase):
         g = Game(name="deleteme")
         repo.save(g)
         repo.flush()
-        asserts.assert_is_not_none(repo.get(1))
-        repo.delete(repo.get(1))
+        g = repo.get(1)
+        asserts.assert_is_not_none(g)
+        assert g is not None  # Para pyright ugh
+        repo.delete(g)
         repo.flush()
         asserts.assert_is_none(repo.get(1))
