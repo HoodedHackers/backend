@@ -2,8 +2,8 @@ from os import getenv
 from fastapi import FastAPI, Response, Request, Depends
 from sqlalchemy.orm import Session
 
-from database import Base, Database
-from model import Player
+from database import Database
+from repositories import GameRepository
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -12,25 +12,22 @@ else:
     db = Database()
 db.create_tables()
 app = FastAPI()
+game_repo = GameRepository(db.session())
 
 
 @app.middleware("http")
-async def db_session_middleware(request: Request, call_next):
-    response = Response("Internal server error", status_code=500)
-    try:
-        request.state.db = db.get_session()
-        response = await call_next(request)
-    finally:
-        request.state.db.close()
+async def add_game_repo_to_request(request: Request, call_next):
+    request.state.game_repo = game_repo
+    response = await call_next(request)
     return response
 
 
-def get_db(request: Request):
-    return request.state.db
+def get_games_repo(request: Request) -> GameRepository:
+    return request.state.game_repo
 
 
 # endpoing juguete, borralo cuando haya uno de verdad
 @app.get("/api/borrame")
-async def borrame(db: Session = Depends(get_db)):
-    players = db.query(Player).limit(10).all()
-    return {"players": players}
+async def borrame(games_repo: GameRepository = Depends(get_games_repo)):
+    games = games_repo.get_many(10)
+    return {"games": games}

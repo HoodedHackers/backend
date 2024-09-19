@@ -17,6 +17,9 @@ class Database:
     def create_tables(self):
         Base.metadata.create_all(bind=self.engine)
 
+    def close(self):
+        self.session.close_all()
+
 
 class Base(DeclarativeBase):
     pass
