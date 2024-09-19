@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException, WebSocket, Form
 from pydantic import BaseModel
-import uuid
-from uuid import UUID
+#import uuid
+#from uuid import UUID
 #from uuid import uuid4
+import random
 
 
 #crear partida
@@ -28,7 +29,7 @@ class PartidaIn(BaseModel):
    # host
 
 class Partida(BaseModel):
-    id_partida: UUID
+    id_partida: int
     nombre: str
     jugadores: list
     turno: int
@@ -38,7 +39,7 @@ class Jugador(BaseModel):
     nombre: str
     host: bool = False 
     en_partida: bool = False
-
+    
 """
 # Dependency
 def get_db():
@@ -75,13 +76,30 @@ async def crear_partida(partida: PartidaIn, jugador: Jugador):
     jugador.host = True
     jugador.en_partida = True
 
-    nueva_partida = PartidaOut(id=uuid.uuid4(), nombre=nombre, max_jugadores=max_jugadores, min_jugadores=min_jugadores, jugadores=[])
+    nueva_partida = PartidaOut(id= random.randint(1000, 9999), nombre=nombre, max_jugadores=max_jugadores, min_jugadores=min_jugadores, jugadores=[])
     
     """esto se borra"""
     partidas[contador_id] = nueva_partida
     """esto se borra"""
     contador_id += 1
     return nueva_partida
+
+"""# Validaciones
+
+Verificar si nombre no está vacío: Asegúrate de que el nombre no sea una cadena vacía.
+if not nombre or not isinstance(nombre, str) or len(nombre) == 0:
+    raise HTTPException(status_code=412, detail="El nombre no puede estar vacío")
+
+    para ver que los valores ingresados son enteros
+if not isinstance(min_jugadores, int) or not isinstance(max_jugadores, int):
+    raise HTTPException(status_code=412, detail="Los jugadores deben ser enteros")
+if min_jugadores < 2 or max_jugadores > 4:
+    raise HTTPException(status_code=412, detail="El número de jugadores debe ser entre 2 y 4")
+elif min_jugadores > max_jugadores:
+    raise HTTPException(status_code=412, detail="El número mínimo de jugadores no puede ser mayor al máximo")
+elif min_jugadores == max_jugadores:
+    raise HTTPException(status_code=412, detail="El número mínimo de jugadores no puede ser igual al máximo")
+"""
 
 
 
@@ -90,6 +108,7 @@ async def crear_partida(partida: PartidaIn, jugador: Jugador):
 
 # Simular una "base de datos" en memoria con UUID como string
 partidas = {
+
     str(uuid.uuid4()): {
         "id_partida": str(uuid.uuid4()),
         "jugadores": {
@@ -106,7 +125,29 @@ partidas = {
         }
     }
 }
+#sortear posicion de los jugadores, funca bien
+@app.post('/partida/{id_partida}/jugador')
+async def sortear_posicion_de_jugador(id_partida: str):
+    if id_partida not in partidas:
+        raise HTTPException(status_code=404, detail= "la partida no existe")
+    else:
+        #sortear posicion de los jugadores
+        #cant_jugadores = len(partidas[id_partida]["jugadores"])
+        #busco sortear a estos jugadores
+            # Extraer jugadores del diccionario
+        jugadores = list(partidas[id_partida]["jugadores"].items())  # items() devuelve pares (clave, valor)
 
+        random.shuffle(jugadores)
+
+        # Reasignar los jugadores sorteados al diccionario manteniendo las claves originales
+        partidas[id_partida]["jugadores"] = {f"jugador_{i+1}": jugador[1] for i, jugador in enumerate(jugadores)}
+    #cambiar
+    return {"partida": id_partida, "jugadores_sorteados": partidas[id_partida]["jugadores"]}
+        
+
+
+
+# Simular una "base de datos" en memoria con UUID como string
 @app.delete('/partida/{id_partida}')
 
 #existira una base de datos, hasta entonces simulo que partidas esta en mi base de datos
