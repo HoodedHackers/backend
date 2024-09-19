@@ -6,7 +6,9 @@ from sqlalchemy.pool import StaticPool
 
 class Database:
     def __init__(self, db_uri="sqlite:///:memory:"):
-        self.engine = create_engine(db_uri, connect_args={'check_same_thread': False}, poolclass=StaticPool)
+        self.engine = create_engine(
+            db_uri, connect_args={"check_same_thread": False}, poolclass=StaticPool
+        )
         self.session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
 
     def get_session(self):

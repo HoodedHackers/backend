@@ -29,6 +29,19 @@ class Game(Base):
         "Player", secondary=game_player_association
     )
 
+    def __eq__(self, other):
+        if not isinstance(other, Game):
+            return NotImplemented
+        return (
+            self.id == other.id
+            and self.name == other.name
+            and self.current_player_turn == other.current_player_turn
+            and self.max_players == other.max_players
+            and self.min_players == other.min_players
+            and self.started == other.started
+            and self.players == other.players
+        )
+
     def set_defaults(self):
         if self.current_player_turn is None:
             self.current_player_turn = 0
