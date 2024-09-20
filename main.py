@@ -142,9 +142,7 @@ async def sortear_posicion_de_jugador(id_partida: str):
         # Reasignar los jugadores sorteados al diccionario manteniendo las claves originales
         partidas[id_partida]["jugadores"] = {f"jugador_{i+1}": jugador[1] for i, jugador in enumerate(jugadores)}
     #cambiar
-    return {"partida": id_partida, "jugadores_sorteados": partidas[id_partida]["jugadores"]}
-        
-
+    return { partidas[id_partida]["jugadores"]}
 
 
 # Simular una "base de datos" en memoria con UUID como string
