@@ -26,8 +26,7 @@ def get_games_repo(request: Request) -> GameRepository:
     return request.state.game_repo
 
 
-# endpoing juguete, borralo cuando haya uno de verdad
-@app.get("/api/borrame")
-async def borrame(games_repo: GameRepository = Depends(get_games_repo)):
-    games = games_repo.get_many(10)
-    return {"games": games}
+@app.get("/api/lobby")
+def get_games_available(repo: GameRepository = Depends(get_games_repo)):
+    lobbies = repo.get_available(10)
+    return lobbies
