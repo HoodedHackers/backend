@@ -3,7 +3,7 @@ from fastapi import FastAPI, Response, Request, Depends
 from sqlalchemy.orm import Session
 
 from database import Database
-from repositories import GameRepository
+from repositories import GameRepository, PlayerRepository
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -11,9 +11,14 @@ if db_uri is not None:
 else:
     db = Database()
 db.create_tables()
-app = FastAPI()
-game_repo = GameRepository(db.session())
 
+# creamos la App
+app = FastAPI()
+
+# inicialicemos los repos 
+player_repo = PlayerRepository(db.session())
+game_repo = GameRepository(db.session())
+# #no seria Database().get.session()? 
 
 @app.middleware("http")
 async def add_game_repo_to_request(request: Request, call_next):

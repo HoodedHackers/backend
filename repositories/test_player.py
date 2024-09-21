@@ -10,6 +10,7 @@ from database import Database
 class TestGameRepo(unittest.TestCase):
     def repo(self):
         return PlayerRepository(Database().session())
+    #no seria Database().get.session()? 
 
     def test_new_player(self):
         repo = self.repo()
