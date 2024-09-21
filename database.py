@@ -10,6 +10,7 @@ class Database:
             db_uri, connect_args={"check_same_thread": False}, poolclass=StaticPool
         )
         self.session = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        self.create_tables()
 
     def get_session(self):
         return self.session()

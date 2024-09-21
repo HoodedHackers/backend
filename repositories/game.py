@@ -7,9 +7,11 @@ class GameRepository(Repository):
 
     def save(self, game: Game):
         self.db.add(game)
+        self.db.commit()
 
     def delete(self, game: Game):
         self.db.delete(game)
+        self.db.commit()
 
     def get(self, id: int) -> Optional[Game]:
         return self.db.get(Game, id)
