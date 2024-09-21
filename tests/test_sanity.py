@@ -6,23 +6,8 @@ from main import app
 
 client = TestClient(app)
 
-# ------- LISTAR PARTIDAS DISPONIBLES ------- #
-def test_estado_codigo():
-    response = client.get("/api/lobby")
-    assert response.status_code == 200
 
-def test_partidas_disponibles():
-    response = client.get("/api/lobby")
-    date = response.json()
-    for party in date:
-        assert party['started'] == False
-        assert len(party['players']) < party['max_players']
-
-def test_orden_cantidad_jugadores():
-    response = client.get("/api/lobby")
-    data = response.json()
-
-    players_count = [len(lobby['players']) for lobby in data]
-    
-    assert players_count == sorted(players_count)
-    
+def test_borrame():
+    response = client.get("/api/borrame")
+    asserts.assert_equal(response.status_code, 200)
+    asserts.assert_equal(response.json(), {"games": []})
