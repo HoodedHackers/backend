@@ -3,6 +3,7 @@ PYTHON = $(VENV_DIR)/bin/python
 PIP = $(VENV_DIR)/bin/pip
 BLACK = $(VENV_DIR)/bin/black
 PYTEST = $(VENV_DIR)/bin/pytest
+DB_PATH = "sqlite:///./local.db"
 
 all: help
 
@@ -16,7 +17,7 @@ install: venv
 	$(PIP) install -r requirements.txt
 
 start: venv
-	$(PYTHON) -m uvicorn main:app --reload
+	DB_URI=$(DB_PATH) $(PYTHON) -m uvicorn main:app --reload
 
 format: venv
 	$(BLACK) .
@@ -26,6 +27,7 @@ test: venv
 
 clean:
 	rm -rf $(VENV_DIR)
+	rm -rf *.db
 
 help:
 	@echo "Comandos disponibles:"
