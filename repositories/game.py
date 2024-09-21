@@ -2,6 +2,7 @@ from typing import Optional, List
 from repositories.general import Repository
 from model import Game, Player
 
+from sqlalchemy.sql import func
 
 class GameRepository(Repository):
 
@@ -19,6 +20,16 @@ class GameRepository(Repository):
     def get_many(self, count: int) -> List[Game]:
         return self.db.query(Game).limit(count).all()
 
-    def get_available(self, count: int) -> List[Game]:
-        games = self.db.query(Game).filter(Game.started == False).all()
-        return [game for game in games if len(game.players) < game.max_players][:count]
+    def get_available(self, count: int = None) -> List[Game]:
+        q = (
+            self.db.query(Game)
+            .outerjoin(Game.players)
+            .group_by(Game.id)
+            .having(func.count(Player.id) < Game.max_players)
+            .filter(Game.started == False)
+            .order_by(func.count(Player.id))
+            
+        )
+        if count is not None:
+            q = q.limit(count)
+        return q.all()
