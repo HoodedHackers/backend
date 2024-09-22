@@ -77,6 +77,7 @@ def test_crear_partida_nombre_vacio():
     assert response.json() == {"detail": "El nombre de la partida no puede estar vacío"}
 
 
+
 """""
 
 def test_crear_partida_campos_invalidos():
