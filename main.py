@@ -49,7 +49,10 @@ class SetNameResponse(BaseModel):
 
 
 @app.post("/api/name")
-async def set_player_name(setNameRequest: SetNameRequest) -> SetNameResponse:
+async def set_player_name(
+    setNameRequest: SetNameRequest,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+) -> SetNameResponse:
     identifier = uuid4()
     player_repo.save(Player(name=setNameRequest.name, identifier=identifier))
     return SetNameResponse(name=setNameRequest.name, identifier=identifier)
