@@ -24,13 +24,7 @@ def test_borrame():
     asserts.assert_equal(response.json(), {"games": []})
 
 
-from main import app
-from fastapi.testclient import TestClient
-from unittest.mock import patch
-
-
 client = TestClient(app)
-
 
 
 def test_crear_partida():
@@ -43,7 +37,7 @@ def test_crear_partida():
     assert data["max_players"] == 4
     assert data["min_players"] == 2
     assert data["started"] is False
-    assert isinstance(data["id"], int) 
+    assert isinstance(data["id"], int)
     assert data["players"] != []  # no se si esta bien
 
 
@@ -165,4 +159,3 @@ def test_sortear_jugadores_game_not_found(mock_game_repo, client):
     assert response.status_code == 404
     assert response.json() == {"detail": "Partida no encontrada"}
 """ ""
-

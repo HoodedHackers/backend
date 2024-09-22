@@ -60,11 +60,14 @@ class GameOut(BaseModel):
     started: bool
     players: List[Player]
 
+    class Config:
+        arbitrary_type_allowed = True
 
-@app.post("/api/lobby", response_model=GameOut)
+
+@app.post("/api/lobby")
 async def create_game(
     game_create: GameIn, game_repo: GameRepository = Depends(get_games_repo)
-):
+) -> GameOut:
     if game_create.min_players < 2 or game_create.max_players > 4:
         raise HTTPException(
             status_code=412, detail="El número de jugadores debe ser entre 2 y 4"
@@ -99,7 +102,7 @@ async def create_game(
         max_players=nueva_partida.max_players,
         min_players=nueva_partida.min_players,
         started=nueva_partida.started,
-        players=nueva_partida.players #tampoco se si esta bien
+        players=nueva_partida.players,  # tampoco se si esta bien
     )
 
 
