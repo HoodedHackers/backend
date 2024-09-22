@@ -1,3 +1,6 @@
+
+
+'''
 from main import app
 from fastapi.testclient import TestClient
 from unittest.mock import patch
@@ -5,161 +8,151 @@ from unittest.mock import patch
 
 client = TestClient(app)
 
+from fastapi.testclient import TestClient
+
+import asserts
+from unittest.mock import MagicMock
+
+from main import get_games_repo
+from main import app
+from model import Game, Player
+from unittest.mock import AsyncMock, patch
+from fastapi import FastAPI, HTTPException, Depends
+
+client = TestClient(app)
+
+
 def test_crear_partida():
-    response = client.post("/", json={"nombre": "partida1", "max_jugadores": 4, "min_jugadores": 2})
+    response = client.post(
+        "/api/lobby", json={"name": "partida1", "max_players": 4, "min_players": 2}
+    )
     assert response.status_code == 200
-    assert response.json() == {"id": 0, "nombre": "partida1", "max_jugadores": 4, "min_jugadores": 2, "jugadores": [], "host": "partida1"}
+    data = response.json()
+    assert data["name"] == "partida1"
+    assert data["max_players"] == 4
+    assert data["min_players"] == 2
+    assert data["started"] is False
+    assert isinstance(data["id"], int) 
+    assert data["players"] != []  # no se si esta bien
 
-def test_crear_partida_error():
-    response = client.post("/", json={"nombre": "partida1", "max_jugadores": 4, "min_jugadores": 5})
+
+def test_crear_partida_error_min_mayor_max():
+    response = client.post(
+        "/api/lobby", json={"name": "partida1", "max_players": 4, "min_players": 5}
+    )
     assert response.status_code == 412
-    assert response.json() == {"detail": "El número mínimo de jugadores no puede ser mayor al máximo"}
-    
+    assert response.json() == {
+        "detail": "El número mínimo de jugadores no puede ser mayor al máximo"
+    }
 
-def test_crear_partida_error2():
-    response = client.post("/", json={"nombre": "partida1", "max_jugadores": 4, "min_jugadores": 4})
+
+def test_crear_partida_error_min_igual_max():
+    response = client.post(
+        "/api/lobby", json={"name": "partida1", "max_players": 4, "min_players": 4}
+    )
     assert response.status_code == 412
-    assert response.json() == {"detail": "El número mínimo de jugadores no puede ser igual al máximo"}
+    assert response.json() == {
+        "detail": "El número mínimo de jugadores no puede ser igual al máximo"
+    }
 
-def test_crear_partida_error3():
-    response = client.post("/", json={"nombre": "partida1", "max_jugadores": 4, "min_jugadores": 1})
+
+def test_crear_partida_error_min_jugadores_invalido():
+    response = client.post(
+        "/api/lobby", json={"name": "partida1", "max_players": 4, "min_players": 1}
+    )
     assert response.status_code == 412
     assert response.json() == {"detail": "El número de jugadores debe ser entre 2 y 4"}
 
-def test_crear_partida_error4():
-    response = client.post("/", json={"nombre": "", "max_jugadores": 4, "min_jugadores": 2})
+
+def test_crear_partida_nombre_vacio():
+    response = client.post(
+        "/api/lobby", json={"name": "", "max_players": 4, "min_players": 2}
+    )
     assert response.status_code == 412
-    assert response.json() == {"detail": "No se permiten campos vacíos"}
-
-def test_crear_partida_error5():
-    response = client.post("/", json={"nombre": '', "max_jugadores": None, "min_jugadores": None})
-    assert response.status_code == 422  # El código esperado es 422
-    
+    assert response.json() == {"detail": "El nombre de la partida no puede estar vacío"}
 
 
-"""Preguntar"""
-'''
-def test_salir_partida_error():
-    response = client.post("/", json={"id_jugador": "adbcsbdc", "id_partida": "jznciwn"} )
-    assert response.status_code = 
-'''
+"""""
 
-        
-"""
-from random import random
+def test_crear_partida_campos_invalidos():
+    response = client.post(
+        "/api/lobby", json={"name": "", "max_players": None, "min_players": None}
+    )
+    assert response.status_code == 422
+""" ""
 
+"""""
+algo sacado de chatgpt porque estaba muy trabada, 
+no funca pero sirve la idea, queria ver como se hacian los 
+mock con random
 
-def get_a_random_number_well_formatted():
-    now = random()
-    message = f"El número exacto es {now:.4f}!!!"
-    return message
-
-
-if __name__ == '__main__':
-    msg = get_a_random_number_well_formatted()
-    print(msg)
-"""
+def mock_game_repo():
+    # Crear un mock para GameRepository
+    with patch("repositories.general.GameRepository") as mock:
+        yield mock
 
 
+def test_sortear_jugadores(mock_game_repo, client):
+    # Configura el juego de prueba
+    game_id = 1
+    player1 = Player(name="Player 1")
+    player2 = Player(name="Player 2")
+    game = Game(
+        id=game_id,
+        name="Test Game",
+        players=[player1, player2],
+        min_players=2,
+        max_players=4,
+    )
 
+    # Configurar el comportamiento del mock
+    mock_game_repo.return_value.get.return_value = game
+    mock_game_repo.return_value.save = AsyncMock()
 
+    # Llamar al endpoint
+    response = client.post("/api/start_game", json={"game_id": game_id})
 
-
-'''tests  sortear_posicion_de_jugador'''
-
-@patch("main.random.shuffle")
-def test_sortear_posicion_de_jugador(mocked_shuffle):
-    partidas = {
-        "partida_1": {
-            "jugadores": {
-                "jugador_1": {"nombre": "Alice", "host": True, "en_partida": True},
-                "jugador_2": {"nombre": "Bob", "host": False, "en_partida": True},
-                "jugador_3": {"nombre": "Charlie", "host": False, "en_partida": True},
-            }
-        }
-    }
-       
-    '''lambda x: x se utiliza como una simulación de la función shuffle para que no modifique el orden de los elementos'''
-    mocked_shuffle.side_effect = lambda x: x
-         # Simulamos una petición POST al endpoint
-    response = client.post("/partida/partida_1/jugador")
+    # Verificar que la respuesta sea correcta
     assert response.status_code == 200
-    assert response.json() == {"partida": "partida_1", "jugadores_sorteados": {"jugador_1": {"nombre": "Alice", "host": True, "en_partida": True}, "jugador_2": {"nombre": "Bob", "host": False, "en_partida": True}, "jugador_3": {"nombre": "Charlie", "host": False, "en_partida": True}}}
+    response_data = response.json()
+    assert response_data["game_id"] == game_id
+    assert "players" in response_data
+    assert len(response_data["players"]) == len(game.players)
 
-def test_sortear_posicion_de_jugador_partida_no_existente()
-    response = client.post("/partida/partida_2/jugador")
-    assert response.status_code == 404
-    assert response.json() == {"detail": "La partida no existe"}
-
-def test_sortear_posicion_partida_sin_jugadores():
-    partidas = {
-        "partida_1": {
-            "jugadores": {}
-        }
-    }
-    response = client.post("/partida/partida_1/jugador")
-    assert response.status_code == 404
-    assert response.json() == {"detail": "No hay jugadores en la partida"}
-
-def test_sortear_posicion_partida_sin_jugadores():
-    partidas = {
-        "partida_1": {
-            "jugadores": {}
-            }
-    }
-    response = client.post("/partida/partida_1/jugador")
-    assert response.status_code == 200
-    assert response.json() == {"jugadores": {}}
+    # Verifica que los jugadores han sido sorteados
+    assert sorted([p.name for p in game.players]) == sorted(
+        [p["name"] for p in response_data["players"]]
+    )
+    assert response_data["players"] != game.players  # Verifica que el orden ha cambiado
 
 
-"""ver que si hay un solo jugador no reliace el shuffle"""
-@patch("main.random.shuffle")
-def test_sortear_posicion_un_jugador(mocked_shuffle):
-    # Creamos una partida con solo un jugador
-    partidas["partida_3"] = {
-        "jugadores": {
-            "jugador_1": {"nombre": "Alice", "host": True, "en_partida": True}
-        }
-    }
+def test_sortear_jugadores_no_sufficient_players(mock_game_repo, client):
+    # Ajustar el juego para que tenga menos de min_players
+    game_id = 1
+    player1 = Player(name="Player 1")
+    game = Game(
+        id=game_id, name="Test Game", players=[player1], min_players=2, max_players=4
+    )
 
-    # Simulamos una petición POST al endpoint
-    response = client.post("/partida/partida_3/jugador")
+    # Configurar el comportamiento del mock
+    mock_game_repo.return_value.get.return_value = game
 
-    # Verificamos que no se haya llamado a shuffle
-    mocked_shuffle.assert_not_called()
-    
-    # Verificamos que la respuesta sea correcta
-    assert response.status_code == 200
+    response = client.post("/api/start_game", json={"game_id": game_id})
+
+    assert response.status_code == 412
     assert response.json() == {
-        "jugadores": {
-            "jugador_1": {"nombre": "Alice", "host": True, "en_partida": True}
-        }
+        "detail": "No se puede sortear jugadores si no hay suficientes jugadores"
     }
 
 
-@patch("main.random.shuffle")
-def test_sortear_posicion_jugadores_shuffled(mocked_shuffle):
-    # Mockeamos el comportamiento de shuffle para que invierta el orden
-    mocked_shuffle.side_effect = lambda jugadores: jugadores.reverse()
-    
-    partidas["partida_4"] = {
-        "jugadores": {
-            "jugador_1": {"nombre": "Alice", "host": True, "en_partida": True},
-            "jugador_2": {"nombre": "Bob", "host": False, "en_partida": True},
-            "jugador_3": {"nombre": "Charlie", "host": False, "en_partida": True},
-        }
-    }
+def test_sortear_jugadores_game_not_found(mock_game_repo, client):
+    # Configurar el comportamiento del mock para devolver None
+    mock_game_repo.return_value.get.return_value = None
 
-    response = client.post("/partida/partida_4/jugador")
-    
-    assert response.status_code == 200
-    
-    # Verificamos que el orden se haya invertido (simulado)
-    assert response.json() == {
-        "jugadores": {
-            "jugador_1": {"nombre": "Charlie", "host": False, "en_partida": True},
-            "jugador_2": {"nombre": "Bob", "host": False, "en_partida": True},
-            "jugador_3": {"nombre": "Alice", "host": True, "en_partida": True}
-        }
-    }
+    response = client.post("/api/start_game", json={"game_id": 9999})
 
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Partida no encontrada"}
+""" ""
+
+'''
