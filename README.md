@@ -5,24 +5,21 @@
 $ git clone https://github.com/HoodedHackers/Backend.git
 ```
 
-3. Crear un entorno virtual con python (Debe ser con python 3.10).
+2. Instalar dependencias
 ```
-$ python -m venv venv-TheSwitcher
-```
-ó
-```
-$ python3.10 -m venv venv-TheSwitcher
+$ make install
 ```
 
-4. Ejecutar el entorno virtual.
+3. Iniciar el backend
 ```
-$ 
-```
-
-## Correr base de datos
-1. Correr uvicorn
-```
-$ uvicorn hello:app --reload
+$ make start
 ```
 
 ## Correr tests
+
+Las tests son corridas usando pytest, se recomienda usar la libreria de asserts
+para tener codigo mas claro.
+
+```
+$ make test
+```
