@@ -1,6 +1,7 @@
 from os import getenv
 from uuid import uuid4, UUID
 from fastapi import FastAPI, Response, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
@@ -21,6 +22,15 @@ app = FastAPI()
 
 player_repo = PlayerRepository(db.session())
 game_repo = GameRepository(db.session())
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")
