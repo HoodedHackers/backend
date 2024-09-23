@@ -28,6 +28,7 @@ class Game(Base):
     players: Mapped[List[Player]] = relationship(
         "Player", secondary=game_player_association
     )
+    host: Mapped[Player] = relationship("Player", nullable=False)
 
     def __eq__(self, other):
         if not isinstance(other, Game):
