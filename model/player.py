@@ -9,5 +9,4 @@ class Player(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False)
-    identifier: Mapped[UUID] = mapped_column(UUID)
-    
+    identifier: Mapped[UUID] = mapped_column(UUID, nullable=False)

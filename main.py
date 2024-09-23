@@ -20,8 +20,9 @@ db.create_tables()
 # creamos la App
 app = FastAPI()
 
-player_repo = PlayerRepository(db.session())
-game_repo = GameRepository(db.session())
+session = db.get_session()
+player_repo = PlayerRepository(session)
+game_repo = GameRepository(session)
 
 
 app.add_middleware(
@@ -63,6 +64,6 @@ async def set_player_name(
     setNameRequest: SetNameRequest,
     player_repo: PlayerRepository = Depends(get_player_repo),
 ) -> SetNameResponse:
-    identifier = uuid4()
-    player_repo.save(Player(name=setNameRequest.name, identifier=identifier))
-    return SetNameResponse(name=setNameRequest.name, identifier=identifier)
+    id_uuid = uuid4()
+    player_repo.save(Player(name=setNameRequest.name, identifier=id_uuid))
+    return SetNameResponse(name=setNameRequest.name, identifier=id_uuid)
