@@ -37,6 +37,7 @@ class req_in(BaseModel):
     id_game: int
     id_player: int
 
+
 @app.put("/api/lobby/{id_game}")
 async def endpoint_unirse_a_partida(
     req: req_in, 
@@ -49,7 +50,7 @@ async def endpoint_unirse_a_partida(
         raise HTTPException(status_code=404, detail="xd")
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
-    return jsonable_encoder(selec_game)
+    return {"status": "success"}
 
         
     
