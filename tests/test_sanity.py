@@ -8,6 +8,7 @@ client = TestClient(app)
 
 
 def test_borrame():
-    response = client.get("/api/borrame")
+    response = client.post("/api/name", json={"name": "pepe"})
     asserts.assert_equal(response.status_code, 200)
-    asserts.assert_equal(response.json(), {"games": []})
+    rsp = response.json()
+    asserts.assert_equal(rsp["name"], "pepe")
