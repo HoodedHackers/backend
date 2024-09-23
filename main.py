@@ -8,6 +8,7 @@ from model import Player, Game
 
 from typing import List
 from pydantic import BaseModel
+import random
 
 
 db_uri = getenv("DB_URI")
@@ -98,33 +99,3 @@ async def create_game(
         started=nueva_partida.started,
         players=players_out,
     )
-
-
-"""sortear jugadores"""
-
-"""""
-class GamePlayerResponse(BaseModel):
-    game_id: int
-    players: List[Player]
-
-
-@app.post("/api/start_game", response_model=Game)
-async def sortear_jugadores(
-    game_id: int, game_repo: GameRepository = Depends(get_games_repo)
-):
-
-    game = game_repo.get(game_id)
-    if game is None:
-        raise HTTPException(status_code=404, detail="Partida no encontrada")
-
-    if len(game.players) < game.min_players:
-        raise HTTPException(
-            status_code=412,
-            detail="No se puede sortear jugadores si no hay suficientes jugadores",
-        )
-
-    random.shuffle(game.players)
-    game_repo.save(game)
-
-    return GamePlayerResponse(game_id=game_id, players=game.players)
-""" ""
