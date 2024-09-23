@@ -1,5 +1,5 @@
 from sqlalchemy.orm import mapped_column, Mapped
-from sqlalchemy.types import Integer, String
+from sqlalchemy.types import UUID, Integer, String
 
 from database import Base
 
