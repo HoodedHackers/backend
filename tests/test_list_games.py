@@ -6,7 +6,6 @@ from main import app
 
 client = TestClient(app)
 
-# ------- LISTAR PARTIDAS DISPONIBLES ------- #
 def test_estado_codigo():
     response = client.get("/api/lobby")
     assert response.status_code == 200
