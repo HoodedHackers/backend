@@ -7,16 +7,31 @@ from repositories import GameRepository
 from model import Player, Game
 
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import random
+
+from fastapi.middleware.cors import CORSMiddleware
 
 
 db_uri = getenv("DB_URI")
-db = Database(db_uri=db_uri) if db_uri else Database()
+if db_uri is not None:
+    db = Database(db_uri=db_uri)
+else:
+    db = Database()
 db.create_tables()
-
 app = FastAPI()
 game_repo = GameRepository(db.session())
+
+# Agregar el middleware de CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "*"
+    ],  # Permitir todos los orígenes (puedes restringirlo a dominios específicos)
+    allow_credentials=True,
+    allow_methods=["*"],  # Permitir todos los métodos HTTP
+    allow_headers=["*"],  # Permitir todos los encabezados
+)
 
 
 @app.middleware("http")
@@ -30,67 +45,50 @@ def get_games_repo(request: Request) -> GameRepository:
     return request.state.game_repo
 
 
-@app.get("/api/borrame")
-async def borrame(games_repo: GameRepository = Depends(get_games_repo)):
-    games = games_repo.get_many(10)
-    return {"games": games}
-
-
-class GameIn(BaseModel):  # Heredar de BaseModel
-    name: str
-    max_players: int
-    min_players: int
+class GameIn(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    max_players: int = Field(ge=2, le=4)
+    min_players: int = Field(ge=2, le=4)
 
 
 class PlayerOut(BaseModel):
-    id: int
     name: str
 
 
 class GameOut(BaseModel):
-    id: int
     name: str
     max_players: int
     min_players: int
     started: bool
-    players: List[PlayerOut]  # Ajuste aquí
+    players: List[PlayerOut]
 
 
 @app.post("/api/lobby", response_model=GameOut)
 async def create_game(
     game_create: GameIn, game_repo: GameRepository = Depends(get_games_repo)
 ) -> GameOut:
-    if game_create.min_players < 2 or game_create.max_players > 4:
-        raise HTTPException(
-            status_code=412, detail="El número de jugadores debe ser entre 2 y 4"
-        )
-    elif game_create.min_players > game_create.max_players:
+
+    if game_create.min_players > game_create.max_players:
         raise HTTPException(
             status_code=412,
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
         )
-    elif not game_create.name.strip():  # Validar que no esté vacío
-        raise HTTPException(
-            status_code=412, detail="El nombre de la partida no puede estar vacío"
-        )
 
-    nueva_partida = Game(
+    new_game = Game(
         name=game_create.name,
         max_players=game_create.max_players,
         min_players=game_create.min_players,
         started=False,
     )
 
-    game_repo.save(nueva_partida)  # Asegúrate de que aquí se asigna el ID
-    players_out = [
-        PlayerOut(id=player.id, name=player.name) for player in nueva_partida.players
-    ]
+    game_repo.save(new_game)
+
+    players_out = [PlayerOut(name=player.name) for player in new_game.players]
 
     return GameOut(
-        id=nueva_partida.id,  # Asegúrate de que este ID esté asignado correctamente
-        name=nueva_partida.name,
-        max_players=nueva_partida.max_players,
-        min_players=nueva_partida.min_players,
-        started=nueva_partida.started,
+        name=new_game.name,
+        max_players=new_game.max_players,
+        min_players=new_game.min_players,
+        started=new_game.started,
         players=players_out,
     )

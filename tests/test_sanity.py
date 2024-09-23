@@ -1,12 +1,6 @@
 from fastapi.testclient import TestClient
-from pydantic import BaseModel
-from typing import List
 import asserts
-
 from main import app
-
-from fastapi.testclient import TestClient
-
 import asserts
 from unittest.mock import MagicMock
 
@@ -19,14 +13,8 @@ from repositories import GameRepository
 
 client = TestClient(app)
 
-"""""
-def test_borrame():
-    response = client.get("/api/borrame")
-    asserts.assert_equal(response.status_code, 200)
-    asserts.assert_equal(response.json(), {"games": []})
-"""
 
-
+# todo, corregir el test
 @patch("main.GameRepository")
 def test_crear_partida(mock_game_repo):
 
@@ -50,7 +38,7 @@ def test_crear_partida(mock_game_repo):
     assert data["min_players"] == 2
     assert data["started"] is False
     assert isinstance(data["id"], int)
-    assert data["players"] == []  # no se si esta bien
+    assert data["players"] == []
 
 
 @patch("main.GameRepository")
@@ -62,6 +50,7 @@ def test_crear_partida_error_min_mayor_max(mock_game_repo):
     assert response.json() == {
         "detail": "El número mínimo de jugadores no puede ser mayor al máximo"
     }
+
 
 @patch("main.GameRepository")
 def test_crear_partida_error_min_jugadores_invalido(mock_game_repo):
