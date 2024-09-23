@@ -69,11 +69,6 @@ async def create_game(
             status_code=412,
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
         )
-    elif game_create.min_players == game_create.max_players:
-        raise HTTPException(
-            status_code=412,
-            detail="El número mínimo de jugadores no puede ser igual al máximo",
-        )
     elif not game_create.name.strip():  # Validar que no esté vacío
         raise HTTPException(
             status_code=412, detail="El nombre de la partida no puede estar vacío"

@@ -63,18 +63,6 @@ def test_crear_partida_error_min_mayor_max(mock_game_repo):
         "detail": "El número mínimo de jugadores no puede ser mayor al máximo"
     }
 
-
-@patch("main.GameRepository")
-def test_crear_partida_error_min_igual_max(mock_game_repo):
-    response = client.post(
-        "/api/lobby", json={"name": "partida1", "max_players": 4, "min_players": 4}
-    )
-    assert response.status_code == 412
-    assert response.json() == {
-        "detail": "El número mínimo de jugadores no puede ser igual al máximo"
-    }
-
-
 @patch("main.GameRepository")
 def test_crear_partida_error_min_jugadores_invalido(mock_game_repo):
     response = client.post(
