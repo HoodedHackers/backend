@@ -1,6 +1,5 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
 import asserts
 from main import app
 
@@ -36,8 +35,6 @@ def game_pre():
     }
 
 
-@patch("main.GameRepository")
-@patch("main.PlayerRepository")
 def test_post_new_player(
     mock_GameRepository, mock_PlayerRepository, game_pre, game_pos, player_a
 ):
