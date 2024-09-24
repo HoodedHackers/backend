@@ -69,6 +69,18 @@ class Game(Base):
             raise GameFull
         self.players.append(player)
 
+    """
+    creo que va aca se agrega el delete del jugador xd
+    """
+    ''''''
+    def delete_player(self, player):
+        if player not in self.players:
+            raise PlayerNotInGame
+        self.players.remove(player)
 
+    ''''''
 class GameFull(BaseException):
+    pass
+
+class PlayerNotInGame(BaseException):
     pass

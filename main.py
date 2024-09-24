@@ -67,15 +67,12 @@ async def exitGame(
     if not game:
         raise HTTPException(status_code=404, detail="Partida no encontrada")
     # ve si el jugador esta en la partida, por las dudas ah
-
-    if not player:
-        raise HTTPException(status_code=400, detail="El jugadorno esta en la partida")
-
     elif not game.started == False:
         raise HTTPException(status_code=400, detail="El jugador ya abandono la partida")
+    
 
 
 # tomar en cuenta que se si un jugador esta en la partida si en game esta en la lista de players
 # puedo sacar de la lista al jugador y ahi ya no esta en la partida :D en players no hay que hacer nada porque
 # en players esta el id y el nombre del jugador, en Game esta la relacion players y host
-#definir en el modelo el remove de un jugador, con su identifier
+#definir en el modelo el remove de un jugador, con su identifier, es igual que add pero al reves
