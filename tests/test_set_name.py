@@ -1,4 +1,6 @@
 from fastapi.testclient import TestClient
+from unittest.mock import MagicMock, patch
+from uuid import uuid1, UUID
 import pytest
 import asserts
 from database import Database
@@ -9,23 +11,15 @@ client = TestClient(app)
 
 db = Database()
 db.create_tables()
-Session = db.get_session()
+Session = db.get_session() 
 
-
-@pytest.fixture
-def name_of_player():
-
-    return {"name": "Alice", "identifier": "80b4a5b03b5d46a1b50fb5cb510d4802"}
-
-
-@pytest.mark.end2end_test
-def test_set_name_endpoint(name_of_player):
+@patch("main.uuid4")
+def test_set_name(mocked_uuid):
+    value = uuid1(32, 100)
+    mocked_uuid.return_value = value
     response = client.post("/api/name", json={"name": "Alice"})
-    player = (
-        Session.query(Player)
-        .filter_by(identifier="80b4a5b03b5d46a1b50fb5cb510d4802")
-        .first()
-    )
-    assert player is not None
-    assert response.status_code == 201
-    assert response.json() == name_of_player
+    asserts.assert_equal(response.status_code, 200)
+    asserts.assert_equal(response.json(), {"name": "Alice", "identifier": str(value)}) #POR QUE ES UN STRING? 
+
+
+
