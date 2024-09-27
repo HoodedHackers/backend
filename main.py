@@ -46,9 +46,9 @@ def get_games_repo(request: Request) -> GameRepository:
 
 
 class GameIn(BaseModel):
-    name: str
-    max_players: int
-    min_players: int
+    name: str = Field(min_length=1, max_length=64)
+    max_players: int = Field(ge=2, le=4)
+    min_players: int = Field(ge=2, le=4)
 
 
 class PlayerOut(BaseModel):
@@ -73,24 +73,6 @@ async def create_game(
             status_code=412,
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
         )
-    elif game_create.min_players < 2 or game_create.max_players > 4:
-        raise HTTPException(
-            status_code=412, detail="El número de jugadores debe ser entre 2 y 4"
-        )
-    elif (
-        not game_create.name.strip()
-        or game_create.min_players == None
-        or game_create.max_players == None
-    ):  # Validar que no esté vacío
-        raise HTTPException(
-            status_code=412, detail="El nombre de la partida no puede estar vacío"
-        )
-    elif (
-        game_create.name.strip()
-        and game_create.min_players == None
-        and game_create.max_players == None
-    ):
-        raise HTTPException(status_code=422)
 
     new_game = Game(
         name=game_create.name,
