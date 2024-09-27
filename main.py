@@ -52,10 +52,12 @@ class GameIn(BaseModel):
 
 
 class PlayerOut(BaseModel):
+    id: int
     name: str
 
 
 class GameOut(BaseModel):
+    id: int
     name: str
     max_players: int
     min_players: int
@@ -83,9 +85,12 @@ async def create_game(
 
     game_repo.save(new_game)
 
-    players_out = [PlayerOut(name=player.name) for player in new_game.players]
+    players_out = [
+        PlayerOut(id=player.id, name=player.name) for player in new_game.players
+    ]
 
     return GameOut(
+        id=new_game.id,
         name=new_game.name,
         max_players=new_game.max_players,
         min_players=new_game.min_players,

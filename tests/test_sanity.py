@@ -20,6 +20,7 @@ def test_crear_partida(mock_game_repo):
 
     mock_game_repo.return_value.save = AsyncMock()
     mock_game_repo.return_value.save.return_value = Game(
+        id=1,
         name="partida1",
         max_players=4,
         min_players=2,
@@ -36,6 +37,7 @@ def test_crear_partida(mock_game_repo):
     assert data["max_players"] == 4
     assert data["min_players"] == 2
     assert data["started"] is False
+    assert isinstance(data["id"], int)
     assert data["players"] == []
 
 
