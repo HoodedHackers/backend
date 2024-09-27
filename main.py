@@ -2,6 +2,7 @@ from os import getenv
 from fastapi import FastAPI, Response, Request, Depends
 from sqlalchemy.orm import Session
 
+import asyncio
 from database import Database
 from repositories import GameRepository
 
@@ -30,3 +31,9 @@ def get_games_repo(request: Request) -> GameRepository:
 def get_games_available(repo: GameRepository = Depends(get_games_repo)):
     lobbies = repo.get_available(10)
     return lobbies
+
+
+@app.post("/api/lobby/timer")
+async def start_timer():
+    await asyncio.sleep(120)
+    return Response(status_code=200, content="Timer finished")
