@@ -13,14 +13,15 @@ def test_conectar_y_desconectar():
             with client.websocket_connect("/ws/lobby/1") as clientws2:
                 
                 data1 = clientws1.receive_text()
-                assert data1 == "Un nuevo jugador ha ingresado al lobby 1."
+                assert data1 == '{"message":"Un nuevo jugador se ha unido al lobby 1."}'
                 data2 = clientws2.receive_text()
-                assert data2 == "Un nuevo jugador ha ingresado al lobby 1."
+                assert data2 == '{"message":"Un nuevo jugador se ha unido al lobby 1."}'
                 
                 # El jugador 1 se desconecta y los demás jugadores deben recibir una notificación
                 clientws1.close()
                 data3 = clientws2.receive_text()
-                assert data3 == "Un jugador ha abandonado el lobby 1."
+                assert data3 == '{"message":"Un jugador ha abandonado el lobby 1."}'
+                
 
 def handler(signum, frame):
     '''Manejador de señales para el timeout'''

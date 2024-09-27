@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from database import Database
 from repositories import GameRepository
-from services.connection_manager import ManejadorConexionesLobby
+from services.connection_manager import LobbyConnectionHandler
 
-manejador = ManejadorConexionesLobby()
+connection_manager = LobbyConnectionHandler()
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -35,18 +35,19 @@ def get_games_available(repo: GameRepository = Depends(get_games_repo)):
     return lobbies
 
 @app.websocket("/ws/lobby/{lobby_id}")
-async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
+async def lobby_websocket_handler(websocket: WebSocket, lobby_id: int):
     # Conectar al nuevo jugador a la lista de conexiones del lobby
-    await manejador.conectar(websocket, lobby_id)
+    await connection_manager.connect(websocket, lobby_id)
 
-    await manejador.broadcast(f"Un nuevo jugador ha ingresado al lobby {lobby_id}.", lobby_id)
+    # Si se conecto un nuevo jugador al lobby notificamos a los demás jugadores
+    await connection_manager.broadcast(f"Un nuevo jugador se ha unido al lobby {lobby_id}.", lobby_id)
     
     try:
         while True:
-            # Esto solo lo ponemos para mantener la conexión abierta
-            await websocket.receive_text()
+            await websocket.receive_text() # DUMP
+
     except WebSocketDisconnect:
         # Desconectar al jugador y notificamos a los demás jugadores
-        manejador.desconectar(websocket, lobby_id)
+        connection_manager.disconnect(websocket, lobby_id)
 
-        await manejador.broadcast(f"Un jugador ha abandonado el lobby {lobby_id}.", lobby_id)
+        await connection_manager.broadcast(f"Un jugador ha abandonado el lobby {lobby_id}.", lobby_id)

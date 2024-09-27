@@ -1,12 +1,12 @@
 from typing import Dict, List
 from fastapi import WebSocket
 
-class ManejadorConexionesLobby:
+class LobbyConnectionHandler:
     def __init__(self):
         # Diccionario que tendrá una lista de conexiones por cada lobby
         self.lobbies: Dict[int, List[WebSocket]] = {}
 
-    async def conectar(self, websocket: WebSocket, lobby_id: int):
+    async def connect(self, websocket: WebSocket, lobby_id: int):
         # Añadimos la conexión del jugador a la lista lobby especificado
         await websocket.accept()
         
@@ -14,7 +14,7 @@ class ManejadorConexionesLobby:
             self.lobbies[lobby_id] = []
         self.lobbies[lobby_id].append(websocket)
 
-    def desconectar(self, websocket: WebSocket, lobby_id: int):
+    def disconnect(self, websocket: WebSocket, lobby_id: int):
         if lobby_id in self.lobbies:
             self.lobbies[lobby_id].remove(websocket)
             
@@ -24,4 +24,4 @@ class ManejadorConexionesLobby:
     async def broadcast(self, message: str, lobby_id: int):
         if lobby_id in self.lobbies:
             for connection in self.lobbies[lobby_id]:
-                await connection.send_text(message)
+                await connection.send_json({"message": message})
