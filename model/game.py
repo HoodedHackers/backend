@@ -11,8 +11,9 @@ from .player import Player
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("game_id", Integer, ForeignKey("games.id")),
-    Column("player_id", Integer, ForeignKey("players.id")),
+    Column("player_id", Integer, ForeignKey("players.id"))
 )
 
 
