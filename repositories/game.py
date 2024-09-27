@@ -20,7 +20,7 @@ class GameRepository(Repository):
     def get_many(self, count: int) -> List[Game]:
         return self.db.query(Game).limit(count).all()
 
-    def get_available(self, count: int = 10) -> List[Game]:
+    def get_available(self, count: int | None = None) -> List[Game]:
         q = (
             self.db.query(Game)
             .outerjoin(Game.players)
