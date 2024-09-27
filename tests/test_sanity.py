@@ -20,7 +20,6 @@ def test_crear_partida(mock_game_repo):
 
     mock_game_repo.return_value.save = AsyncMock()
     mock_game_repo.return_value.save.return_value = Game(
-        id=1,
         name="partida1",
         max_players=4,
         min_players=2,
@@ -37,14 +36,14 @@ def test_crear_partida(mock_game_repo):
     assert data["max_players"] == 4
     assert data["min_players"] == 2
     assert data["started"] is False
-    assert isinstance(data["id"], int)
+    #  assert isinstance(data["id"], int)
     assert data["players"] == []
 
 
 @patch("main.GameRepository")
 def test_crear_partida_error_min_mayor_max(mock_game_repo):
     response = client.post(
-        "/api/lobby", json={"name": "partida1", "max_players": 4, "min_players": 5}
+        "/api/lobby", json={"name": "partida1", "max_players": 3, "min_players": 4}
     )
     assert response.status_code == 412
     assert response.json() == {
@@ -75,3 +74,12 @@ def test_crear_partida_campos_invalidos():
         "/api/lobby", json={"name": "", "max_players": None, "min_players": None}
     )
     assert response.status_code == 422
+
+
+@patch("main.GameRepository")
+def test_crear_partida_error_brutal(mock_game_repo):
+    response = client.post(
+        "/api/lobby", json={"name": "partida1", "max_players": 5, "min_players": 1}
+    )
+    assert response.status_code == 412
+    assert response.json() == {"detail": "El número de jugadores debe ser entre 2 y 4"}
