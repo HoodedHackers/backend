@@ -12,11 +12,11 @@ if db_uri is not None:
 else:
     db = Database()
 db.create_tables()
-hola = db.session()
+session = db.session()
 app = FastAPI()
 
-game_repo = GameRepository(hola)
-player_repo = PlayerRepository(hola)
+game_repo = GameRepository(session)
+player_repo = PlayerRepository(session)
 
 
 @app.middleware("http")
