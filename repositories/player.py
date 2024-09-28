@@ -16,6 +16,6 @@ class PlayerRepository(Repository):
     def get(self, identifier: str) -> Optional[Player]:
         ret = self.db.query(Player).filter(Player.identifier == identifier)
         return ret.first()
-        
+
     def get_many(self, count: int) -> List[Player]:
         return self.db.query(Player).limit(count).all()

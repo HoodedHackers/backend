@@ -22,7 +22,11 @@ class TestGameRepo(unittest.TestCase):
 
     def test_delete_player(self):
         repo = self.repo()
-        players = [Player(name="Alice", identifier="sdfda"), Player(name="Bob", identifier="sdgda"), Player(name="Carl", identifier="sdhda")]
+        players = [
+            Player(name="Alice", identifier="sdfda"),
+            Player(name="Bob", identifier="sdgda"),
+            Player(name="Carl", identifier="sdhda"),
+        ]
         for p in players:
             repo.save(p)
         alice = players[0]
