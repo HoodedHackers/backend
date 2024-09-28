@@ -35,10 +35,30 @@ class TestGameRepo(unittest.TestCase):
     def test_get_available_games(self):
         repo = self.repo()
         games = [
-            Game(name="game1", started=False, players=[Player(name=f"{n}") for n in range(2)], max_players=4),
-            Game(name="game2", started=False, players=[Player(name=f"{n}") for n in range(4)], max_players=4),
-            Game(name="game3", started=True, players=[Player(name=f"{n}") for n in range(2)], max_players=4),
-            Game(name="game4", started=False, players=[Player(name=f"{n}") for n in range(1)], max_players=2)
+            Game(
+                name="game1",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(2)],
+                max_players=4,
+            ),
+            Game(
+                name="game2",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(4)],
+                max_players=4,
+            ),
+            Game(
+                name="game3",
+                started=True,
+                players=[Player(name=f"{n}") for n in range(2)],
+                max_players=4,
+            ),
+            Game(
+                name="game4",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(1)],
+                max_players=2,
+            ),
         ]
         for game in games:
             game.set_defaults()
@@ -49,5 +69,3 @@ class TestGameRepo(unittest.TestCase):
         asserts.assert_in(games[3], available_games)
         asserts.assert_not_in(games[1], available_games)
         asserts.assert_not_in(games[2], available_games)
-
-
