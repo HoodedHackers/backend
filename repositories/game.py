@@ -4,6 +4,7 @@ from model import Game, Player
 
 from sqlalchemy.sql import func
 
+
 class GameRepository(Repository):
 
     def save(self, game: Game):
@@ -20,7 +21,7 @@ class GameRepository(Repository):
     def get_many(self, count: int) -> List[Game]:
         return self.db.query(Game).limit(count).all()
 
-    def get_available(self, count: int = None) -> List[Game]:
+    def get_available(self, count: int | None = None) -> List[Game]:
         q = (
             self.db.query(Game)
             .outerjoin(Game.players)
@@ -28,7 +29,6 @@ class GameRepository(Repository):
             .having(func.count(Player.id) < Game.max_players)
             .filter(Game.started == False)
             .order_by(func.count(Player.id))
-            
         )
         if count is not None:
             q = q.limit(count)
