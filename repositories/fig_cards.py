@@ -19,4 +19,3 @@ class FigRepository(Repository):
 
     def get_many(self, count: int) -> List[FigCards]:
         return self.db.query(FigCards).limit(count).all()
-    

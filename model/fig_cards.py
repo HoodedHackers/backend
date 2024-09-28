@@ -10,7 +10,7 @@ figCards_player_association = Table(
     "figCards_player_association",
     Base.metadata,
     Column("figCards_id", Integer, ForeignKey("figCards.id")),
-    Column("player_in_game_id", Integer, ForeignKey("game_player_association.id"))
+    Column("player_in_game_id", Integer, ForeignKey("game_player_association.id")),
 )
 
 
