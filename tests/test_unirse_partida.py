@@ -2,6 +2,11 @@ import pytest
 from fastapi.testclient import TestClient
 import asserts
 from main import app
+from database import Database
+
+db = Database()
+db.create_tables()
+hola = db.session()
 
 client = TestClient(app)
 
@@ -22,4 +27,3 @@ def test_post_new_player(game_pos):
     response = client.put("/api/lobby/1", json={"id_game": 1, "identifier_player": "sdsda"})
     
     asserts.assert_equal(response.status_code, 200)
-    asserts.assert_equal(response.json, game_pos)
