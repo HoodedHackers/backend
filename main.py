@@ -1,13 +1,12 @@
 from os import getenv
-from fastapi import FastAPI, Response, Request, Depends
+from fastapi import FastAPI, Response, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import Database
 from repositories import GameRepository
 from pydantic import BaseModel
 from typing import List
-from fastapi import HTTPException, Depends
-
+from uuid import UUID
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -37,30 +36,34 @@ async def borrame(games_repo: GameRepository = Depends(get_games_repo)):
     return {"games": games}
 
 
-class PlayerOutRandom(BaseModel):
+class PlayerOutRandom(BaseModel):  #
     id: int
     name: str
+    identifier: UUID
 
 
+"""
 class PlayerExit(BaseModel):
     id: int
     name: str
     activate: bool
-
-class ExitRequest(BaseModel): #le llega esto al endpoint
-    identifier : str
+"""
 
 
-class GamePlayerResponse(BaseModel):
+class ExitRequest(BaseModel):  # le llega esto al endpoint
+    identifier: UUID
+
+
+class GamePlayerResponse(BaseModel):  # Lo que envia
     game_id: int
     players: List[PlayerOutRandom]
 
 
-@app.delete(
-    "/api/lobby/{game_id}}", response_model=GamePlayerResponse
-)
+@app.delete("/api/lobby/{game_id}", response_model=GamePlayerResponse)
 async def exitGame(
-    game_id: int, exit_request: ExitRequest, games_repo: GameRepository = Depends(get_games_repo)
+    game_id: int,
+    exit_request: ExitRequest,
+    games_repo: GameRepository = Depends(get_games_repo),
 ):
     game = games_repo.get(game_id)
 
@@ -68,11 +71,39 @@ async def exitGame(
         raise HTTPException(status_code=404, detail="Partida no encontrada")
     # ve si el jugador esta en la partida, por las dudas ah
     elif not game.started == False:
-        raise HTTPException(status_code=400, detail="El jugador ya abandono la partida")
-    
+        raise HTTPException(status_code=400, detail="El juego no empezo'")
+
+    player_exit = (
+        next(
+            player
+            for player in game.players
+            if player.identifier == exit_request.identifier
+        ),
+        None,
+    )
+
+    if player_exit is None:
+        raise HTTPException(status_code=404, detail="El jugador no existe")
+
+    game.delete_player(player_exit)
+    games_repo.save(game)
+
+    """''
+    if game.host.id == player_exit.id
+        game.host = None
+    """ ""
+    return GamePlayerResponse(
+        game_id=game.id,
+        players=[
+            PlayerOutRandom(
+                id=player.id, name=player.name, identifier=player.identifier
+            )
+            for player in game.players
+        ],
+    )
 
 
 # tomar en cuenta que se si un jugador esta en la partida si en game esta en la lista de players
 # puedo sacar de la lista al jugador y ahi ya no esta en la partida :D en players no hay que hacer nada porque
 # en players esta el id y el nombre del jugador, en Game esta la relacion players y host
-#definir en el modelo el remove de un jugador, con su identifier, es igual que add pero al reves
+# definir en el modelo el remove de un jugador, con su identifier, es igual que add pero al reves
