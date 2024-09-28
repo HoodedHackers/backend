@@ -15,8 +15,9 @@ data_out = Game(
     max_players=4,
     min_players=2,
     started=False,
-    players=[Player(id=1, name="Player 1"), Player(id=2, name="Player 2")]
+    players=[Player(id=1, name="Player 1"), Player(id=2, name="Player 2")],
 )
+
 
 def test_get_game():
     with patch("repositories.game.GameRepository.get") as mock_get:
@@ -29,8 +30,9 @@ def test_get_game():
             "max_players": 4,
             "min_players": 2,
             "is_started": False,
-            "turn": 0
+            "turn": 0,
         }
+
 
 def test_get_game_not_found():
     with patch("repositories.game.GameRepository.get") as mock_get:

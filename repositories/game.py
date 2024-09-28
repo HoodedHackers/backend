@@ -4,6 +4,7 @@ from model import Game, Player
 
 from sqlalchemy.sql import func
 
+
 class GameRepository(Repository):
 
     def save(self, game: Game):
@@ -28,7 +29,6 @@ class GameRepository(Repository):
             .having(func.count(Player.id) < Game.max_players)
             .filter(Game.started == False)
             .order_by(func.count(Player.id))
-            
         )
         if count is not None:
             q = q.limit(count)

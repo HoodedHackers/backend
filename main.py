@@ -16,6 +16,7 @@ db.create_tables()
 app = FastAPI()
 game_repo = GameRepository(db.session())
 
+
 class GameStateOutput(BaseModel):
     name: str
     current_players: int
