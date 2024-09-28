@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from database import Database
 from repositories import GameRepository, PlayerRepository
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -36,8 +36,8 @@ def get_player_repo(request: Request) -> PlayerRepository:
 
 
 class req_in(BaseModel):
-    id_game: int
-    id_player: int
+    id_game: int = Field()
+    identifier_player: str = Field()
 
 
 @app.put("/api/lobby/{id_game}")
@@ -46,10 +46,12 @@ async def endpoint_unirse_a_partida(
     games_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ):
-    selec_player = player_repo.get(req.id_player)
+    selec_player = player_repo.get(req.identifier_player)
     selec_game = games_repo.get(req.id_game)
-    if selec_player is None or selec_game is None:
-        raise HTTPException(status_code=404, detail="xd")
+    if selec_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if selec_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
-    return {"status": "success"}
+    return {"status": "success!"}

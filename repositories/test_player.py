@@ -13,19 +13,19 @@ class TestGameRepo(unittest.TestCase):
 
     def test_new_player(self):
         repo = self.repo()
-        p = Player(name="Alice")
+        p = Player(name="Alice", identifier="sdsda")
         repo.save(p)
-        self.assertIsNotNone(p.id)
-        saved_player = repo.get(p.id)
+        self.assertIsNotNone(p.identifier)
+        saved_player = repo.get(p.identifier)
         assert saved_player is not None
         self.assertEqual(p.name, saved_player.name)
 
     def test_delete_player(self):
         repo = self.repo()
-        players = [Player(name="Alice"), Player(name="Bob"), Player(name="Carl")]
+        players = [Player(name="Alice", identifier="sdfda"), Player(name="Bob", identifier="sdgda"), Player(name="Carl", identifier="sdhda")]
         for p in players:
             repo.save(p)
         alice = players[0]
         repo.delete(alice)
-        saved_player = repo.get(alice.id)
+        saved_player = repo.get(alice.identifier)
         self.assertIsNone(saved_player)

@@ -1,5 +1,4 @@
 from typing import Optional, List
-
 from model import Player
 from repositories.general import Repository
 
@@ -14,8 +13,9 @@ class PlayerRepository(Repository):
         self.db.delete(player)
         self.db.commit()
 
-    def get(self, id: int) -> Optional[Player]:
-        return self.db.get(Player, id)
-
+    def get(self, identifier: str) -> Optional[Player]:
+        ret = self.db.query(Player).filter(Player.identifier == identifier)
+        return ret.first()
+        
     def get_many(self, count: int) -> List[Player]:
         return self.db.query(Player).limit(count).all()
