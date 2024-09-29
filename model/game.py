@@ -69,6 +69,9 @@ class Game(Base):
             raise GameFull
         self.players.append(player)
 
+    def count_players(self) -> int:
+        return len(self.players)
+
 
 class GameFull(BaseException):
     pass
