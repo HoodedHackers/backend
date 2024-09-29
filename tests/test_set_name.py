@@ -9,10 +9,6 @@ from main import app
 
 client = TestClient(app)
 
-db = Database()
-db.create_tables()
-Session = db.get_session()
-
 
 @patch("main.uuid4")
 def test_set_name(mocked_uuid):
