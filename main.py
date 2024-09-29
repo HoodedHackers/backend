@@ -48,8 +48,9 @@ class GameStateOutput(BaseModel):
     current_players: int
     max_players: int
     min_players: int
-    is_started: bool
+    started: bool
     turn: int
+    players: List[str]
 
 
 @app.middleware("http")
@@ -101,6 +102,11 @@ async def create_game(
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
         )
     player = player_repo.get_by_identifier(game_create.identifier)
+    if player is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Jugador no encontrado"
+        )
 
     new_game = Game(
         name=game_create.name,
@@ -135,8 +141,9 @@ def get_games_available(repo: GameRepository = Depends(get_games_repo)):
             current_players=len(lobby_query.players),
             max_players=lobby_query.max_players,
             min_players=lobby_query.min_players,
-            is_started=lobby_query.started,
+            started=lobby_query.started,
             turn=lobby_query.current_player_turn,
+            players=[player.name for player in lobby_query.players],
         )
         lobbies.append(lobby)
     return lobbies
@@ -152,8 +159,9 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
         current_players=len(lobby_query.players),
         max_players=lobby_query.max_players,
         min_players=lobby_query.min_players,
-        is_started=lobby_query.started,
+        started=lobby_query.started,
         turn=lobby_query.current_player_turn,
+        players=[player.name for player in lobby_query.players]
     )
     return lobby
 
