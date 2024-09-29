@@ -15,7 +15,8 @@ def test_borrame():
     asserts.assert_equal(response.status_code, 200)
     asserts.assert_equal(response.json(), {"games": []})
 
-'''
+
+"""
 # crear un jugador
 def create_player(name: str):
     response = client.post("/api/player", json={"name": name})
@@ -40,30 +41,35 @@ def exit_game(game_id: int, player_identifier: str):
     assert response.status_code == 200
     return response.json()
 
-'''
-#simulo el game repository
+"""
+
+
+# simulo el game repository
 def mock_game_repo():
     mock = Mock()
     app.dependency_overrides[get_games_repo] = lambda: mock
-    return mock 
+    return mock
 
-#test para cuando el jugador no esta en la partida
+
+# test para cuando el jugador no esta en la partida
 def test_exit_game_player_in_game(mock_game_repo):
-    player1_uuid= uuid4()
-    player2_uuid= uuid4()
-    player3_uuid= uuid4()
+    player1_uuid = uuid4()
+    player2_uuid = uuid4()
+    player3_uuid = uuid4()
     mock_game = Mock()
     mock_game.players = [
-        {'id': 1, 'name': 'player1', 'identifier': player1_uuid},
-        {'id': 2, 'name': 'Player2', 'identifier': player2_uuid},
-        {'id': 3, 'name': 'Player3', 'identifier': player3_uuid},
+        {"id": 1, "name": "player1", "identifier": player1_uuid},
+        {"id": 2, "name": "Player2", "identifier": player2_uuid},
+        {"id": 3, "name": "Player3", "identifier": player3_uuid},
     ]
     mock_game_repo.get.return_value = mock_game
-    response = client.delete("/api/lobby/1", json={"game_id": 1,"identifier": str(player2_uuid)})
+    response = client.delete(
+        "/api/lobby/1", json={"game_id": 1, "identifier": str(player2_uuid)}
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["game_id"] == 1
-    assert len(data["players"]) == 2 #como se va uno quedan solo 2 jugadores
+    assert len(data["players"]) == 2  # como se va uno quedan solo 2 jugadores
     remaining_players = [player["identifier"] for player in data["players"]]
     assert str(player1_uuid) in remaining_players  # Player1 sigue en la partida
     assert str(player3_uuid) in remaining_players  # Player3 sigue en la partida
@@ -71,18 +77,20 @@ def test_exit_game_player_in_game(mock_game_repo):
 
 
 def test_exit_game_not_in_game(mock_game_repo):
-    player1_uuid= uuid4()
-    player2_uuid= uuid4()
-    player3_uuid= uuid4()
+    player1_uuid = uuid4()
+    player2_uuid = uuid4()
+    player3_uuid = uuid4()
     mock_game = Mock()
     mock_game.players = [
-        {'id': 1, 'name': 'player1', 'identifier': player1_uuid},
-        {'id': 2, 'name': 'Player2', 'identifier': player2_uuid},
-        {'id': 3, 'name': 'Player3', 'identifier': player3_uuid},
+        {"id": 1, "name": "player1", "identifier": player1_uuid},
+        {"id": 2, "name": "Player2", "identifier": player2_uuid},
+        {"id": 3, "name": "Player3", "identifier": player3_uuid},
     ]
     mock_game_repo.get.return_value = mock_game
     non_exist_player_uuid = uuid4()
-    response = client.delete("/api/lobby/1", json={"game_id": 1,"identifier": non_exist_player_uuid})
+    response = client.delete(
+        "/api/lobby/1", json={"game_id": 1, "identifier": non_exist_player_uuid}
+    )
     assert response.status_code == 404
     assert response.json() == {"detail": "El jugador no existe"}
 
