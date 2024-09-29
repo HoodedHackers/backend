@@ -59,6 +59,7 @@ class GamePlayerResponse(BaseModel):  # Lo que envia
     players: List[PlayerOutRandom]
 
 
+# api/lobby/{game_id}
 @app.delete("/api/lobby/{game_id}", response_model=GamePlayerResponse)
 async def exitGame(
     game_id: int,
