@@ -74,7 +74,6 @@ class GameIn(BaseModel):
 
 
 class PlayerOut(BaseModel):
-    id: UUID
     name: str
 
 
@@ -117,7 +116,7 @@ async def create_game(
     game_repo.save(new_game)
 
     players_out = [
-        PlayerOut(id=player.id, name=player.name) for player in new_game.players
+        PlayerOut(name=player.name) for player in new_game.players
     ]
 
     return GameOut(
