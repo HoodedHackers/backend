@@ -11,6 +11,7 @@ from model import Player, Game
 from typing import List
 from pydantic import BaseModel, Field
 import random
+from uuid import UUID
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -66,13 +67,14 @@ def get_player_repo(request: Request) -> PlayerRepository:
 
 
 class GameIn(BaseModel):
+    identifier: UUID
     name: str = Field(min_length=1, max_length=64)
     max_players: int = Field(ge=2, le=4)
     min_players: int = Field(ge=2, le=4)
 
 
 class PlayerOut(BaseModel):
-    id: int
+    id: UUID
     name: str
 
 
@@ -83,6 +85,7 @@ class GameOut(BaseModel):
     min_players: int
     started: bool
     players: List[PlayerOut]
+    
 
 
 @app.post("/api/lobby", response_model=GameOut)
@@ -97,14 +100,15 @@ async def create_game(
             status_code=412,
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
         )
+    player = player_repo.get_by_identifier(game_create.identifier)
 
-    host = Player(name="host, borrame soy basura")
-    player_repo.save(host)
+    #host = Player(name="host, borrame soy basura")
+    #player_repo.save(host)
 
     new_game = Game(
         name=game_create.name,
-        host=host,
-        host_id=host.id,
+        host= player,  #host,
+        host_id=player.id,  #host.id,
         max_players=game_create.max_players,
         min_players=game_create.min_players,
         started=False,
