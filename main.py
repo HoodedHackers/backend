@@ -39,8 +39,9 @@ class GameStateOutput(BaseModel):
 
 
 @app.middleware("http")
-async def add_game_repo_to_request(request: Request, call_next):
+async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
+    request.state.player_repo = player_repo
     response = await call_next(request)
     return response
 
