@@ -5,6 +5,7 @@ from sqlalchemy.schema import ForeignKey, Table
 from sqlalchemy.types import Boolean, Integer, String
 
 from database import Base
+from .board import Board, Color
 from .player import Player
 
 
@@ -28,6 +29,7 @@ class Game(Base):
     players: Mapped[List[Player]] = relationship(
         "Player", secondary=game_player_association
     )
+    # board: Mapped[List[Color]] = mapped_column(Board, default=Board.random_board)
 
     def __eq__(self, other):
         if not isinstance(other, Game):
@@ -51,6 +53,8 @@ class Game(Base):
             self.min_players = 2
         if self.started is None:
             self.started = False
+        if self.board is None:
+            self.board = Board.random_board()
 
     def __repr__(self):
         return (
@@ -67,6 +71,9 @@ class Game(Base):
         if len(self.players) == self.max_players:
             raise GameFull
         self.players.append(player)
+
+    def count_players(self) -> int:
+        return len(self.players)
 
 
 class GameFull(BaseException):

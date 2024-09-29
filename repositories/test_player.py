@@ -1,4 +1,5 @@
 import unittest
+from uuid import uuid4
 
 import asserts
 
@@ -33,3 +34,11 @@ class TestGameRepo(unittest.TestCase):
         repo.delete(alice)
         saved_player = repo.get(alice.identifier)
         self.assertIsNone(saved_player)
+
+    def test_get_player_by_identifier(self):
+        repo = self.repo()
+        identifier = uuid4()
+        p = Player(name="Alice", identifier=identifier)
+        repo.save(p)
+        saved_p = repo.get_by_identifier(identifier)
+        self.assertEqual(p, saved_p)

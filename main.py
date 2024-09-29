@@ -1,6 +1,11 @@
 from os import getenv
 from fastapi import FastAPI, Response, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
+from pydantic import BaseModel
+from uuid import UUID
+
+
 from database import Database
 from repositories import GameRepository, PlayerRepository
 from fastapi.encoders import jsonable_encoder
@@ -19,6 +24,15 @@ game_repo = GameRepository(session)
 player_repo = PlayerRepository(session)
 
 
+class GameStateOutput(BaseModel):
+    name: str
+    current_players: int
+    max_players: int
+    min_players: int
+    is_started: bool
+    turn: int
+
+
 @app.middleware("http")
 async def add_game_repo_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
@@ -31,6 +45,37 @@ def get_games_repo(request: Request) -> GameRepository:
     return request.state.game_repo
 
 
+@app.get("/api/lobby")
+def get_games_available(repo: GameRepository = Depends(get_games_repo)):
+    lobbies_queries = repo.get_available(10)
+    lobbies = []
+    for lobby_query in lobbies_queries:
+        lobby = GameStateOutput(
+            name=lobby_query.name,
+            current_players=len(lobby_query.players),
+            max_players=lobby_query.max_players,
+            min_players=lobby_query.min_players,
+            is_started=lobby_query.started,
+            turn=lobby_query.current_player_turn,
+        )
+        lobbies.append(lobby)
+    return lobbies
+
+
+@app.get("/api/lobby/{id}")
+def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
+    lobby_query = repo.get(id)
+    if lobby_query is None:
+        raise HTTPException(status_code=404, detail="Lobby not found")
+    lobby = GameStateOutput(
+        name=lobby_query.name,
+        current_players=len(lobby_query.players),
+        max_players=lobby_query.max_players,
+        min_players=lobby_query.min_players,
+        is_started=lobby_query.started,
+        turn=lobby_query.current_player_turn,
+    )
+    return lobby
 def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
 
@@ -46,7 +91,9 @@ async def endpoint_unirse_a_partida(
     games_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ):
-    selec_player = player_repo.get(req.identifier_player)
+    new_identifier = UUID(req.identifier_player)
+    print(new_identifier)
+    selec_player = player_repo.get_by_identifier(new_identifier)
     selec_game = games_repo.get(req.id_game)
     if selec_player is None:
         raise HTTPException(status_code=404, detail="Player dont found!")
