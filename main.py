@@ -14,6 +14,8 @@ import random
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from repositories.player import PlayerRepository
+
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -22,7 +24,9 @@ else:
     db = Database()
 db.create_tables()
 app = FastAPI()
-game_repo = GameRepository(db.session())
+dbs = db.session()
+game_repo = GameRepository(dbs)
+player_repo = PlayerRepository(dbs)
 
 # Agregar el middleware de CORS
 app.add_middleware(
@@ -46,14 +50,19 @@ class GameStateOutput(BaseModel):
 
 
 @app.middleware("http")
-async def add_game_repo_to_request(request: Request, call_next):
+async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
+    request.state.player_repo = player_repo
     response = await call_next(request)
     return response
 
 
 def get_games_repo(request: Request) -> GameRepository:
     return request.state.game_repo
+
+
+def get_player_repo(request: Request) -> PlayerRepository:
+    return request.state.player_repo
 
 
 class GameIn(BaseModel):
@@ -78,7 +87,9 @@ class GameOut(BaseModel):
 
 @app.post("/api/lobby", response_model=GameOut)
 async def create_game(
-    game_create: GameIn, game_repo: GameRepository = Depends(get_games_repo)
+    game_create: GameIn,
+    game_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
 ) -> GameOut:
 
     if game_create.min_players > game_create.max_players:
@@ -87,8 +98,13 @@ async def create_game(
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
         )
 
+    host = Player(name="host, borrame soy basura")
+    player_repo.save(host)
+
     new_game = Game(
         name=game_create.name,
+        host=host,
+        host_id=host.id,
         max_players=game_create.max_players,
         min_players=game_create.min_players,
         started=False,
