@@ -3,42 +3,36 @@ import asserts
 from main import app
 import asserts
 from unittest.mock import MagicMock
+from fastapi import Request, Depends, HTTPException
 
 from main import get_games_repo
 
 from model import Game, Player
 from unittest.mock import AsyncMock, patch
 from fastapi import FastAPI, HTTPException, Depends
-from repositories import GameRepository
+from repositories import GameRepository, PlayerRepository
 from uuid import uuid4
+from repositories.player import PlayerRepository
+from os import getenv
+from database import Database
+from main import game_repo, player_repo
 
 client = TestClient(app)
 
 
-# todo, corregir el test
+def test_creat_game():
+    # Crea un jugador host
+    test_identifier = uuid4()
+    host = Player(name="host", identifier=test_identifier)
+    player_repo.save(host)
 
-@patch("main.GameRepository")
-@patch("main.PlayerRepository")
-def test_crear_partida(mock_game_repo, mock_player_repo):
-
-    test_identifier = uuid4()  
-    mock_player = Player(id=99, name="host", identifier=test_identifier)
-
-    mock_game_repo.return_value.save = AsyncMock()
-    mock_game_repo.return_value.save.return_value = Game(
-        id=1,
-        name="partida1",
-        max_players=4,
-        min_players=2,
-        started=False,
-        host=Player(name="host", id=99, identifier = uuid4()),
-        host_id=99,
-        players=[],
-    )
-    mock_player_repo.return_value.get_by_identifier.return_value = AsyncMock(return_value=mock_player)
+    # Guarda al jugador usando el endpoint
     response = client.post(
-        "/api/lobby", json={"identifier": str(test_identifier), "name": "partida1", "max_players": 4, "min_players": 2}
+        "/api/lobby",
+        json={"identifier": str(test_identifier), "name": "partida1", "max_players": 4, "min_players": 2},
     )
+    
+    # Verifica el estado de la respuesta
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "partida1"
@@ -46,7 +40,11 @@ def test_crear_partida(mock_game_repo, mock_player_repo):
     assert data["min_players"] == 2
     assert data["started"] is False
     assert isinstance(data["id"], int)
-    assert data["players"] != []
+
+    game = game_repo.get(data["id"])
+    assert game is not None
+    assert game.name == "partida1"
+    assert game.host == host
 
 
 @patch("main.GameRepository")
