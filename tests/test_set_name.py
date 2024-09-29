@@ -20,6 +20,4 @@ def test_set_name(mocked_uuid):
     mocked_uuid.return_value = value
     response = client.post("/api/name", json={"name": "Alice"})
     asserts.assert_equal(response.status_code, 200)
-    asserts.assert_equal(
-        response.json(), {"name": "Alice", "identifier": str(value)}
-    )
+    asserts.assert_equal(response.json(), {"name": "Alice", "identifier": str(value)})

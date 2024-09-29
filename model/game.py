@@ -29,6 +29,10 @@ class Game(Base):
     players: Mapped[List[Player]] = relationship(
         "Player", secondary=game_player_association
     )
+    host_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("players.id"), nullable=False
+    )
+    host: Mapped[Player] = relationship("Player")
     board: Mapped[List[Color]] = mapped_column(Board, default=Board.random_board)
 
     def __eq__(self, other):
@@ -59,7 +63,8 @@ class Game(Base):
     def __repr__(self):
         return (
             f"<Game(id={self.id}, name={self.name}, current_player_turn={self.current_player_turn}, "
-            f"max_players={self.max_players}, min_players={self.min_players}, started={self.started})>"
+            f"max_players={self.max_players}, min_players={self.min_players}, started={self.started}, "
+            f"host_id={self.host_id})>"
         )
 
     def advance_player(self):
