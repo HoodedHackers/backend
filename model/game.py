@@ -79,6 +79,13 @@ class Game(Base):
 
     def count_players(self) -> int:
         return len(self.players)
+    
+    ''''''
+    def delete_player(self, player):
+        if player in self.players:
+            self.players.remove(player)
+        else:
+            raise ValueError("El jugador no esta en la partida")
 
 
 class GameFull(BaseException):
