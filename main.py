@@ -101,13 +101,10 @@ async def create_game(
         )
     player = player_repo.get_by_identifier(game_create.identifier)
 
-    #host = Player(name="host, borrame soy basura")
-    #player_repo.save(host)
-
     new_game = Game(
         name=game_create.name,
-        host= player,  #host,
-        host_id=player.id,  #host.id,
+        host= player,  
+        host_id=player.id, 
         max_players=game_create.max_players,
         min_players=game_create.min_players,
         started=False,
