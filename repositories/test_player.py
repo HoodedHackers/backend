@@ -8,13 +8,14 @@ from repositories import PlayerRepository
 from database import Database
 
 
-class TestGameRepo(unittest.TestCase):
+class TestPlayerRepo(unittest.TestCase):
     def repo(self):
         return PlayerRepository(Database().session())
 
     def test_new_player(self):
         repo = self.repo()
-        p = Player(name="Alice")
+        identifier = uuid4()
+        p = Player(name="Alice", identifier=identifier)
         repo.save(p)
         self.assertIsNotNone(p.id)
         saved_player = repo.get(p.id)
@@ -23,7 +24,12 @@ class TestGameRepo(unittest.TestCase):
 
     def test_delete_player(self):
         repo = self.repo()
-        players = [Player(name="Alice"), Player(name="Bob"), Player(name="Carl")]
+        identifier_1 = uuid4()
+        identifier_2 = uuid4()
+        players = [
+            Player(name="Alice", identifier=identifier_1),
+            Player(name="Bob", identifier=identifier_2),
+        ]
         for p in players:
             repo.save(p)
         alice = players[0]
