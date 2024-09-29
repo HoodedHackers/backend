@@ -103,10 +103,7 @@ async def create_game(
         )
     player = player_repo.get_by_identifier(game_create.identifier)
     if player is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Jugador no encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Jugador no encontrado")
 
     new_game = Game(
         name=game_create.name,
@@ -161,7 +158,7 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
         min_players=lobby_query.min_players,
         started=lobby_query.started,
         turn=lobby_query.current_player_turn,
-        players=[player.name for player in lobby_query.players]
+        players=[player.name for player in lobby_query.players],
     )
     return lobby
 
