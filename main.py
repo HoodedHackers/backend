@@ -3,9 +3,10 @@ from fastapi import FastAPI, Response, Request, Depends
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from pydantic import BaseModel
-
+from uuid import UUID
 from database import Database
 from repositories import GameRepository
+
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -68,3 +69,19 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
         turn=lobby_query.current_player_turn,
     )
     return lobby
+
+class IdentityIn(BaseModel):
+    id: UUID
+
+class responseOut(BaseModel):
+    
+
+@app.patch("/api/lobby/{id}")
+def unlock_game_not_started(id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)):
+    lobby_query = repo.get(id)
+    if lobby_query is None:
+        raise HTTPException(status_code=404, detail="Lobby not found")
+    
+
+    
+    
