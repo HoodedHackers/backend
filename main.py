@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from database import Database
 from model import Player, Game
 from repositories import GameRepository, PlayerRepository
-
+from model import Player
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
