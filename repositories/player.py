@@ -1,7 +1,8 @@
 from typing import Optional, List
+from uuid import UUID
+
 from model import Player
 from repositories.general import Repository
-from sqlalchemy.types import UUID
 
 
 class PlayerRepository(Repository):
@@ -14,8 +15,11 @@ class PlayerRepository(Repository):
         self.db.delete(player)
         self.db.commit()
 
-    def get(self, identifier: UUID) -> Optional[Player]:
-        return self.db.get(Player, identifier)
+    def get(self, id: int) -> Optional[Player]:
+        return self.db.get(Player, id)
 
     def get_many(self, count: int) -> List[Player]:
         return self.db.query(Player).limit(count).all()
+
+    def get_by_identifier(self, identifier: UUID) -> Optional[Player]:
+        return self.db.query(Player).filter(Player.identifier == identifier).first()

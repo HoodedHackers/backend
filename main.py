@@ -1,14 +1,14 @@
 from os import getenv
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 from fastapi import FastAPI, Response, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
 from database import Database
 from repositories import GameRepository, PlayerRepository
 from model import Player
-
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -16,28 +16,31 @@ if db_uri is not None:
 else:
     db = Database()
 db.create_tables()
-
-# creamos la App
 app = FastAPI()
-
 session = db.get_session()
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
 
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:8080"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+class GameStateOutput(BaseModel):
+    name: str
+    current_players: int
+    max_players: int
+    min_players: int
+    is_started: bool
+    turn: int
+
 
 @app.middleware("http")
-async def add_repos_to_request(request: Request, call_next):
+async def add_game_repo_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
-    request.state.player_repo = player_repo
     response = await call_next(request)
     return response
 
@@ -50,13 +53,45 @@ def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
 
 
+@app.get("/api/lobby")
+def get_games_available(repo: GameRepository = Depends(get_games_repo)):
+    lobbies_queries = repo.get_available(10)
+    lobbies = []
+    for lobby_query in lobbies_queries:
+        lobby = GameStateOutput(
+            name=lobby_query.name,
+            current_players=len(lobby_query.players),
+            max_players=lobby_query.max_players,
+            min_players=lobby_query.min_players,
+            is_started=lobby_query.started,
+            turn=lobby_query.current_player_turn,
+        )
+        lobbies.append(lobby)
+    return lobbies
+
+
+@app.get("/api/lobby/{id}")
+def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
+    lobby_query = repo.get(id)
+    if lobby_query is None:
+        raise HTTPException(status_code=404, detail="Lobby not found")
+    lobby = GameStateOutput(
+        name=lobby_query.name,
+        current_players=len(lobby_query.players),
+        max_players=lobby_query.max_players,
+        min_players=lobby_query.min_players,
+        is_started=lobby_query.started,
+        turn=lobby_query.current_player_turn,
+    )
+    return lobby
+
 class SetNameRequest(BaseModel):
     name: str = Field(min_length=1, max_length=64)
 
 
 class SetNameResponse(BaseModel):
-    name: str = Field()
-    identifier: UUID = Field()
+    name: str
+    identifier: UUID
 
 
 @app.post("/api/name")
