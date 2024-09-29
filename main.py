@@ -44,9 +44,9 @@ class GameStateOutput(BaseModel):
     current_players: int
     max_players: int
     min_players: int
-    is_started: bool
+    started: bool
     turn: int
-
+    players: List[str]
 
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
