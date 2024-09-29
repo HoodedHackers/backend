@@ -22,5 +22,4 @@ class PlayerRepository(Repository):
         return self.db.query(Player).limit(count).all()
 
     def get_by_identifier(self, identifier: UUID) -> Optional[Player]:
-        print(identifier)
         return self.db.query(Player).filter(Player.identifier == identifier).first()

@@ -16,8 +16,8 @@ class TestGameRepo(unittest.TestCase):
         repo = self.repo()
         p = Player(name="Alice", identifier="sdsda")
         repo.save(p)
-        self.assertIsNotNone(p.identifier)
-        saved_player = repo.get(p.identifier)
+        self.assertIsNotNone(p.id)
+        saved_player = repo.get(p.id)
         assert saved_player is not None
         self.assertEqual(p.name, saved_player.name)
 
@@ -32,7 +32,7 @@ class TestGameRepo(unittest.TestCase):
             repo.save(p)
         alice = players[0]
         repo.delete(alice)
-        saved_player = repo.get(alice.identifier)
+        saved_player = repo.get(alice.id)
         self.assertIsNone(saved_player)
 
     def test_get_player_by_identifier(self):
