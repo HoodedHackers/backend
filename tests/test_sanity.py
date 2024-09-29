@@ -29,9 +29,14 @@ def test_creat_game():
     # Guarda al jugador usando el endpoint
     response = client.post(
         "/api/lobby",
-        json={"identifier": str(test_identifier), "name": "partida1", "max_players": 4, "min_players": 2},
+        json={
+            "identifier": str(test_identifier),
+            "name": "partida1",
+            "max_players": 4,
+            "min_players": 2,
+        },
     )
-    
+
     # Verifica el estado de la respuesta
     assert response.status_code == 200
     data = response.json()
@@ -50,7 +55,13 @@ def test_creat_game():
 @patch("main.GameRepository")
 def test_crear_partida_error_min_mayor_max(mock_game_repo):
     response = client.post(
-        "/api/lobby", json={"identifier": "123e4567-e89b-12d3-a456-426614174000", "name": "partida1", "max_players": 3, "min_players": 4}
+        "/api/lobby",
+        json={
+            "identifier": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "partida1",
+            "max_players": 3,
+            "min_players": 4,
+        },
     )
     assert response.status_code == 412
     assert response.json() == {
@@ -61,7 +72,13 @@ def test_crear_partida_error_min_mayor_max(mock_game_repo):
 @patch("main.GameRepository")
 def test_crear_partida_error_min_jugadores_invalido(mock_game_repo):
     response = client.post(
-        "/api/lobby", json={"identifier": "123e4567-e89b-12d3-a456-426614174000", "name": "partida1", "max_players": 4, "min_players": 1}
+        "/api/lobby",
+        json={
+            "identifier": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "partida1",
+            "max_players": 4,
+            "min_players": 1,
+        },
     )
     assert response.status_code == 422
 
@@ -69,14 +86,26 @@ def test_crear_partida_error_min_jugadores_invalido(mock_game_repo):
 @patch("main.GameRepository")
 def test_crear_partida_nombre_vacio(mock_game_repo):
     response = client.post(
-        "/api/lobby", json={"identifier": "123e4567-e89b-12d3-a456-426614174000", "name": "", "max_players": 4, "min_players": 2}
+        "/api/lobby",
+        json={
+            "identifier": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "",
+            "max_players": 4,
+            "min_players": 2,
+        },
     )
     assert response.status_code == 422
 
 
 def test_crear_partida_campos_invalidos():
     response = client.post(
-        "/api/lobby", json={"identifier": "123e4567-e89b-12d3-a456-426614174000", "name": "", "max_players": None, "min_players": None}
+        "/api/lobby",
+        json={
+            "identifier": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "",
+            "max_players": None,
+            "min_players": None,
+        },
     )
     assert response.status_code == 422
 
@@ -84,6 +113,12 @@ def test_crear_partida_campos_invalidos():
 @patch("main.GameRepository")
 def test_crear_partida_error_brutal(mock_game_repo):
     response = client.post(
-        "/api/lobby", json={"identifier": "123e4567-e89b-12d3-a456-426614174000","name": "partida1", "max_players": 5, "min_players": 1}
+        "/api/lobby",
+        json={
+            "identifier": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "partida1",
+            "max_players": 5,
+            "min_players": 1,
+        },
     )
     assert response.status_code == 422

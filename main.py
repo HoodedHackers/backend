@@ -1,11 +1,15 @@
 from os import getenv
+
 from fastapi import FastAPI, Request, Depends, HTTPException
+
+from uuid import UUID, uuid4
+from fastapi.middleware.cors import CORSMiddleware
+
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from database import Database
-from repositories import GameRepository
 from model import Player, Game
 
 from typing import List
@@ -15,7 +19,7 @@ from uuid import UUID
 
 from fastapi.middleware.cors import CORSMiddleware
 
-from repositories.player import PlayerRepository
+from repositories import GameRepository, PlayerRepository
 
 
 db_uri = getenv("DB_URI")
@@ -25,19 +29,17 @@ else:
     db = Database()
 db.create_tables()
 app = FastAPI()
-dbs = db.session()
-game_repo = GameRepository(dbs)
-player_repo = PlayerRepository(dbs)
 
-# Agregar el middleware de CORS
+session = db.get_session()
+player_repo = PlayerRepository(session)
+game_repo = GameRepository(session)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*"
-    ],  # Permitir todos los orígenes (puedes restringirlo a dominios específicos)
+    allow_origins=["http://localhost:5173", "http://localhost:8080"],
     allow_credentials=True,
-    allow_methods=["*"],  # Permitir todos los métodos HTTP
-    allow_headers=["*"],  # Permitir todos los encabezados
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -84,7 +86,6 @@ class GameOut(BaseModel):
     min_players: int
     started: bool
     players: List[PlayerOut]
-    
 
 
 @app.post("/api/lobby", response_model=GameOut)
@@ -103,8 +104,8 @@ async def create_game(
 
     new_game = Game(
         name=game_create.name,
-        host= player,  
-        host_id=player.id, 
+        host=player,
+        host_id=player.id,
         max_players=game_create.max_players,
         min_players=game_create.min_players,
         started=False,
@@ -112,9 +113,7 @@ async def create_game(
 
     game_repo.save(new_game)
 
-    players_out = [
-        PlayerOut(name=player.name) for player in new_game.players
-    ]
+    players_out = [PlayerOut(name=player.name) for player in new_game.players]
 
     return GameOut(
         id=new_game.id,
@@ -157,3 +156,22 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
         turn=lobby_query.current_player_turn,
     )
     return lobby
+
+
+class SetNameRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+
+
+class SetNameResponse(BaseModel):
+    name: str
+    identifier: UUID
+
+
+@app.post("/api/name")
+async def set_player_name(
+    setNameRequest: SetNameRequest,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+) -> SetNameResponse:
+    id_uuid = uuid4()
+    player_repo.save(Player(name=setNameRequest.name, identifier=id_uuid))
+    return SetNameResponse(name=setNameRequest.name, identifier=id_uuid)
