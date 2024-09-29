@@ -29,3 +29,9 @@ def test_advance_turm():
     assert_equal(g.current_player_turn, 1)
     g.advance_player()
     assert_equal(g.current_player_turn, 0)
+
+def test_game_has_tiles():
+	g = Game(name="test game")
+	g.set_defaults()
+	assert len(g.board) == 36
+	

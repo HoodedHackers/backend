@@ -1,4 +1,5 @@
 from enum import Enum
+from random import randint
 from typing_extensions import List
 
 from sqlalchemy.types import VARCHAR, TypeDecorator
@@ -23,3 +24,7 @@ class Board(TypeDecorator):
         if value is None:
             return []
         return [Color(int(c)) for c in value]
+
+    @staticmethod
+    def random_board(count=36) -> List[Color]:
+        return [Color(randint(1, 4)) for _ in range(count)]
