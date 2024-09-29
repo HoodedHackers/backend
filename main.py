@@ -29,6 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class GameStateOutput(BaseModel):
     name: str
     current_players: int
@@ -85,6 +86,7 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
         turn=lobby_query.current_player_turn,
     )
     return lobby
+
 
 class SetNameRequest(BaseModel):
     name: str = Field(min_length=1, max_length=64)
