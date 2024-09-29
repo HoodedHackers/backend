@@ -25,6 +25,8 @@ def test_crear_partida(mock_game_repo):
         max_players=4,
         min_players=2,
         started=False,
+        host=Player(name="host", id=99),
+        host_id=99,
         players=[],
     )
 
