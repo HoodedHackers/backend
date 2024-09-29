@@ -1,24 +1,15 @@
 from os import getenv
+from uuid import UUID, uuid4
+from typing import List
+import random
 
 from fastapi import FastAPI, Request, Depends, HTTPException
-
-from uuid import UUID, uuid4
 from fastapi.middleware.cors import CORSMiddleware
-
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
 from database import Database
 from model import Player, Game
-
-from typing import List
-from pydantic import BaseModel, Field
-import random
-from uuid import UUID
-
-from fastapi.middleware.cors import CORSMiddleware
-
 from repositories import GameRepository, PlayerRepository
 
 
