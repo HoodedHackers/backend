@@ -10,8 +10,12 @@ from typing import List, Dict
 from uuid import UUID, uuid4
 from database import Database
 from model import Player, Game
-from repositories import GameRepository, PlayerRepository, FigRepository
-from create_cards import create_all_figs
+from repositories import (
+    GameRepository,
+    PlayerRepository,
+    FigRepository,
+    create_all_figs,
+)
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -255,9 +259,9 @@ async def repartir_cartas_figura(
         in_game = game_repo.get(req.game_id)
         if in_game_player is None:
             raise HTTPException(status_code=404, detail="Player dont found!")
-        if in_game is None: 
+        if in_game is None:
             raise HTTPException(status_code=404, detail="Game dont found!")
-        if not in_game_player in in_game.players: 
+        if not in_game_player in in_game.players:
             continue
         cards = card_repo.get_many(3)
         new_cards = []
