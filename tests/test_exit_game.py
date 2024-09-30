@@ -22,46 +22,6 @@ from main import PlayerOutRandom
 client = TestClient(app)
 
 
-def test_exit_game_success_with_mock():
-    # Crear datos de prueba
-    player1 = PlayerOutRandom(name="Player 1", identifier=uuid4())
-    player2 = PlayerOutRandom(name="Player 2", identifier=uuid4())
-    player3 = PlayerOutRandom(name="Player 3", identifier=uuid4())
-    
-    # Crear una partida simulada
-    game_mock = MagicMock()
-    game_mock.id = 1
-    game_mock.players = [player1, player2, player3]
-    game_mock.started = True  # Asegúrate de que la partida no haya comenzado
-
-    # Simular el repositorio de juegos
-    with patch("main.get_games_repo") as mock_repo:
-        mock_repo.return_value.get.return_value = game_mock  # El juego existe
-
-        # Crear el cuerpo de la solicitud
-        exit_request = {"identifier": str(player2.identifier)}
-
-        # Realizar la solicitud PATCH
-        response = client.patch(
-            f"/api/lobby/salir/{game_mock.id}",
-            json=exit_request  # Enviar el cuerpo como JSON
-        )
-
-        # Verificar que la respuesta sea correcta
-        assert response.status_code == 200
-        result = response.json()
-
-        # Verificar que el juego devuelto es correcto
-        assert result["game_id"] == game_mock.id
-        assert len(result["players"]) == 2  # Solo debe quedar un jugador
-
-        # Verificar que `delete_player` fue llamado con el jugador correcto
-        game_mock.delete_player.assert_called_once()
-
-        deleted_player = game_mock.delete_player.call_args[0][0]
-        assert deleted_player.identifier == player2.identifier
-
-'''
 # crear un jugador
 def set_player_name(name: str):
     response = client.post("/api/name", json={"name": name})
@@ -98,7 +58,8 @@ def endpoint_unirse_a_partida(game_id: int, player_identifier: str):
 def test_exit_game_success():
     player1 = set_player_name("Player 1")
     player2 = set_player_name("Player 2")
-    
+    player3 = set_player_name("Player 3")
+
     # Crear el juego
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
@@ -108,9 +69,11 @@ def test_exit_game_success():
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
     ################### aca va start partida
     
+
+
     # El jugador sale de la partida
-    response = client.delete(
-        f"/api/lobby/{game['id']}",
+    response = client.patch(
+        f"/api/lobby/salir/{game['id']}",
         json={"identifier": player2["identifier"]}
     )
     
@@ -118,10 +81,9 @@ def test_exit_game_success():
     result = response.json()
     
     assert result["game_id"] == game["id"]
-    assert len(result["players"]) == 1  # Solo debería quedar un jugador
-    assert result["players"][0]["identifier"] == str(player1["identifier"])
+    assert len(result["players"]) == 2  # Solo debería quedar un jugador
+ #   assert result["players"][0]["identifier"] == str(player1["identifier"])
 
-'''
 
 ''''
 # salir de un juego

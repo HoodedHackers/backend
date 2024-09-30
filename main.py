@@ -195,8 +195,7 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 class GamePlayerResponse(BaseModel):  # Lo que envia
     game_id: int
     players: List[PlayerOutRandom]
-    out: PlayerOutRandom
-
+    ident : ExitRequest
 
 # api/lobby/{game_id}
 @app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
@@ -218,28 +217,28 @@ async def exitGame(
             player
             for player in game.players
             if player.identifier == exit_request.identifier
-        ),
-        None,
+        )
     )
+    print(player_exit.identifier)
 
     if player_exit is None:
         raise HTTPException(status_code=404, detail="El jugador no existe")
 
+    if game.host.identifier == player_exit.identifier:
+        game.host = None
+    
     game.delete_player(player_exit)
     games_repo.save(game)
 
-    """''
-    if game.host.id == player_exit.id
-        game.host = None
-    """ ""
+    
     return GamePlayerResponse(
         game_id=game.id,
         players=[
             PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
             for player in game.players
         ],
-        out=PlayerOutRandom(
-            name=player_exit.name, identifier=UUID(str(player_exit.identifier))
+        out=ExitRequest(
+            ident=exit_request.identifier,
         ),
     )
 
