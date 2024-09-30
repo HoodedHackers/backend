@@ -201,3 +201,33 @@ async def endpoint_unirse_a_partida(
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
     return {"status": "success!"}
+
+class GameIn2(BaseModel):
+    game_id: int
+    players: List[str]
+
+class CardsFigOut(BaseModel):
+    card_id: int
+    card_name: str
+
+class PlayerOut2(BaseModel):
+    player: str
+    cards_out: List[CardsFigOut]
+
+class SetCardsResponse(BaseModel):
+    all_cards: List[PlayerOut2]
+
+@app.post("/api/partida/en_curso", response_model=SetCardsResponse)
+async def repartir_cartas_figura(
+    req: GameIn2, card_repo: FigRepository = Depends(get_card_repo)
+):
+    all_cards = []
+    for player in req.players:
+        cards = card_repo.get_many(3)
+        new_cards = []
+        for card in cards:
+            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
+            new_cards.append(new_card)
+        new_dic = PlayerOut2(player=player, cards_out=new_cards)
+        all_cards.append(new_dic)
+    return SetCardsResponse(all_cards=all_cards)
