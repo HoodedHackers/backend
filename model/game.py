@@ -79,8 +79,9 @@ class Game(Base):
 
     def count_players(self) -> int:
         return len(self.players)
-    
-    ''''''
+
+    """"""
+
     def delete_player(self, player):
         if player in self.players:
             self.players.remove(player)

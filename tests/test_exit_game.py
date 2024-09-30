@@ -17,10 +17,11 @@ from os import getenv
 from database import Database
 from main import game_repo, player_repo
 from unittest.mock import Mock
+import pytest
 
 client = TestClient(app)
 
-'''''
+"""''
 from fastapi.testclient import TestClient
 import pytest
 from uuid import UUID, uuid4
@@ -37,37 +38,48 @@ def test_borrame():
     response = client.get("/api/borrame")
     asserts.assert_equal(response.status_code, 200)
     asserts.assert_equal(response.json(), {"games": []})
-'''''
+""" ""
 
-"""
+
 # crear un jugador
 def create_player(name: str):
     response = client.post("/api/player", json={"name": name})
     assert response.status_code == 200
     return response.json()
 
+
 # crear un juego
 def create_game(name: str, min_players: int, max_players: int):
-    response = client.post("/api/lobby", json={"name": name, "min_players": min_players, "max_players": max_players})
+    response = client.post(
+        "/api/lobby",
+        json={"name": name, "min_players": min_players, "max_players": max_players},
+    )
     assert response.status_code == 200
     return response.json()
+
 
 # unirse a un juego
-def join_game(game_id: int, player_identifier: str): #ver que onda con esto
-    response = client.put(f"/api/lobby/{game_id}", json={"id_game": game_id, "identifier_player": player_identifier})
+def join_game(game_id: int, player_identifier: str):  # ver que onda con esto
+    response = client.put(
+        f"/api/lobby/{game_id}",
+        json={"id_game": game_id, "identifier_player": player_identifier},
+    )
     assert response.status_code == 200
     return response.json()
+
 
 # salir de un juego
-def exit_game(game_id: int, player_identifier: str):
-    response = client.delete(f"/api/lobby/{game_id}", json={"id_game": game_id, "identifier_player": player_identifier})
+def exit_game(game_id: int, player_identifier: UUID):
+    response = client.delete(
+        f"/api/lobby/{game_id}", json={"id": game_id, "identifier": player_identifier}
+    )
     assert response.status_code == 200
     return response.json()
 
+
 """
-
-
 # simulo el game repository
+@pytest.fixture
 def mock_game_repo():
     mock = Mock()
     app.dependency_overrides[get_games_repo] = lambda: mock
@@ -75,6 +87,7 @@ def mock_game_repo():
 
 
 # test para cuando el jugador no esta en la partida
+@pytest.fixture
 def test_exit_game_player_in_game(mock_game_repo):
     player1_uuid = uuid4()
     player2_uuid = uuid4()
@@ -129,3 +142,5 @@ def test_exit_game_no_game(mock_game_repo):
     # Aserciones
     assert response.status_code == 404
     assert response.json() == {"detail": "Partida no encontrada"}
+
+"""

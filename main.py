@@ -13,8 +13,6 @@ from model import Player, Game
 from repositories import GameRepository, PlayerRepository
 
 
-
-
 db_uri = getenv("DB_URI")
 if db_uri is not None:
     db = Database(db_uri=db_uri)
@@ -175,30 +173,22 @@ async def set_player_name(
     return SetNameResponse(name=setNameRequest.name, identifier=id_uuid)
 
 
-
-
-
-
-
-
-
-
-
-
-
 """
 class PlayerExit(BaseModel):
     id: int
     name: str
     activate: bool
 """
-class PlayerOutRandom(BaseModel):  
-    name : str
+
+
+class PlayerOutRandom(BaseModel):
+    name: str
     identifier: UUID
 
 
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
+    id: int
 
 
 class GamePlayerResponse(BaseModel):  # Lo que envia
@@ -243,9 +233,7 @@ async def exitGame(
     return GamePlayerResponse(
         game_id=game.id,
         players=[
-            PlayerOutRandom(
-                name=player.name, identifier=UUID(str(player.identifier))
-            )
+            PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
             for player in game.players
         ],
     )
@@ -255,5 +243,3 @@ async def exitGame(
 # puedo sacar de la lista al jugador y ahi ya no esta en la partida :D en players no hay que hacer nada porque
 # en players esta el id y el nombre del jugador, en Game esta la relacion players y host
 # definir en el modelo el remove de un jugador, con su identifier, es igual que add pero al reves
-
-
