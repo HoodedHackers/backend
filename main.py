@@ -38,6 +38,7 @@ app.add_middleware(
 )
 create_all_figs(card_repo)
 
+
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
@@ -58,6 +59,7 @@ def get_card_repo(request: Request) -> FigRepository:
 def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
 
+
 class GameStateOutput(BaseModel):
     name: str
     current_players: int
@@ -66,6 +68,7 @@ class GameStateOutput(BaseModel):
     started: bool
     turn: int
     players: List[str]
+
 
 class GameIn(BaseModel):
     identifier: UUID
@@ -202,24 +205,32 @@ async def endpoint_unirse_a_partida(
     games_repo.save(selec_game)
     return {"status": "success!"}
 
+
 class GameIn2(BaseModel):
     game_id: int
     players: List[str]
+
 
 class CardsFigOut(BaseModel):
     card_id: int
     card_name: str
 
+
 class PlayerOut2(BaseModel):
     player: str
     cards_out: List[CardsFigOut]
 
+
 class SetCardsResponse(BaseModel):
     all_cards: List[PlayerOut2]
 
+
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
 async def repartir_cartas_figura(
-    req: GameIn2, card_repo: FigRepository = Depends(get_card_repo)
+    req: GameIn2,
+    card_repo: FigRepository = Depends(get_card_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
 ):
     all_cards = []
     for player in req.players:

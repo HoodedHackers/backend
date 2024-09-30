@@ -2,6 +2,7 @@ from typing import Optional, List
 
 from model import FigCards
 from repositories.general import Repository
+from sqlalchemy import func
 
 
 class FigRepository(Repository):
@@ -18,4 +19,4 @@ class FigRepository(Repository):
         return self.db.get(FigCards, id)
 
     def get_many(self, count: int) -> List[FigCards]:
-        return self.db.query(FigCards).limit(count).all()
+        return self.db.query(FigCards).order_by(func.random()).limit(count).all()

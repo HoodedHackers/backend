@@ -5,6 +5,7 @@ from sqlalchemy.schema import ForeignKey, Table
 
 from database import Base
 
+
 class FigCards(Base):
     __tablename__ = "figCards"
 
