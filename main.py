@@ -1,6 +1,7 @@
 from os import getenv
 from uuid import UUID, uuid4
 from typing import List
+<<<<<<< HEAD
 import random
 
 from fastapi import FastAPI, Request, Depends, HTTPException, Response
@@ -8,13 +9,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 from fastapi import HTTPException
+=======
+from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from uuid import UUID
+>>>>>>> develop
 from pydantic import BaseModel, Field
+from typing import List, Dict
 
+<<<<<<< HEAD
 import asyncio
 from database import Database
 from repositories import GameRepository, PlayerRepository
 import services.counter
 from model import Player, Game
+=======
+from uuid import UUID, uuid4
+from database import Database
+from model import Player, Game
+from repositories import (
+    GameRepository,
+    PlayerRepository,
+    FigRepository,
+    create_all_figs,
+)
+>>>>>>> develop
 
 
 db_uri = getenv("DB_URI")
@@ -22,15 +42,16 @@ if db_uri is not None:
     db = Database(db_uri=db_uri)
 else:
     db = Database()
+
 db.create_tables()
 
-session = db.session()
 app = FastAPI()
 
 session = db.get_session()
 
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
+card_repo = FigRepository(session)
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,6 +60,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+create_all_figs(card_repo)
+
+
+@app.middleware("http")
+async def add_repos_to_request(request: Request, call_next):
+    request.state.game_repo = game_repo
+    request.state.player_repo = player_repo
+    request.state.card_repo = card_repo
+    response = await call_next(request)
+    return response
+
+
+def get_games_repo(request: Request) -> GameRepository:
+    return request.state.game_repo
+
+
+def get_card_repo(request: Request) -> FigRepository:
+    return request.state.card_repo
+
+
+def get_player_repo(request: Request) -> PlayerRepository:
+    return request.state.player_repo
 
 
 class GameStateOutput(BaseModel):
@@ -49,22 +92,6 @@ class GameStateOutput(BaseModel):
     started: bool
     turn: int
     players: List[str]
-
-
-@app.middleware("http")
-async def add_repos_to_request(request: Request, call_next):
-    request.state.game_repo = game_repo
-    request.state.player_repo = player_repo
-    response = await call_next(request)
-    return response
-
-
-def get_games_repo(request: Request) -> GameRepository:
-    return request.state.game_repo
-
-
-def get_player_repo(request: Request) -> PlayerRepository:
-    return request.state.player_repo
 
 
 class GameIn(BaseModel):
@@ -111,6 +138,7 @@ async def create_game(
         min_players=game_create.min_players,
         started=False,
     )
+    new_game.add_player(player)
 
     game_repo.save(new_game)
 
@@ -214,16 +242,121 @@ async def endpoint_unirse_a_partida(
     games_repo.save(selec_game)
     return {"status": "success!"}
 
+
 @app.put("/api/lobby/{id_game}/start")
 async def start_game(
-    id_game: int,
-    games_repo: GameRepository = Depends(get_games_repo)
+    id_game: int, games_repo: GameRepository = Depends(get_games_repo)
 ):
     selec_game = games_repo.get(id_game)
     if selec_game is None:
         raise HTTPException(status_code=404, detail="Game dont found")
     if len(selec_game.players) < selec_game.min_players:
-        raise HTTPException(status_code=412, detail="Doesnt meet the minimum number of players")
+        raise HTTPException(
+            status_code=412, detail="Doesnt meet the minimum number of players"
+        )
     selec_game.started = True
     games_repo.save(selec_game)
     return {"status": "success!"}
+
+
+class GameIn2(BaseModel):
+    game_id: int
+    players: List[str]
+
+
+class CardsFigOut(BaseModel):
+    card_id: int
+    card_name: str
+
+
+class PlayerOut2(BaseModel):
+    player: str
+    cards_out: List[CardsFigOut]
+
+
+class SetCardsResponse(BaseModel):
+    all_cards: List[PlayerOut2]
+
+
+@app.post("/api/partida/en_curso", response_model=SetCardsResponse)
+async def repartir_cartas_figura(
+    req: GameIn2,
+    card_repo: FigRepository = Depends(get_card_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+    all_cards = []
+    for player in req.players:
+        identifier_player = UUID(player)
+        in_game_player = player_repo.get_by_identifier(identifier_player)
+        in_game = game_repo.get(req.game_id)
+        if in_game_player is None:
+            raise HTTPException(status_code=404, detail="Player dont found!")
+        if in_game is None:
+            raise HTTPException(status_code=404, detail="Game dont found!")
+        if not in_game_player in in_game.players:
+            continue
+        cards = card_repo.get_many(3)
+        new_cards = []
+        for card in cards:
+            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
+            new_cards.append(new_card)
+        new_dic = PlayerOut2(player=player, cards_out=new_cards)
+        all_cards.append(new_dic)
+    return SetCardsResponse(all_cards=all_cards)
+
+
+class IdentityIn(BaseModel):
+    identifier: UUID
+
+
+class PlayersOfGame(BaseModel):
+    identifier: UUID
+    name: str
+
+
+class ResponseOut(BaseModel):
+    id: int
+    started: bool
+    players: List[PlayersOfGame]
+
+
+@app.patch("/api/lobby/{id}", response_model=ResponseOut)
+def unlock_game_not_started(
+    id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
+):
+    lobby_query = repo.get(id)
+    if lobby_query is None:
+        raise HTTPException(status_code=404, detail="Lobby not found")
+    elif lobby_query.started == True:
+        raise HTTPException(status_code=412, detail="Game already started")
+
+    if len(lobby_query.players) == lobby_query.max_players:
+        player_exit = (  # obtiene el jugador de la lista de jugadores que se quiere ir
+            next(
+                (
+                    player
+                    for player in lobby_query.players
+                    if player.identifier == ident.identifier
+                )
+            )
+        )
+        if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
+            repo.delete(lobby_query)  # borro la partida
+            return ResponseOut(id=0, started=False, players=[])  # devuelvo vacio
+
+        lobby_query.delete_player(player_exit)  # borro al jugador de la lista
+        lobby_query.started = False  # seteo en falso
+        repo.save(lobby_query)  # guardo los cambios de la partida
+        list_players = [  # guarda la lista de jugadores
+            PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
+            for player in lobby_query.players
+        ]
+        return ResponseOut(
+            id=lobby_query.id, started=lobby_query.started, players=list_players
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="No hay suficientes jugadores para desbloquear la partida",
+        )
