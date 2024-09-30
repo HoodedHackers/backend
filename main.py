@@ -190,7 +190,6 @@ def unlock_game_not_started(
         raise HTTPException(status_code=404, detail="Lobby not found")
     elif lobby_query.started == True:
         raise HTTPException(status_code=412, detail="Game already started")
-    # game = repo.get(ident.id) #toma la partida
 
     if lobby_query.started == True:
         raise HTTPException(status_code=412, detail="Game already started")
