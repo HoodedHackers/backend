@@ -348,3 +348,60 @@ def unlock_game_not_started(
             status_code=400,
             detail="No hay suficientes jugadores para desbloquear la partida",
         )
+
+
+class PlayerOutRandom(BaseModel):
+    name: str
+    identifier: UUID
+
+
+class ExitRequest(BaseModel):  # le llega esto al endpoint
+    identifier: UUID
+
+
+class GamePlayerResponse(BaseModel):  # Lo que envia
+    game_id: int
+    players: List[PlayerOutRandom]
+    out: ExitRequest
+    activo: bool
+
+
+# api/lobby/{game_id}
+@app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
+async def exitGame(
+    game_id: int,
+    exit_request: ExitRequest,
+    games_repo: GameRepository = Depends(get_games_repo),
+):
+    game = games_repo.get(game_id)
+
+    if not game:
+        raise HTTPException(status_code=404, detail="Partida no encontrada")
+    # ve si el jugador esta en la partida, por las dudas ah
+    elif game.started == False:
+        raise HTTPException(status_code=400, detail="El juego no empezo")
+    elif len(game.players) <= 1 or len(game.players) <= game.min_players:
+        raise HTTPException(
+            status_code=400, detail="numero de jugadores menor al esperado"
+        )
+
+    player_exit = next(
+        player
+        for player in game.players
+        if player.identifier == exit_request.identifier
+    )
+
+    game.delete_player(player_exit)
+    games_repo.save(game)
+
+    return GamePlayerResponse(
+        game_id=game.id,
+        players=[
+            PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
+            for player in game.players
+        ],
+        out=ExitRequest(
+            identifier=exit_request.identifier,
+        ),
+        activo=game.started,
+    )
