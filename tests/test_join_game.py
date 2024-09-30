@@ -1,4 +1,3 @@
-import unittest
 from fastapi.testclient import TestClient
 import asserts
 from model import Game, Player
@@ -8,7 +7,7 @@ from main import app, player_repo, game_repo
 client = TestClient(app)
 
 
-def test_add_game_seccess():
+def test_add_game_success():
     value = UUID("0123456789abcdef0123456789abcdef")
     p = Player(name="Alice", identifier=value)
     player_repo.save(p)

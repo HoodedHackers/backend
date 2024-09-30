@@ -12,6 +12,7 @@ from .player import Player
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("game_id", Integer, ForeignKey("games.id")),
     Column("player_id", Integer, ForeignKey("players.id")),
 )
@@ -82,14 +83,15 @@ class Game(Base):
     def count_players(self) -> int:
         return len(self.players)
 
-    """"""
-
     def delete_player(self, player):
-        if player in self.players:
-            self.players.remove(player)
-        else:
-            raise ValueError("El jugador no esta en la partida")
+        if player not in self.players:
+            raise PlayerNotInGame
+        self.players.remove(player)
 
 
 class GameFull(BaseException):
+    pass
+
+
+class PlayerNotInGame(BaseException):
     pass
