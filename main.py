@@ -16,7 +16,6 @@ from repositories import GameRepository, PlayerRepository
 import services.counter
 from model import Player, Game
 
-timer = services.counter.Counter()
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -153,20 +152,8 @@ async def start_timer():
 
 @app.websocket("/ws/timer")
 async def timer_websocket(websocket: WebSocket):
-    await websocket.accept()
-    try:
-        while True:
-            message = await websocket.receive_json()
-
-            if message.get("action") == "start":
-                if not timer.running:
-                    await timer.start(websocket)
-
-            elif message.get("action") == "stop":
-                await timer.stop()
-
-    except WebSocketDisconnect:
-        await timer.stop()
+    timer = services.counter.Counter()
+    await timer.listen(websocket)
 
 
 @app.get("/api/lobby/{id}")
