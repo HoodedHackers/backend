@@ -107,7 +107,7 @@ async def create_game(
         min_players=game_create.min_players,
         started=False,
     )
-
+    new_game.add_player(player)
     game_repo.save(new_game)
 
     players_out = [PlayerOut(name=player.name) for player in new_game.players]
@@ -196,6 +196,7 @@ class GamePlayerResponse(BaseModel):  # Lo que envia
     game_id: int
     players: List[PlayerOutRandom]
     out : ExitRequest
+    activo : bool
 
 # api/lobby/{game_id}
 @app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
@@ -209,8 +210,10 @@ async def exitGame(
     if not game:
         raise HTTPException(status_code=404, detail="Partida no encontrada")
     # ve si el jugador esta en la partida, por las dudas ah
-    elif not game.started == False:
-        raise HTTPException(status_code=400, detail="El juego no empezo'")
+    elif game.started == False:
+        raise HTTPException(status_code=400, detail="El juego no empezo")
+    elif len(game.players) <= 1 or len(game.players) <= game.min_players:
+        raise HTTPException(status_code= 400, detail= "numero de jugadores menor al esperado" )
 
     player_exit = (
         next(
@@ -219,7 +222,6 @@ async def exitGame(
             if player.identifier == exit_request.identifier
         )
     )
-    print(player_exit.identifier)
 
     if player_exit is None:
         raise HTTPException(status_code=404, detail="El jugador no existe")
@@ -237,6 +239,7 @@ async def exitGame(
         out=ExitRequest(
             identifier=exit_request.identifier,
         ),
+        activo=game.started,
     )
 
 # tomar en cuenta que se si un jugador esta en la partida si en game esta en la lista de players
