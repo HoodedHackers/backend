@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from database import Database
 from model import Player, Game
 from repositories import GameRepository, PlayerRepository
-
+from model import Player
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -19,9 +19,12 @@ if db_uri is not None:
 else:
     db = Database()
 db.create_tables()
+
+session = db.session()
 app = FastAPI()
 
 session = db.get_session()
+
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
 
@@ -180,7 +183,7 @@ class PlayerExit(BaseModel):
     activate: bool
 """
 
-
+'''''
 class PlayerOutRandom(BaseModel):
     name: str
     identifier: UUID
@@ -237,9 +240,32 @@ async def exitGame(
             for player in game.players
         ],
     )
-
+''' ""
 
 # tomar en cuenta que se si un jugador esta en la partida si en game esta en la lista de players
 # puedo sacar de la lista al jugador y ahi ya no esta en la partida :D en players no hay que hacer nada porque
 # en players esta el id y el nombre del jugador, en Game esta la relacion players y host
 # definir en el modelo el remove de un jugador, con su identifier, es igual que add pero al reves
+
+
+class req_in(BaseModel):
+    id_game: int = Field()
+    identifier_player: str = Field()
+
+
+@app.put("/api/lobby/{id_game}")
+async def endpoint_unirse_a_partida(
+    req: req_in,
+    games_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+):
+    new_identifier = UUID(req.identifier_player)
+    selec_player = player_repo.get_by_identifier(new_identifier)
+    selec_game = games_repo.get(req.id_game)
+    if selec_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if selec_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    selec_game.add_player(selec_player)
+    games_repo.save(selec_game)
+    return {"status": "success!"}

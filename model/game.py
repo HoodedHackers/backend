@@ -57,6 +57,8 @@ class Game(Base):
             self.min_players = 2
         if self.started is None:
             self.started = False
+        if self.host_id is None:
+            self.host_id = 1
         if self.board is None:
             self.board = Board.random_board()
 
