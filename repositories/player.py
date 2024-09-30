@@ -1,4 +1,5 @@
 from typing import Optional, List
+from uuid import UUID
 
 from model import Player
 from repositories.general import Repository
@@ -19,3 +20,6 @@ class PlayerRepository(Repository):
 
     def get_many(self, count: int) -> List[Player]:
         return self.db.query(Player).limit(count).all()
+
+    def get_by_identifier(self, identifier: UUID) -> Optional[Player]:
+        return self.db.query(Player).filter(Player.identifier == identifier).first()
