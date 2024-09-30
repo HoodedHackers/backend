@@ -6,7 +6,6 @@ import random
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
 from pydantic import BaseModel
 from uuid import UUID
 from pydantic import BaseModel, Field
