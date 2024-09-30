@@ -6,7 +6,6 @@ import random
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from uuid import UUID
 from pydantic import BaseModel, Field
 
@@ -159,10 +158,6 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
         players=[player.name for player in lobby_query.players],
     )
     return lobby
-
-
-"""""" """""" """""" """
-""" """""" """""" """"""
 
 
 class IdentityIn(BaseModel):

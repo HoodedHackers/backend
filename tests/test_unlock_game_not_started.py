@@ -1,20 +1,6 @@
 from fastapi.testclient import TestClient
-import asserts
 from main import app
-import asserts
-from unittest.mock import MagicMock
-from fastapi import Request, Depends, HTTPException
-
-from main import get_games_repo
-
-from model import Game, Player
-from unittest.mock import AsyncMock, patch
-from fastapi import FastAPI, HTTPException, Depends
-from repositories import GameRepository, PlayerRepository
 from uuid import uuid4
-from repositories.player import PlayerRepository
-from os import getenv
-from database import Database
 from main import game_repo, player_repo
 from uuid import UUID
 
