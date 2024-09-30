@@ -1,5 +1,4 @@
 from fastapi.testclient import TestClient
-import asserts
 from main import app
 import asserts
 from unittest.mock import MagicMock
@@ -17,7 +16,6 @@ from os import getenv
 from database import Database
 from main import game_repo, player_repo
 from unittest.mock import Mock
-import pytest
 from main import PlayerOutRandom
 
 client = TestClient(app)
