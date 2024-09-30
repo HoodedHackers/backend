@@ -183,7 +183,6 @@ class PlayerExit(BaseModel):
     activate: bool
 """
 
-'''''
 class PlayerOutRandom(BaseModel):
     name: str
     identifier: UUID
@@ -191,16 +190,16 @@ class PlayerOutRandom(BaseModel):
 
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
-    id: int
 
 
 class GamePlayerResponse(BaseModel):  # Lo que envia
     game_id: int
     players: List[PlayerOutRandom]
+    out: PlayerOutRandom
 
 
 # api/lobby/{game_id}
-@app.delete("/api/lobby/{game_id}", response_model=GamePlayerResponse)
+@app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
 async def exitGame(
     game_id: int,
     exit_request: ExitRequest,
@@ -239,8 +238,10 @@ async def exitGame(
             PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
             for player in game.players
         ],
+        out=PlayerOutRandom(
+            name=player_exit.name, identifier=UUID(str(player_exit.identifier))
+        ),
     )
-''' ""
 
 # tomar en cuenta que se si un jugador esta en la partida si en game esta en la lista de players
 # puedo sacar de la lista al jugador y ahi ya no esta en la partida :D en players no hay que hacer nada porque
