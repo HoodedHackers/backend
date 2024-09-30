@@ -2,6 +2,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import WebSocket, WebSocketDisconnect
 import asyncio
 
+
 class Counter:
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
@@ -23,7 +24,7 @@ class Counter:
     async def start(self, websocket: WebSocket):
         self.running = True
         self.websocket = websocket
-        self.scheduler.add_job(self.count_up, 'interval', seconds=0.5)
+        self.scheduler.add_job(self.count_up, "interval", seconds=0.5)
         self.scheduler.start()
 
     async def stop(self):

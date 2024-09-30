@@ -1,7 +1,6 @@
 from os import getenv
 from uuid import UUID, uuid4
 from typing import List
-<<<<<<< HEAD
 import random
 
 from fastapi import FastAPI, Request, Depends, HTTPException, Response
@@ -9,24 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 from fastapi import HTTPException
-=======
-from fastapi import FastAPI, Request, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from uuid import UUID
->>>>>>> develop
+from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 from typing import List, Dict
 
-<<<<<<< HEAD
 import asyncio
 from database import Database
 from repositories import GameRepository, PlayerRepository
 import services.counter
-from model import Player, Game
-=======
-from uuid import UUID, uuid4
-from database import Database
 from model import Player, Game
 from repositories import (
     GameRepository,
@@ -34,7 +23,6 @@ from repositories import (
     FigRepository,
     create_all_figs,
 )
->>>>>>> develop
 
 
 db_uri = getenv("DB_URI")
