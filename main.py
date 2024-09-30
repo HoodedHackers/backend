@@ -141,7 +141,7 @@ def get_games_available(repo: GameRepository = Depends(get_games_repo)):
     return lobbies
 
 
-@app.websocket("ws/api/lobby")
+@app.websocket("/ws/api/lobby")
 async def notify_new_games(
     websocket: WebSocket, repo: GameRepository = Depends(get_games_repo)
 ):
@@ -151,7 +151,7 @@ async def notify_new_games(
         await asyncio.sleep(5)
         current_lobbies = repo.get_available(10)
         if previous_lobbies != current_lobbies:
-            await websocket.send_json(current_lobbies)
+            await websocket.send_json({"message": "update"})
 
 
 @app.get("/api/lobby/{id}")
