@@ -192,8 +192,7 @@ def unlock_game_not_started(
                     player
                     for player in lobby_query.players
                     if player.identifier == ident.identifier
-                ),
-                None,
+                )
             )
         )
         if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
