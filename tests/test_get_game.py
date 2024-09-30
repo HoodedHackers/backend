@@ -29,8 +29,9 @@ def test_get_game():
             "current_players": 2,
             "max_players": 4,
             "min_players": 2,
-            "is_started": False,
+            "started": False,
             "turn": 0,
+            "players": ["Player 1", "Player 2"],
         }
 
 
