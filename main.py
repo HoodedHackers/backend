@@ -161,44 +161,66 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
     return lobby
 
 
+"""""" """""" """""" """
+""" """""" """""" """"""
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-''''''''''''''''''
 class IdentityIn(BaseModel):
-    id: UUID
+    identifier: UUID
+    id: int
 
-class responseOut(BaseModel):
-    
 
-@app.patch("/api/lobby/{id}")
-def unlock_game_not_started(id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)):
-    lobby_query = repo.get(id)
+class PlayersOfGame(BaseModel):
+    identifier: UUID
+    name: str
+
+
+class ResponseOut(BaseModel):
+    id: int
+    started: bool
+    players: List[PlayersOfGame]
+
+
+@app.patch("/api/lobby/{id}, response_model=responseOut")
+def unlock_game_not_started(
+    ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
+):
+    lobby_query = repo.get(ident.id)
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
-    
 
-    
+    # game = repo.get(ident.id) #toma la partida
 
+    # if lobby_query.started == True:
+    #   raise HTTPException(status_code=412,
+    #  detail="Game already started")
+    if len(lobby_query.players) == lobby_query.max_players:
+        player_exit = (  # obtiene el jugador de la lista de jugadores que se quiere ir
+            next(
+                player
+                for player in lobby_query.players
+                if player.identifier == ident.identifier
+            ),
+            None,
+        )
+        if player_exit is None:
+            raise HTTPException(status_code=404, detail="El jugador no existe")
+        lobby_query.delete_player(player_exit)  # borro al jugador de la lista
+        lobby_query.started = False  # seteo en falso
+        repo.save(lobby_query)  # guardo los cambios de la partida
+        list_players = [  # guarda la lista de jugadores
+            PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
+            for player in lobby_query.players
+        ]
+        return ResponseOut(
+            id=lobby_query.id, started=lobby_query.started, players=list_players
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="No hay suficientes jugadores para desbloquear la partida",
+        )
 
-
-
-
-
-    
 
 class SetNameRequest(BaseModel):
     name: str = Field(min_length=1, max_length=64)
