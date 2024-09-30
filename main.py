@@ -234,15 +234,6 @@ async def repartir_cartas_figura(
 ):
     all_cards = []
     for player in req.players:
-        identifier_player = UUID(player)
-        in_game_player = player_repo.get_by_identifier(identifier_player)
-        in_game = game_repo.get(req.game_id)
-        if in_game_player is None:
-            raise HTTPException(status_code=404, detail="Player dont found!")
-        if in_game is None: 
-            raise HTTPException(status_code=404, detail="Game dont found!")
-        if not in_game_player in in_game.players: 
-            continue
         cards = card_repo.get_many(3)
         new_cards = []
         for card in cards:
