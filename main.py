@@ -266,3 +266,17 @@ async def endpoint_unirse_a_partida(
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
     return {"status": "success!"}
+
+@app.put("/api/lobby/{id_game}/start")
+async def start_game(
+    id_game: int,
+    games_repo: GameRepository = Depends(get_games_repo)
+):
+    selec_game = games_repo.get(id_game)
+    if selec_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found")
+    if len(selec_game.players) < selec_game.min_players:
+        raise HTTPException(status_code=412, detail="Doesnt meet the minimum number of players")
+    selec_game.started = True
+    games_repo.save(selec_game)
+    return {"status": "success!"}
