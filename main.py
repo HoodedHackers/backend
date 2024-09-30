@@ -12,6 +12,8 @@ from database import Database
 from model import Player, Game
 from repositories import GameRepository, PlayerRepository, CardsMovRepository
 
+from create_cards import create_all_mov
+
 db_uri = getenv("DB_URI")
 if db_uri is not None:
     db = Database(db_uri=db_uri)
@@ -21,6 +23,7 @@ db.create_tables()
 app = FastAPI()
 
 session = db.get_session()
+
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
 move_repo = CardsMovRepository(session)
@@ -50,8 +53,13 @@ def get_games_repo(request: Request) -> GameRepository:
 def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
 
+
 def get_move_repo(request: Request) -> CardsMovRepository:
     return request.state.move_repo
+
+
+create_all_mov(move_repo)
+
 
 class GameStateOutput(BaseModel):
     name: str
@@ -198,9 +206,11 @@ async def endpoint_unirse_a_partida(
     games_repo.save(selec_game)
     return {"status": "success!"}
 
+
 class GameIn2(BaseModel):
     game_id: int
     players: List[str]
+
 
 class CardsFigOut(BaseModel):
     card_id: int

@@ -3,6 +3,7 @@ from repositories.general import Repository
 from model import MoveCards
 from sqlalchemy import func
 
+
 class CardsMovRepository(Repository):
 
     def save(self, mov_cards: MoveCards):
