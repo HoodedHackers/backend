@@ -19,7 +19,9 @@ from main import game_repo, player_repo
 from unittest.mock import Mock
 import pytest
 from main import PlayerOutRandom
+
 client = TestClient(app)
+
 
 
 # crear un jugador
@@ -85,7 +87,7 @@ def test_exit_game_success():
  #   assert result["players"][0]["identifier"] == str(player1["identifier"])
 
 
-''''
+'''
 # salir de un juego
 def exit_game(game_id: int, player_identifier: UUID):
     response = client.delete(
