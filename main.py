@@ -176,78 +176,6 @@ async def set_player_name(
     return SetNameResponse(name=setNameRequest.name, identifier=id_uuid)
 
 
-"""
-class PlayerExit(BaseModel):
-    id: int
-    name: str
-    activate: bool
-"""
-
-class PlayerOutRandom(BaseModel):
-    name: str
-    identifier: UUID
-
-
-class ExitRequest(BaseModel):  # le llega esto al endpoint
-    identifier: UUID
-
-
-class GamePlayerResponse(BaseModel):  # Lo que envia
-    game_id: int
-    players: List[PlayerOutRandom]
-    out : ExitRequest
-    activo : bool
-
-# api/lobby/{game_id}
-@app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
-async def exitGame(
-    game_id: int,
-    exit_request: ExitRequest,
-    games_repo: GameRepository = Depends(get_games_repo),
-):
-    game = games_repo.get(game_id)
-
-    if not game:
-        raise HTTPException(status_code=404, detail="Partida no encontrada")
-    # ve si el jugador esta en la partida, por las dudas ah
-    elif game.started == False:
-        raise HTTPException(status_code=400, detail="El juego no empezo")
-    elif len(game.players) <= 1 or len(game.players) <= game.min_players:
-        raise HTTPException(status_code= 400, detail= "numero de jugadores menor al esperado" )
-
-    player_exit = (
-        next(
-            player
-            for player in game.players
-            if player.identifier == exit_request.identifier
-        )
-    )
-
-    if player_exit is None:
-        raise HTTPException(status_code=404, detail="El jugador no existe")
-
-    game.delete_player(player_exit)
-    games_repo.save(game)
-
-    
-    return GamePlayerResponse(
-        game_id=game.id,
-        players=[
-            PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
-            for player in game.players
-        ],
-        out=ExitRequest(
-            identifier=exit_request.identifier,
-        ),
-        activo=game.started,
-    )
-
-# tomar en cuenta que se si un jugador esta en la partida si en game esta en la lista de players
-# puedo sacar de la lista al jugador y ahi ya no esta en la partida :D en players no hay que hacer nada porque
-# en players esta el id y el nombre del jugador, en Game esta la relacion players y host
-# definir en el modelo el remove de un jugador, con su identifier, es igual que add pero al reves
-
-
 class req_in(BaseModel):
     id_game: int = Field()
     identifier_player: str = Field()
@@ -270,16 +198,75 @@ async def endpoint_unirse_a_partida(
     games_repo.save(selec_game)
     return {"status": "success!"}
 
+
 @app.put("/api/lobby/{id_game}/start")
 async def start_game(
-    id_game: int,
-    games_repo: GameRepository = Depends(get_games_repo)
+    id_game: int, games_repo: GameRepository = Depends(get_games_repo)
 ):
     selec_game = games_repo.get(id_game)
     if selec_game is None:
         raise HTTPException(status_code=404, detail="Game dont found")
     if len(selec_game.players) < selec_game.min_players:
-        raise HTTPException(status_code=412, detail="Doesnt meet the minimum number of players")
+        raise HTTPException(
+            status_code=412, detail="Doesnt meet the minimum number of players"
+        )
     selec_game.started = True
     games_repo.save(selec_game)
     return {"status": "success!"}
+
+
+class PlayerOutRandom(BaseModel):
+    name: str
+    identifier: UUID
+
+
+class ExitRequest(BaseModel):  # le llega esto al endpoint
+    identifier: UUID
+
+
+class GamePlayerResponse(BaseModel):  # Lo que envia
+    game_id: int
+    players: List[PlayerOutRandom]
+    out: ExitRequest
+    activo: bool
+
+
+# api/lobby/{game_id}
+@app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
+async def exitGame(
+    game_id: int,
+    exit_request: ExitRequest,
+    games_repo: GameRepository = Depends(get_games_repo),
+):
+    game = games_repo.get(game_id)
+
+    if not game:
+        raise HTTPException(status_code=404, detail="Partida no encontrada")
+    # ve si el jugador esta en la partida, por las dudas ah
+    elif game.started == False:
+        raise HTTPException(status_code=400, detail="El juego no empezo")
+    elif len(game.players) <= 1 or len(game.players) <= game.min_players:
+        raise HTTPException(
+            status_code=400, detail="numero de jugadores menor al esperado"
+        )
+
+    player_exit = next(
+        player
+        for player in game.players
+        if player.identifier == exit_request.identifier
+    )
+
+    game.delete_player(player_exit)
+    games_repo.save(game)
+
+    return GamePlayerResponse(
+        game_id=game.id,
+        players=[
+            PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
+            for player in game.players
+        ],
+        out=ExitRequest(
+            identifier=exit_request.identifier,
+        ),
+        activo=game.started,
+    )

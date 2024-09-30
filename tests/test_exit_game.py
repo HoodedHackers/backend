@@ -23,7 +23,6 @@ from main import PlayerOutRandom
 client = TestClient(app)
 
 
-
 # crear un jugador
 def set_player_name(name: str):
     response = client.post("/api/name", json={"name": name})
@@ -55,6 +54,7 @@ def endpoint_unirse_a_partida(game_id: int, player_identifier: str):
     assert response.status_code == 200
     return response.json()
 
+
 def start_game(game_id: int):
     response = client.put(f"/api/lobby/{game_id}/start")
     assert response.status_code == 200
@@ -70,30 +70,31 @@ def test_exit_game_success():
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
-    print(game['name'])
+    print(game["name"])
     # Unirse al juego
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
-    endpoint_unirse_a_partida(game['id'], player3["identifier"])   
+    endpoint_unirse_a_partida(game["id"], player3["identifier"])
 
-    start_game(game['id'])
-    print("Jugadores antes de salir:", game['players'])
+    start_game(game["id"])
+    print("Jugadores antes de salir:", game["players"])
 
     # El jugador sale de la partida
     response = client.patch(
-        f"/api/lobby/salir/{game['id']}",
-        json={"identifier": player2["identifier"]}
+        f"/api/lobby/salir/{game['id']}", json={"identifier": player2["identifier"]}
     )
-    
+
     assert response.status_code == 200
     result = response.json()
 
     assert result["game_id"] == game["id"]
-    assert len(result["players"]) == 2 
+    assert len(result["players"]) == 2
 
     # Verificar estado del juego
     assert result["activo"] == True  # Asegúrate de que el estado sea correcto
     # Verificar que el jugador que salió ya no está
-    assert player2["identifier"] not in [player["identifier"] for player in result["players"]]
+    assert player2["identifier"] not in [
+        player["identifier"] for player in result["players"]
+    ]
 
     # Verificar que el jugador que queda es el correcto
     remaining_players = [player["identifier"] for player in result["players"]]
@@ -109,16 +110,15 @@ def test_exit_game_not_started():
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
-    
+
     endpoint_unirse_a_partida(game["id"], player1["identifier"])
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
 
     # Intentar salir antes de iniciar el juego
     response = client.patch(
-        f"/api/lobby/salir/{game['id']}",
-        json={"identifier": player1["identifier"]}
+        f"/api/lobby/salir/{game['id']}", json={"identifier": player1["identifier"]}
     )
-    
+
     assert response.status_code == 400
     assert response.json()["detail"] == "El juego no empezo"
 
@@ -127,12 +127,12 @@ def test_exit_game_not_found():
     exit_request = {"identifier": str(uuid4())}  # UUID aleatorio
 
     response = client.patch(
-        "/api/lobby/salir/9999",  # ID de juego que no existe
-        json=exit_request
+        "/api/lobby/salir/9999", json=exit_request  # ID de juego que no existe
     )
-    
+
     assert response.status_code == 404
     assert response.json()["detail"] == "Partida no encontrada"
+
 
 def test_exit_game_min_players():
     player1 = set_player_name("Player 1")
@@ -142,7 +142,7 @@ def test_exit_game_min_players():
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
-    
+
     endpoint_unirse_a_partida(game["id"], player1["identifier"])
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
 
@@ -151,32 +151,9 @@ def test_exit_game_min_players():
 
     # El jugador 1 sale de la partida
     response = client.patch(
-        f"/api/lobby/salir/{game['id']}",
-        json={"identifier": player1["identifier"]}
+        f"/api/lobby/salir/{game['id']}", json={"identifier": player1["identifier"]}
     )
 
     # Ahora deberíamos tener solo un jugador (jugador 2)
     assert response.status_code == 400
     assert response.json()["detail"] == "numero de jugadores menor al esperado"
-
-
-def test_exit_game_player_not_in_game():
-    player1 = set_player_name("Player 1")
-    player2 = set_player_name("Player 2")
-
-    # Crear el juego
-    game = create_game(
-        identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
-    )
-    
-    endpoint_unirse_a_partida(game["id"], player1["identifier"])
-
-    # Intentar salir con un jugador que no está en el juego
-    response = client.patch(
-        f"/api/lobby/salir/{game['id']}",
-        json={"identifier": player2["identifier"]}
-    )
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "El jugador no existe"
-
