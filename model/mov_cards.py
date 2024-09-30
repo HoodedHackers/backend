@@ -3,6 +3,7 @@ from sqlalchemy.types import Integer, String
 
 from database import Base
 
+
 class MoveCards(Base):
     __tablename__ = "moveCards"
 

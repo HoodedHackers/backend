@@ -10,8 +10,7 @@ from pydantic import BaseModel, Field
 
 from database import Database
 from model import Player, Game
-from repositories import GameRepository, PlayerRepository
-from model import Player
+from repositories import GameRepository, PlayerRepository, CardsMovRepository
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -19,14 +18,12 @@ if db_uri is not None:
 else:
     db = Database()
 db.create_tables()
-
-session = db.session()
 app = FastAPI()
 
 session = db.get_session()
-
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
+move_repo = CardsMovRepository(session)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,20 +34,11 @@ app.add_middleware(
 )
 
 
-class GameStateOutput(BaseModel):
-    name: str
-    current_players: int
-    max_players: int
-    min_players: int
-    started: bool
-    turn: int
-    players: List[str]
-
-
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
     request.state.player_repo = player_repo
+    request.state.move_repo = move_repo
     response = await call_next(request)
     return response
 
@@ -61,6 +49,18 @@ def get_games_repo(request: Request) -> GameRepository:
 
 def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
+
+def get_move_repo(request: Request) -> CardsMovRepository:
+    return request.state.move_repo
+
+class GameStateOutput(BaseModel):
+    name: str
+    current_players: int
+    max_players: int
+    min_players: int
+    started: bool
+    turn: int
+    players: List[str]
 
 
 class GameIn(BaseModel):
@@ -197,3 +197,39 @@ async def endpoint_unirse_a_partida(
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
     return {"status": "success!"}
+
+class GameIn2(BaseModel):
+    game_id: int
+    players: List[str]
+
+class CardsFigOut(BaseModel):
+    card_id: int
+    card_name: str
+
+
+class PlayerOut2(BaseModel):
+    player: str
+    cards_out: List[CardsFigOut]
+
+
+class SetCardsResponse(BaseModel):
+    all_cards: List[PlayerOut2]
+
+
+@app.post("/api/partida/en_curso", response_model=SetCardsResponse)
+async def repartir_cartas_movimiento(
+    req: GameIn2,
+    card_repo: CardsMovRepository = Depends(get_move_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+    all_cards = []
+    for player in req.players:
+        cards = card_repo.get_many(3)
+        new_cards = []
+        for card in cards:
+            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
+            new_cards.append(new_card)
+        new_dic = PlayerOut2(player=player, cards_out=new_cards)
+        all_cards.append(new_dic)
+    return SetCardsResponse(all_cards=all_cards)

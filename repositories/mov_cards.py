@@ -1,7 +1,7 @@
 from typing import Optional, List
 from repositories.general import Repository
 from model import MoveCards
-
+from sqlalchemy import func
 
 class CardsMovRepository(Repository):
 
@@ -17,4 +17,4 @@ class CardsMovRepository(Repository):
         return self.db.get(MoveCards, id)
 
     def get_many(self, count: int) -> List[MoveCards]:
-        return self.db.query(MoveCards).limit(count).all()
+        return self.db.query(MoveCards).order_by(func.random()).limit(count).all()
