@@ -2,8 +2,7 @@ from fastapi.testclient import TestClient
 import asserts
 from model import Game, Player
 from uuid import UUID
-from main import app, player_repo, game_repo, card_repo
-from create_cards import create_all_figs
+from main import app, player_repo, game_repo, card_repo, create_all_figs
 
 client = TestClient(app)
 
