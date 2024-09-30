@@ -185,9 +185,6 @@ def unlock_game_not_started(
     elif lobby_query.started == True:
         raise HTTPException(status_code=412, detail="Game already started")
 
-    if lobby_query.started == True:
-        raise HTTPException(status_code=412, detail="Game already started")
-
     if len(lobby_query.players) == lobby_query.max_players:
         player_exit = (  # obtiene el jugador de la lista de jugadores que se quiere ir
             next(
