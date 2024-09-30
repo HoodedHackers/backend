@@ -4,6 +4,7 @@ from typing import List
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from uuid import UUID
 from pydantic import BaseModel, Field
 from typing import List, Dict
 
@@ -16,6 +17,7 @@ from repositories import (
     FigRepository,
     create_all_figs,
 )
+
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -118,6 +120,7 @@ async def create_game(
         min_players=game_create.min_players,
         started=False,
     )
+    new_game.add_player(player)
 
     game_repo.save(new_game)
 
@@ -271,3 +274,59 @@ async def repartir_cartas_figura(
         new_dic = PlayerOut2(player=player, cards_out=new_cards)
         all_cards.append(new_dic)
     return SetCardsResponse(all_cards=all_cards)
+
+
+class IdentityIn(BaseModel):
+    identifier: UUID
+
+
+class PlayersOfGame(BaseModel):
+    identifier: UUID
+    name: str
+
+
+class ResponseOut(BaseModel):
+    id: int
+    started: bool
+    players: List[PlayersOfGame]
+
+
+@app.patch("/api/lobby/{id}", response_model=ResponseOut)
+def unlock_game_not_started(
+    id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
+):
+    lobby_query = repo.get(id)
+    if lobby_query is None:
+        raise HTTPException(status_code=404, detail="Lobby not found")
+    elif lobby_query.started == True:
+        raise HTTPException(status_code=412, detail="Game already started")
+
+    if len(lobby_query.players) == lobby_query.max_players:
+        player_exit = (  # obtiene el jugador de la lista de jugadores que se quiere ir
+            next(
+                (
+                    player
+                    for player in lobby_query.players
+                    if player.identifier == ident.identifier
+                )
+            )
+        )
+        if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
+            repo.delete(lobby_query)  # borro la partida
+            return ResponseOut(id=0, started=False, players=[])  # devuelvo vacio
+
+        lobby_query.delete_player(player_exit)  # borro al jugador de la lista
+        lobby_query.started = False  # seteo en falso
+        repo.save(lobby_query)  # guardo los cambios de la partida
+        list_players = [  # guarda la lista de jugadores
+            PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
+            for player in lobby_query.players
+        ]
+        return ResponseOut(
+            id=lobby_query.id, started=lobby_query.started, players=list_players
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="No hay suficientes jugadores para desbloquear la partida",
+        )
