@@ -1,5 +1,4 @@
 from fastapi.testclient import TestClient
-import asserts
 from main import app
 import asserts
 from unittest.mock import MagicMock
@@ -20,7 +19,7 @@ from main import game_repo, player_repo
 client = TestClient(app)
 
 
-def test_creat_game():
+def test_create_game():
     # Crea un jugador host
     test_identifier = uuid4()
     host = Player(name="host", identifier=test_identifier)

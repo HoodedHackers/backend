@@ -196,6 +196,10 @@ def unlock_game_not_started(
                 None,
             )
         )
+        if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
+            repo.delete(lobby_query)  # borro la partida
+            return ResponseOut(id=0, started=False, players=[])  # devuelvo vacio
+
         lobby_query.delete_player(player_exit)  # borro al jugador de la lista
         lobby_query.started = False  # seteo en falso
         repo.save(lobby_query)  # guardo los cambios de la partida

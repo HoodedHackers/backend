@@ -50,6 +50,40 @@ def test_unlock_game_not_started():
         f"Jugadores actuales: {player1['identifier']}, {player2['identifier']}, {player3['identifier']}"
     )
     game = create_game(
+        identifier=player2["identifier"], name="Test Game", min_players=2, max_players=3
+    )
+    print(f"Juego creado: {game['name']}")
+    print(f"Jugadores actuales: {game['players']}")
+
+    endpoint_unirse_a_partida(game["id"], player1["identifier"])
+    endpoint_unirse_a_partida(game["id"], player3["identifier"])
+
+    # Obtener el estado actualizado del juego
+    response4 = client.get(f"/api/lobby/{game['id']}")
+    assert response4.status_code == 200
+    updated_game = response4.json()
+
+    assert len(updated_game["players"]) == 3
+    response = client.patch(
+        f"/api/lobby/{game['id']}", json={"identifier": player1["identifier"]}
+    )
+    assert response.status_code == 200
+    result = response.json()
+
+    # Verificar que el juego no haya comenzado y que la lista de jugadores esté actualizada
+    assert result["started"] == False
+    assert len(result["players"]) == 2
+
+
+def test_unlock_game_not_started_host():
+    player1 = set_player_name("Test Player")
+    player2 = set_player_name("Test player 2")
+    player3 = set_player_name("Test player 3")
+
+    print(
+        f"Jugadores actuales: {player1['identifier']}, {player2['identifier']}, {player3['identifier']}"
+    )
+    game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
     print(f"Juego creado: {game['name']}")
@@ -72,7 +106,7 @@ def test_unlock_game_not_started():
 
     # Verificar que el juego no haya comenzado y que la lista de jugadores esté actualizada
     assert result["started"] == False
-    assert len(result["players"]) == 2
+    assert len(result["players"]) == 0
 
 
 def test_unlock_game_not_found():
