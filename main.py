@@ -111,6 +111,7 @@ async def create_game(
         min_players=game_create.min_players,
         started=False,
     )
+    new_game.add_player(player)
 
     game_repo.save(new_game)
 
@@ -167,7 +168,6 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
 
 class IdentityIn(BaseModel):
     identifier: UUID
-    id: int
 
 
 class PlayersOfGame(BaseModel):
@@ -181,30 +181,31 @@ class ResponseOut(BaseModel):
     players: List[PlayersOfGame]
 
 
-@app.patch("/api/lobby/{id}, response_model=responseOut")
+@app.patch("/api/lobby/{id}", response_model=ResponseOut)
 def unlock_game_not_started(
-    ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
+    id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
 ):
-    lobby_query = repo.get(ident.id)
+    lobby_query = repo.get(id)
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
-
+    elif lobby_query.started == True:
+        raise HTTPException(status_code=412, detail="Game already started")
     # game = repo.get(ident.id) #toma la partida
 
-    # if lobby_query.started == True:
-    #   raise HTTPException(status_code=412,
-    #  detail="Game already started")
+    if lobby_query.started == True:
+        raise HTTPException(status_code=412, detail="Game already started")
+
     if len(lobby_query.players) == lobby_query.max_players:
         player_exit = (  # obtiene el jugador de la lista de jugadores que se quiere ir
             next(
-                player
-                for player in lobby_query.players
-                if player.identifier == ident.identifier
-            ),
-            None,
+                (
+                    player
+                    for player in lobby_query.players
+                    if player.identifier == ident.identifier
+                ),
+                None,
+            )
         )
-        if player_exit is None:
-            raise HTTPException(status_code=404, detail="El jugador no existe")
         lobby_query.delete_player(player_exit)  # borro al jugador de la lista
         lobby_query.started = False  # seteo en falso
         repo.save(lobby_query)  # guardo los cambios de la partida

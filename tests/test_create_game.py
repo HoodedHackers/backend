@@ -45,6 +45,7 @@ def test_creat_game():
     assert data["min_players"] == 2
     assert data["started"] is False
     assert isinstance(data["id"], int)
+    assert data["players"] == [{"name": "host"}]
 
     game = game_repo.get(data["id"])
     assert game is not None
