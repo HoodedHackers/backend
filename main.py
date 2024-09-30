@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from database import Database
 from model import Player, Game
 from repositories import GameRepository, PlayerRepository
-
+from model import Player
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -19,9 +19,12 @@ if db_uri is not None:
 else:
     db = Database()
 db.create_tables()
+
+session = db.session()
 app = FastAPI()
 
 session = db.get_session()
+
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
 
@@ -171,3 +174,26 @@ async def set_player_name(
     id_uuid = uuid4()
     player_repo.save(Player(name=setNameRequest.name, identifier=id_uuid))
     return SetNameResponse(name=setNameRequest.name, identifier=id_uuid)
+
+
+class req_in(BaseModel):
+    id_game: int = Field()
+    identifier_player: str = Field()
+
+
+@app.put("/api/lobby/{id_game}")
+async def endpoint_unirse_a_partida(
+    req: req_in,
+    games_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+):
+    new_identifier = UUID(req.identifier_player)
+    selec_player = player_repo.get_by_identifier(new_identifier)
+    selec_game = games_repo.get(req.id_game)
+    if selec_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if selec_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    selec_game.add_player(selec_player)
+    games_repo.save(selec_game)
+    return {"status": "success!"}
