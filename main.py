@@ -1,15 +1,21 @@
 from os import getenv
 from uuid import UUID, uuid4
 from typing import List
-from fastapi import FastAPI, Request, Depends, HTTPException
+import random
+
+from fastapi import FastAPI, Request, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from uuid import UUID
+from fastapi.websockets import WebSocket, WebSocketDisconnect
+from fastapi import HTTPException
+from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 from typing import List, Dict
 
-from uuid import UUID, uuid4
+import asyncio
 from database import Database
+from repositories import GameRepository, PlayerRepository
+import services.counter
 from model import Player, Game
 from repositories import (
     GameRepository,
@@ -152,6 +158,18 @@ def get_games_available(repo: GameRepository = Depends(get_games_repo)):
         )
         lobbies.append(lobby)
     return lobbies
+
+
+@app.post("/api/lobby/timer")
+async def start_timer():
+    await asyncio.sleep(120)
+    return Response(status_code=200, content="Timer finished")
+
+
+@app.websocket("/ws/timer")
+async def timer_websocket(websocket: WebSocket):
+    timer = services.counter.Counter()
+    await timer.listen(websocket)
 
 
 @app.get("/api/lobby/{id}")
