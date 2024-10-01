@@ -170,7 +170,7 @@ async def timer_websocket(websocket: WebSocket):
 
 @app.websocket("/ws/api/lobby")
 async def notify_new_games(websocket: WebSocket):
-    
+
     await websocket.accept()
 
     previous_lobbies = game_repo.get_available(10)
