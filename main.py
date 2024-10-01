@@ -93,13 +93,27 @@ async def sortear_jugadores(
         )
     elif game.started == False:
         raise HTTPException(status_code=400, detail="El juego no empezo")
-    
     random.shuffle(game.players)
-    game_repo.save(game)
+    print("Jugadores después  recien de sortearrrrrrrrrr:")
+    for player in game.players:
+        print(f"- {player.name} (ID: {player.identifier})")
 
-    return GamePlayerResp(game_id=game_id, players=[
-            PlayersOut(id=UUID(str(player.id)), name=player.name) for player in game.players
-        ])
+
+
+    game_repo.save(game)
+    new_game = game_repo.get(game_id)
+
+
+    print("Jugadores después de sortearrrrrrrrrr:")
+    for player in new_game.players:
+        print(f"- {player.name} (ID: {player.identifier})")
+
+
+    players_out = [
+            PlayersOut(id=UUID(str(player.identifier)), name=player.name) for player in new_game.players
+    ]
+    return GamePlayerResp(game_id=game_id, players=players_out)
+        
 
 
 def get_card_repo(request: Request) -> FigRepository:
