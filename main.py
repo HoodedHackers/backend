@@ -1,8 +1,4 @@
 from os import getenv
-from uuid import UUID, uuid4
-from typing import List
-import random
-
 from fastapi import FastAPI, Request, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -170,6 +166,20 @@ async def start_timer():
 async def timer_websocket(websocket: WebSocket):
     timer = services.counter.Counter()
     await timer.listen(websocket)
+
+
+@app.websocket("/ws/api/lobby")
+async def notify_new_games(websocket: WebSocket):
+
+    await websocket.accept()
+
+    previous_lobbies = game_repo.get_available(10)
+
+    while True:
+        await asyncio.sleep(1)
+        current_lobbies = game_repo.get_available(10)
+        if previous_lobbies != current_lobbies:
+            await websocket.send_json({"message": "update"})
 
 
 @app.get("/api/lobby/{id}")
