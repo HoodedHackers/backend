@@ -168,6 +168,20 @@ async def timer_websocket(websocket: WebSocket):
     await timer.listen(websocket)
 
 
+@app.websocket("/ws/api/lobby")
+async def notify_new_games(websocket: WebSocket):
+    
+    await websocket.accept()
+
+    previous_lobbies = game_repo.get_available(10)
+
+    while True:
+        await asyncio.sleep(1)
+        current_lobbies = game_repo.get_available(10)
+        if previous_lobbies != current_lobbies:
+            await websocket.send_json({"message": "update"})
+
+
 @app.get("/api/lobby/{id}")
 def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
     lobby_query = repo.get(id)
