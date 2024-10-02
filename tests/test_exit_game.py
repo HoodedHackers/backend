@@ -53,8 +53,8 @@ def endpoint_unirse_a_partida(game_id: int, player_identifier: str):
     return response.json()
 
 
-def start_game(game_id: int):
-    response = client.put(f"/api/lobby/{game_id}/start")
+def start_game(game_id: int, identifier: str):
+    response = client.put(f"/api/lobby/{game_id}/start", json={"identifier": identifier})
     assert response.status_code == 200
     return response.json()
 
@@ -73,7 +73,7 @@ def test_exit_game_success():
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
     endpoint_unirse_a_partida(game["id"], player3["identifier"])
 
-    start_game(game["id"])
+    start_game(game["id"], identifier=player1["identifier"])
     print("Jugadores antes de salir:", game["players"])
 
     # El jugador sale de la partida
@@ -145,7 +145,7 @@ def test_exit_game_min_players():
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
 
     # Iniciar el juego
-    start_game(game["id"])
+    start_game(game["id"], identifier=player1["identifier"])
 
     # El jugador 1 sale de la partida
     response = client.patch(
