@@ -34,7 +34,7 @@ app = FastAPI()
 
 session = db.get_session()
 
-connection_manager = LobbyConnectionHandler()
+
 
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
@@ -158,23 +158,12 @@ def get_games_available(repo: GameRepository = Depends(get_games_repo)):
         lobbies.append(lobby)
     return lobbies
 
+
 @app.websocket("/ws/lobby/{lobby_id}")
 async def lobby_websocket_handler(websocket: WebSocket, lobby_id: int):
-    # Conectar al nuevo jugador a la lista de conexiones del lobby
-    await connection_manager.connect(websocket, lobby_id)
+    connection_manager = LobbyConnectionHandler()
+    await connection_manager.listen(websocket, lobby_id, player_repo)
 
-    # Si se conecto un nuevo jugador al lobby notificamos a los demás jugadores
-    await connection_manager.broadcast(f"Un nuevo jugador se ha unido al lobby {lobby_id}.", lobby_id)
-    
-    try:
-        while True:
-            await websocket.receive_text() # DUMP
-
-    except WebSocketDisconnect:
-        # Desconectar al jugador y notificamos a los demás jugadores
-        connection_manager.disconnect(websocket, lobby_id)
-
-        await connection_manager.broadcast(f"Un jugador ha abandonado el lobby {lobby_id}.", lobby_id)
 
 @app.post("/api/lobby/timer")
 async def start_timer():
