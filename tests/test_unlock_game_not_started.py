@@ -111,10 +111,12 @@ def test_unlock_game_not_started_host():
     assert result["started"] == False
     assert len(result["players"]) == 0
 
+
 @skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_not_found():
     response = client.patch("/api/lobby/9999", json={"identifier": str(uuid4())})
     assert response.status_code == 404
+
 
 @skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_already_started():
@@ -146,6 +148,7 @@ def test_unlock_game_already_started():
     )
     assert response.status_code == 412
     assert response.json()["detail"] == "Game already started"
+
 
 @skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_not_enough_players():

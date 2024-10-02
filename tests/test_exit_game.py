@@ -54,7 +54,9 @@ def endpoint_unirse_a_partida(game_id: int, player_identifier: str):
 
 
 def start_game(game_id: int, identifier: str):
-    response = client.put(f"/api/lobby/{game_id}/start", json={"identifier": identifier})
+    response = client.put(
+        f"/api/lobby/{game_id}/start", json={"identifier": identifier}
+    )
     assert response.status_code == 200
     return response.json()
 

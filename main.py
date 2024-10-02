@@ -243,14 +243,15 @@ async def endpoint_unirse_a_partida(
 
 
 class StartGameRequest(BaseModel):
-	identifier: UUID = Field(UUID)
+    identifier: UUID = Field(UUID)
+
 
 @app.put("/api/lobby/{id_game}/start")
 async def start_game(
     id_game: int,
     start_game_request: StartGameRequest,
     games_repo: GameRepository = Depends(get_games_repo),
-    player_repo: PlayerRepository = Depends(get_player_repo)
+    player_repo: PlayerRepository = Depends(get_player_repo),
 ):
     selec_game = games_repo.get(id_game)
     if selec_game is None:
@@ -263,7 +264,9 @@ async def start_game(
     try:
         selec_game.start()
     except PreconditionsNotMet:
-        raise HTTPException(status_code=400, detail="Doesnt meet the minimum number of players")
+        raise HTTPException(
+            status_code=400, detail="Doesnt meet the minimum number of players"
+        )
     except GameStarted:
         raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
