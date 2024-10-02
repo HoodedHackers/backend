@@ -333,6 +333,7 @@ class ResponseOut(BaseModel):
     players: List[PlayersOfGame]
 
 
+# TODO: Eliminar, la idea de esete endpoint es incorrecta.
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
 def unlock_game_not_started(
     id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
