@@ -10,6 +10,7 @@ from typing import List, Dict
 
 import asyncio
 from database import Database
+from model.exceptions import PreconditionNotMet
 from repositories import GameRepository, PlayerRepository
 import services.counter
 from model import Player, Game
@@ -438,5 +439,8 @@ async def advance_game_turn(
         raise HTTPException(status_code=404, detail="Player is not in game")
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
-    game.advance_turn()
+    try:
+        game.advance_turn()
+    except PreconditionNotMet:
+        raise HTTPException(status_code=401, detail="Game hasn't started yet")
     return {"status": "success"}
