@@ -106,13 +106,13 @@ def test_exit_game_already_started():
     )
     game_instance = game_repo.get(game["id"])
     assert game_instance is not None
-    game_instance.started = True  
+    game_instance.started = True
     game_repo.save(game_instance)
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
     response = client.patch(
         f"/api/lobby/{game['id']}", json={"identifier": player1["identifier"]}
     )
-    assert response.status_code == 412  
+    assert response.status_code == 412
     response = client.patch(
         f"/api/lobby/{game['id']}", json={"identifier": player1["identifier"]}
     )

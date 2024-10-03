@@ -18,6 +18,7 @@ game_player_association = Table(
     Column("player_id", Integer, ForeignKey("players.id")),
 )
 
+
 class Game(Base):
     __tablename__ = "games"
 
