@@ -1,4 +1,5 @@
 from typing import List
+from typing_extensions import Optional
 from sqlalchemy import Column
 from sqlalchemy.orm import mapped_column, relationship, Mapped, MappedColumn
 from sqlalchemy.schema import ForeignKey, Table
@@ -7,6 +8,7 @@ from sqlalchemy.types import Boolean, Integer, String
 from database import Base
 from .board import Board, Color
 from .player import Player
+from .exceptions import *
 
 
 game_player_association = Table(
@@ -88,10 +90,12 @@ class Game(Base):
             raise PlayerNotInGame
         self.players.remove(player)
 
+    def current_player(self) -> Optional[Player]:
+        if len(self.players) == 0:
+            return None
+        return self.players[self.current_player_turn]
 
-class GameFull(BaseException):
-    pass
-
-
-class PlayerNotInGame(BaseException):
-    pass
+    def advance_turn(self):
+        if not self.started:
+            raise PreconditionNotMet
+        self.advance_player()
