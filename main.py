@@ -332,16 +332,13 @@ def exit_game(
     elif lobby_query.started is True:
         raise HTTPException(status_code=412, detail="Game already started")
     player_exit = repo_player.get_by_identifier(ident.identifier)
+    if player_exit == lobby_query.host:  
+        repo.delete(lobby_query)  
+        return ResponseOut(id=0, started=False, players=[])  
 
-    if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
-        repo.delete(lobby_query)  # borro la partida
-        return ResponseOut(id=0, started=False, players=[])  # devuelvo vacío
-
-    lobby_query.delete_player(player_exit)  # borro al jugador de la lista
-    lobby_query.started = False  # seteo en falso por las dudas
-    repo.save(lobby_query)  # guardo los cambios de la partida
-
-    # Guarda la lista de jugadores
+    lobby_query.delete_player(player_exit)  
+    lobby_query.started = False  
+    repo.save(lobby_query)  
     list_players = [
         PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
         for player in lobby_query.players
