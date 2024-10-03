@@ -320,98 +320,33 @@ class ResponseOut(BaseModel):
 
 
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
-def unlock_game_not_started(
-    id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
+def exit_game(
+    id: int,
+    ident: IdentityIn,
+    repo: GameRepository = Depends(get_games_repo),
+    repo_player: PlayerRepository = Depends(get_player_repo),
 ):
     lobby_query = repo.get(id)
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
-    elif lobby_query.started == True:
+    elif lobby_query.started is True:
         raise HTTPException(status_code=412, detail="Game already started")
+    player_exit = repo_player.get_by_identifier(ident.identifier)
 
-    if len(lobby_query.players) == lobby_query.max_players:
-        player_exit = (  # obtiene el jugador de la lista de jugadores que se quiere ir
-            next(
-                (
-                    player
-                    for player in lobby_query.players
-                    if player.identifier == ident.identifier
-                )
-            )
-        )
-        if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
-            repo.delete(lobby_query)  # borro la partida
-            return ResponseOut(id=0, started=False, players=[])  # devuelvo vacio
+    if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
+        repo.delete(lobby_query)  # borro la partida
+        return ResponseOut(id=0, started=False, players=[])  # devuelvo vacío
 
-        lobby_query.delete_player(player_exit)  # borro al jugador de la lista
-        lobby_query.started = False  # seteo en falso
-        repo.save(lobby_query)  # guardo los cambios de la partida
-        list_players = [  # guarda la lista de jugadores
-            PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
-            for player in lobby_query.players
-        ]
-        return ResponseOut(
-            id=lobby_query.id, started=lobby_query.started, players=list_players
-        )
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="No hay suficientes jugadores para desbloquear la partida",
-        )
+    lobby_query.delete_player(player_exit)  # borro al jugador de la lista
+    lobby_query.started = False  # seteo en falso por las dudas
+    repo.save(lobby_query)  # guardo los cambios de la partida
 
+    # Guarda la lista de jugadores
+    list_players = [
+        PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
+        for player in lobby_query.players
+    ]
 
-class PlayerOutRandom(BaseModel):
-    name: str
-    identifier: UUID
-
-
-class ExitRequest(BaseModel):  # le llega esto al endpoint
-    identifier: UUID
-
-
-class GamePlayerResponse(BaseModel):  # Lo que envia
-    game_id: int
-    players: List[PlayerOutRandom]
-    out: ExitRequest
-    activo: bool
-
-
-# api/lobby/{game_id}
-@app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
-async def exitGame(
-    game_id: int,
-    exit_request: ExitRequest,
-    games_repo: GameRepository = Depends(get_games_repo),
-):
-    game = games_repo.get(game_id)
-
-    if not game:
-        raise HTTPException(status_code=404, detail="Partida no encontrada")
-    # ve si el jugador esta en la partida, por las dudas ah
-    elif game.started == False:
-        raise HTTPException(status_code=400, detail="El juego no empezo")
-    elif len(game.players) <= 1 or len(game.players) <= game.min_players:
-        raise HTTPException(
-            status_code=400, detail="numero de jugadores menor al esperado"
-        )
-
-    player_exit = next(
-        player
-        for player in game.players
-        if player.identifier == exit_request.identifier
-    )
-
-    game.delete_player(player_exit)
-    games_repo.save(game)
-
-    return GamePlayerResponse(
-        game_id=game.id,
-        players=[
-            PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
-            for player in game.players
-        ],
-        out=ExitRequest(
-            identifier=exit_request.identifier,
-        ),
-        activo=game.started,
+    return ResponseOut(
+        id=lobby_query.id, started=lobby_query.started, players=list_players
     )

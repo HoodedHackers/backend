@@ -1,22 +1,10 @@
 from fastapi.testclient import TestClient
 from main import app
-import asserts
-from unittest.mock import MagicMock
-from fastapi import Request, Depends, HTTPException
+from uuid import uuid4
+from main import game_repo
+from uuid import UUID
 
-from main import get_games_repo
-
-from model import Game, Player
-from unittest.mock import AsyncMock, patch
-from fastapi import FastAPI, HTTPException, Depends
-from repositories import GameRepository, PlayerRepository
-from uuid import uuid4, UUID
-from repositories.player import PlayerRepository
-from os import getenv
-from database import Database
-from main import game_repo, player_repo
-from unittest.mock import Mock
-from main import PlayerOutRandom
+from main import game_repo
 
 client = TestClient(app)
 
@@ -53,105 +41,105 @@ def endpoint_unirse_a_partida(game_id: int, player_identifier: str):
     return response.json()
 
 
-def start_game(game_id: int):
-    response = client.put(f"/api/lobby/{game_id}/start")
-    assert response.status_code == 200
-    return response.json()
+def test_exit_game_not_started():
+    player1 = set_player_name("Test Player")
+    player2 = set_player_name("Test player 2")
+    player3 = set_player_name("Test player 3")
 
-
-def test_exit_game_success():
-    player1 = set_player_name("Player 1")
-    player2 = set_player_name("Player 2")
-    player3 = set_player_name("Player 3")
-
-    # Crear el juego
-    game = create_game(
-        identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
+    print(
+        f"Jugadores actuales: {player1['identifier']}, {player2['identifier']}, {player3['identifier']}"
     )
-    print(game["name"])
-    # Unirse al juego
-    endpoint_unirse_a_partida(game["id"], player2["identifier"])
+    game = create_game(
+        identifier=player2["identifier"], name="Test Game", min_players=2, max_players=3
+    )
+    print(f"Juego creado: {game['name']}")
+    print(f"Jugadores actuales: {game['players']}")
+
+    endpoint_unirse_a_partida(game["id"], player1["identifier"])
     endpoint_unirse_a_partida(game["id"], player3["identifier"])
 
-    start_game(game["id"])
-    print("Jugadores antes de salir:", game["players"])
+    # Obtener el estado actualizado del juego
+    response4 = client.get(f"/api/lobby/{game['id']}")
+    assert response4.status_code == 200
+    updated_game = response4.json()
 
-    # El jugador sale de la partida
+    assert len(updated_game["players"]) == 3
     response = client.patch(
-        f"/api/lobby/salir/{game['id']}", json={"identifier": player2["identifier"]}
+        f"/api/lobby/{game['id']}", json={"identifier": player1["identifier"]}
     )
-
     assert response.status_code == 200
     result = response.json()
 
-    assert result["game_id"] == game["id"]
+    # Verificar que el juego no haya comenzado y que la lista de jugadores esté actualizada
+    assert result["started"] == False
     assert len(result["players"]) == 2
 
-    # Verificar estado del juego
-    assert result["activo"] == True  # Asegúrate de que el estado sea correcto
-    # Verificar que el jugador que salió ya no está
-    assert player2["identifier"] not in [
-        player["identifier"] for player in result["players"]
-    ]
 
-    # Verificar que el jugador que queda es el correcto
-    remaining_players = [player["identifier"] for player in result["players"]]
-    assert len(remaining_players) == 2
-    assert player1["identifier"] in remaining_players
+def test_exit_game_not_started_host():
+    player1 = set_player_name("Test Player")
+    player2 = set_player_name("Test player 2")
+    player3 = set_player_name("Test player 3")
 
-
-def test_exit_game_not_started():
-    player1 = set_player_name("Player 1")
-    player2 = set_player_name("Player 2")
-
-    # Crear el juego
+    print(
+        f"Jugadores actuales: {player1['identifier']}, {player2['identifier']}, {player3['identifier']}"
+    )
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
+    print(f"Juego creado: {game['name']}")
+    print(f"Jugadores actuales: {game['players']}")
 
-    endpoint_unirse_a_partida(game["id"], player1["identifier"])
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
+    endpoint_unirse_a_partida(game["id"], player3["identifier"])
 
-    # Intentar salir antes de iniciar el juego
+    # Obtener el estado actualizado del juego
+    response4 = client.get(f"/api/lobby/{game['id']}")
+    assert response4.status_code == 200
+    updated_game = response4.json()
+
+    assert len(updated_game["players"]) == 3
     response = client.patch(
-        f"/api/lobby/salir/{game['id']}", json={"identifier": player1["identifier"]}
+        f"/api/lobby/{game['id']}", json={"identifier": player1["identifier"]}
     )
+    assert response.status_code == 200
+    result = response.json()
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "El juego no empezo"
+    # Verificar que el juego no haya comenzado y que la lista de jugadores esté actualizada
+    assert result["started"] == False
+    assert len(result["players"]) == 0
 
 
 def test_exit_game_not_found():
-    exit_request = {"identifier": str(uuid4())}  # UUID aleatorio
-
-    response = client.patch(
-        "/api/lobby/salir/9999", json=exit_request  # ID de juego que no existe
-    )
-
+    response = client.patch("/api/lobby/9999", json={"identifier": str(uuid4())})
     assert response.status_code == 404
-    assert response.json()["detail"] == "Partida no encontrada"
 
 
-def test_exit_game_min_players():
-    player1 = set_player_name("Player 1")
-    player2 = set_player_name("Player 2")
+def test_exit_game_already_started():
+    player1 = set_player_name("Test Player")
+    player2 = set_player_name("Test player 2")
 
-    # Crear el juego con un mínimo de 2 jugadores
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
 
-    endpoint_unirse_a_partida(game["id"], player1["identifier"])
+    game_instance = game_repo.get(game["id"])
+    assert game_instance is not None
+    game_instance.started = True  # Marcar el juego como iniciado
+
+    # Guardar la instancia del juego actualizada
+    game_repo.save(game_instance)
+
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
 
-    # Iniciar el juego
-    start_game(game["id"])
-
-    # El jugador 1 sale de la partida
+    # Simular que el juego ha comenzado
     response = client.patch(
-        f"/api/lobby/salir/{game['id']}", json={"identifier": player1["identifier"]}
+        f"/api/lobby/{game['id']}", json={"identifier": player1["identifier"]}
     )
+    assert response.status_code == 412  # Juego ahora está comenzado
 
-    # Ahora deberíamos tener solo un jugador (jugador 2)
-    assert response.status_code == 400
-    assert response.json()["detail"] == "numero de jugadores menor al esperado"
+    # Intentar desbloquear el juego
+    response = client.patch(
+        f"/api/lobby/{game['id']}", json={"identifier": player1["identifier"]}
+    )
+    assert response.status_code == 412
+    assert response.json()["detail"] == "Game already started"

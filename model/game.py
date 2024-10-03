@@ -3,6 +3,7 @@ from sqlalchemy import Column
 from sqlalchemy.orm import mapped_column, relationship, Mapped, MappedColumn
 from sqlalchemy.schema import ForeignKey, Table
 from sqlalchemy.types import Boolean, Integer, String
+from sqlalchemy.ext.orderinglist import ordering_list
 
 from database import Base
 from .board import Board, Color
@@ -17,7 +18,6 @@ game_player_association = Table(
     Column("player_id", Integer, ForeignKey("players.id")),
 )
 
-
 class Game(Base):
     __tablename__ = "games"
 
@@ -28,7 +28,8 @@ class Game(Base):
     min_players: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
     started: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     players: Mapped[List[Player]] = relationship(
-        "Player", secondary=game_player_association
+        "Player",
+        secondary=game_player_association,
     )
     host_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("players.id"), nullable=False
