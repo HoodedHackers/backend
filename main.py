@@ -20,6 +20,8 @@ from repositories import (
     create_all_figs,
 )
 
+import services.connection_manager
+from services.connection_manager import ManejadorConexionesLobby
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -322,7 +324,7 @@ class ResponseOut(BaseModel):
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
 def exit_game(
     id: int,
-    ident: IdentityIn,
+    ident: IdentityIn, websocket: WebSocket,
     repo: GameRepository = Depends(get_games_repo),
     repo_player: PlayerRepository = Depends(get_player_repo),
 ):
@@ -332,8 +334,13 @@ def exit_game(
     elif lobby_query.started is True:
         raise HTTPException(status_code=412, detail="Game already started")
     player_exit = repo_player.get_by_identifier(ident.identifier)
-    if player_exit == lobby_query.host:
+    if player_exit == lobby_query.host and lobby_query.started is False: #si aun no empezo el juego y el host quiere salir
+       
+        await manager.desconectar(websocket, id) #ver lo del id
+
         repo.delete(lobby_query)
+        await manager.broadcast(f"El jugador {player_exit.name} ha salido y el lobby {id} ha sido eliminado.", id) #ver esto que onda
+        
         return ResponseOut(id=0, started=False, players=[])
 
     lobby_query.delete_player(player_exit)
@@ -343,6 +350,12 @@ def exit_game(
         PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
         for player in lobby_query.players
     ]
+     # Desconectar el WebSocket del jugador que salió
+    await manager.desconectar(websocket, id) #ver lo del id
+
+    # Notificar a los demás jugadores que el jugador ha salido
+    await manager.broadcast(f"El jugador {player_exit.name} ha salido del lobby {id}.", id)
+
 
     return ResponseOut(
         id=lobby_query.id, started=lobby_query.started, players=list_players
