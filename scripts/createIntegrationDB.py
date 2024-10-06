@@ -30,13 +30,17 @@ def main():
         Player(name="luis"),
         Player(name="sofia"),
     ]
-    games = [
-        Game(name="Partida 1", max_players=4, min_players=2, started=False),
-        Game(name="Partida 2", max_players=3, min_players=2, started=False),
-        Game(name="Partida 3", max_players=4, min_players=3, started=True),
-        Game(name="Partida 4", max_players=2, min_players=2, started=False),
-        Game(name="Partida 5", max_players=3, min_players=2, started=False),
-    ]
+    g1 = Game(name="Partida 1", max_players=4, min_players=2, started=False)
+    g1.set_defaults()
+    g2 = Game(name="Partida 2", max_players=3, min_players=2, started=False)
+    g2.set_defaults()
+    g3 = Game(name="Partida 3", max_players=4, min_players=3, started=True)
+    g3.set_defaults()
+    g4 = Game(name="Partida 4", max_players=2, min_players=2, started=False)
+    g4.set_defaults()
+    g5 = Game(name="Partida 5", max_players=3, min_players=2, started=False)
+    g5.set_defaults()
+    games = [g1, g2, g3, g4, g5]
     for player in players:
         logging.info("Guardando jugador %s", player.name)
         player_repo.save(player)
