@@ -8,6 +8,8 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 from typing import List, Dict
 
+#llamamos al manejador
+from services import ManejadorConexionesLobby
 import asyncio
 from database import Database
 from repositories import GameRepository, PlayerRepository
@@ -222,6 +224,8 @@ class req_in(BaseModel):
     id_game: int = Field()
     identifier_player: str = Field()
 
+# intentemos conectar con el ws
+connector = ManejadorConexionesLobby()
 
 @app.put("/api/lobby/{id_game}")
 async def endpoint_unirse_a_partida(
@@ -238,6 +242,7 @@ async def endpoint_unirse_a_partida(
         raise HTTPException(status_code=404, detail="Game dont found!")
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
+    await connector.broadcast("refresca gilaso", selec_game.id)
     return {"status": "success!"}
 
 
