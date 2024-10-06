@@ -35,7 +35,6 @@ app = FastAPI()
 session = db.get_session()
 
 
-
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
 card_repo = FigRepository(session)

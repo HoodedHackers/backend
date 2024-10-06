@@ -17,26 +17,29 @@ class LobbyConnectionHandler:
             while True:
                 data = await websocket.receive_json()
                 user_id = data.get("user_identifier")
+                if user_id is None:
+                    await websocket.send_json({"error": "User id is missing"})
+                    continue
+
                 player = player_repo.get_by_identifier(user_id)
+                if player is None:
+                    await websocket.send_json({"error": "Player not found"})
+                    continue
 
-                if player is not None:
-                    user_name = player.name
+                user_name = player.name
+                action = data.get("action")
 
-                    if data.get("action") == "connect":
-                        await self.broadcast(
-                            {"user_name": user_name, "action": "connect"}, lobby_id
-                        )
-
-                    elif data.get("action") == "disconnect":
-                        await self.broadcast(
-                            {"user_name": user_name, "action": "disconnect"}, lobby_id
-                        )
-                        await self.disconnect(websocket, lobby_id)
-
-                    else:
-                        await websocket.send_json({"error": "Invalid action"})
+                if action == "connect":
+                    await self.broadcast(
+                        {"user_name": user_name, "action": "connect"}, lobby_id
+                    )
+                elif action == "disconnect":
+                    await self.broadcast(
+                        {"user_name": user_name, "action": "disconnect"}, lobby_id
+                    )
+                    await self.disconnect(websocket, lobby_id)
                 else:
-                    await websocket.send_json({"error": "User not found"})
+                    await websocket.send_json({"error": "Invalid action"})
 
         except WebSocketDisconnect:
             await self.disconnect(websocket, lobby_id)
