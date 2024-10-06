@@ -322,11 +322,12 @@ class ResponseOut(BaseModel):
 
 
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
-def exit_game(
+async def exit_game(
     id: int,
     ident: IdentityIn, websocket: WebSocket,
     repo: GameRepository = Depends(get_games_repo),
     repo_player: PlayerRepository = Depends(get_player_repo),
+    manager: ManejadorConexionesLobby = Depends(services.connection_manager.ManejadorConexionesLobby)
 ):
     lobby_query = repo.get(id)
     if lobby_query is None:
