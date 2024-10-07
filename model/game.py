@@ -2,8 +2,8 @@ import random
 from typing import List, Dict
 import json
 from dataclasses import dataclass
-from sqlalchemy import Column, JSON
-from sqlalchemy.orm import mapped_column, relationship, Mapped, MappedColumn
+from sqlalchemy import Column
+from sqlalchemy.orm import mapped_column, relationship, Mapped
 from sqlalchemy.schema import ForeignKey, Table
 from sqlalchemy.sql.type_api import TypeDecorator
 from sqlalchemy.types import VARCHAR, Boolean, Integer, String
