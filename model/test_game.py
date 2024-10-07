@@ -59,3 +59,10 @@ def test_shuffle_players():
     assert len(ordered_players) == len(players)
     assert set(ordered_players) == set(players)
     assert ordered_players[0] != players[0]
+
+
+def test_removing_player_changes_turn_order():
+    players = [Player(name=f"player {n}", id=n) for n in range(4)]
+    g = Game(name="test game", players=players)
+    g.delete_player(players[0])
+    assert max(player.turn_position for player in g.player_info.values()) == 2

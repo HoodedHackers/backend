@@ -1,4 +1,4 @@
-from random import shuffle
+import random
 from typing import List, Dict
 import json
 from dataclasses import dataclass
@@ -144,7 +144,16 @@ class Game(Base):
         if player not in self.players:
             raise PlayerNotInGame
         self.players.remove(player)
+        pos = self.player_info[player.id].turn_position
         del self.player_info[player.id]
+        if self.started:
+            return
+        higher_turns = filter(
+            lambda x: x.turn_position > pos, self.player_info.values()
+        )
+        for info in higher_turns:
+            info.turn_position -= 1
+            self.player_info[info.player_id] = info
 
     def ordered_players(self) -> List[Player]:
         players = {player.id: player for player in self.players}
@@ -155,7 +164,7 @@ class Game(Base):
 
     def shuffle_players(self):
         order = list(range(0, len(self.players)))
-        shuffle(order)
+        random.shuffle(order)
         for player, position in zip(self.player_info.values(), order):
             player.turn_position = position
 

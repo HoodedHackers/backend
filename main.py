@@ -255,6 +255,7 @@ async def start_game(
             status_code=412, detail="Doesnt meet the minimum number of players"
         )
     selec_game.started = True
+    selec_game.shuffle_players()
     games_repo.save(selec_game)
     return {"status": "success!"}
 
