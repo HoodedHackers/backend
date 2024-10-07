@@ -1,8 +1,12 @@
-from typing import List
-from sqlalchemy import Column
+from typing import List, Dict
+import json
+from dataclasses import dataclass
+from sqlalchemy import Column, JSON
 from sqlalchemy.orm import mapped_column, relationship, Mapped, MappedColumn
 from sqlalchemy.schema import ForeignKey, Table
-from sqlalchemy.types import Boolean, Integer, String
+from sqlalchemy.sql.type_api import TypeDecorator
+from sqlalchemy.types import VARCHAR, Boolean, Integer, String
+from sqlalchemy.ext.mutable import MutableDict
 
 from database import Base
 from .board import Board, Color
@@ -16,6 +20,43 @@ game_player_association = Table(
     Column("game_id", Integer, ForeignKey("games.id")),
     Column("player_id", Integer, ForeignKey("players.id")),
 )
+
+
+@dataclass
+class PlayerInfo:
+    player_id: int
+    turn_position: int
+
+    def to_dict(self):
+        return {
+            "player_id": self.player_id,
+            "turn_position": self.turn_position,
+        }
+
+    @staticmethod
+    def from_dict(data: dict):
+        return PlayerInfo(
+            player_id=data["player_id"], turn_position=data["turn_position"]
+        )
+
+
+class PlayerInfoMapper(TypeDecorator):
+    impl = VARCHAR
+
+    def process_bind_param(self, value: Dict[int, PlayerInfo] | None, dialect):
+        if value is None:
+            return "{}"
+        return json.dumps({k: v.to_dict() for k, v in value.items()})
+
+    def process_result_value(self, value, dialect) -> Dict[int, PlayerInfo]:
+        if value is None:
+            return {}
+        return {int(k): PlayerInfo.from_dict(v) for k, v in json.loads(value).items()}
+
+
+# Necesario para que sqlalchemy se de cuenta que el dict puede cambiar, sino no puede
+# darse cuenta cuando se modifica el dict y por ende no persiste cambios a la db.
+MutableDict.associate_with(PlayerInfoMapper)
 
 
 class Game(Base):
@@ -35,6 +76,18 @@ class Game(Base):
     )
     host: Mapped[Player] = relationship("Player")
     board: Mapped[List[Color]] = mapped_column(Board, default=Board.random_board)
+    player_info: Mapped[Dict[int, PlayerInfo]] = mapped_column(
+        PlayerInfoMapper, default=lambda: {}
+    )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.player_info is None or self.player_info == {}:
+            self.player_info = {}
+            for index, player in enumerate(self.players):
+                self.player_info[player.id] = PlayerInfo(
+                    player_id=player.id, turn_position=index
+                )
 
     def __eq__(self, other):
         if not isinstance(other, Game):
@@ -79,6 +132,9 @@ class Game(Base):
         if len(self.players) == self.max_players:
             raise GameFull
         self.players.append(player)
+        self.player_info[player.id] = PlayerInfo(
+            player_id=player.id, turn_position=len(self.players) - 1
+        )
 
     def count_players(self) -> int:
         return len(self.players)
@@ -87,6 +143,14 @@ class Game(Base):
         if player not in self.players:
             raise PlayerNotInGame
         self.players.remove(player)
+        del self.player_info[player.id]
+
+    def ordered_players(self) -> List[Player]:
+        players = {player.id: player for player in self.players}
+        order = {
+            info.turn_position: info.player_id for info in self.player_info.values()
+        }
+        return [players[order[i]] for i in range(len(order))]
 
 
 class GameFull(BaseException):
