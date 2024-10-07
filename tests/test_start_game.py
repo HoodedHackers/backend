@@ -25,7 +25,8 @@ class TestGameStart(unittest.TestCase):
 
         self.players = [
             Player(name="Lou"),
-            Player(name="Lou^2"), Player(name="Andy"),
+            Player(name="Lou^2"),
+            Player(name="Andy"),
         ]
         for p in self.players:
             self.player_repo.save(p)
