@@ -23,13 +23,19 @@ class TestGameStart(unittest.TestCase):
         self.host = Player(name="Ely")
         self.player_repo.save(self.host)
 
+        self.players = [
+            Player(name="Lou"),
+            Player(name="Lou^2"), Player(name="Andy"),
+        ]
+        for p in self.players:
+            self.player_repo.save(p)
         self.game_1 = Game(
             name="Game of Falls",
             current_player_turn=0,
             max_players=4,
             min_players=2,
             started=False,
-            players=[Player(name="Lou")],
+            players=[self.players[0]],
             host=self.host,
             host_id=self.host.id,
         )
@@ -40,7 +46,7 @@ class TestGameStart(unittest.TestCase):
             max_players=4,
             min_players=2,
             started=False,
-            players=[Player(name="Lou^2"), Player(name="Andy")],
+            players=self.players[1:3],
             host=self.host,
             host_id=self.host.id,
         )
@@ -86,5 +92,6 @@ class TestGameStart(unittest.TestCase):
                 f"/api/lobby/{self.game_2.id}/start",
                 json={"identifier": str(self.host.identifier)},
             )
+            print(response.json())
             assert response.status_code == 200
             assert response.json() == {"status": "success!"}
