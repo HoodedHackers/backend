@@ -1,3 +1,6 @@
+import random
+from unittest.mock import patch
+
 from .game import Game, GameFull
 from .player import Player
 
@@ -43,3 +46,16 @@ def test_game_player_info():
     assert len(g.player_info) == 0
     g.add_player(Player(name="player 1"))
     assert len(g.player_info) == 1
+
+
+def test_shuffle_players():
+    players = [Player(name=f"player {n}", id=n) for n in range(4)]
+    g = Game(name="test game", players=players)
+
+    with patch("random.shuffle", side_effect=lambda x: random.Random(42).shuffle(x)):
+        g.shuffle_players()
+
+    ordered_players = g.ordered_players()
+    assert len(ordered_players) == len(players)
+    assert set(ordered_players) == set(players)
+    assert ordered_players[0] != players[0]

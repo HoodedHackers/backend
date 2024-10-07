@@ -1,3 +1,4 @@
+from random import shuffle
 from typing import List, Dict
 import json
 from dataclasses import dataclass
@@ -151,6 +152,12 @@ class Game(Base):
             info.turn_position: info.player_id for info in self.player_info.values()
         }
         return [players[order[i]] for i in range(len(order))]
+
+    def shuffle_players(self):
+        order = list(range(0, len(self.players)))
+        shuffle(order)
+        for player, position in zip(self.player_info.values(), order):
+            player.turn_position = position
 
 
 class GameFull(BaseException):
