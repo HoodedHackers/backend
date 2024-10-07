@@ -7,6 +7,7 @@ from sqlalchemy.types import Boolean, Integer, String
 from database import Base
 from .board import Board, Color
 from .player import Player
+from .exceptions import *
 
 
 game_player_association = Table(
@@ -78,6 +79,8 @@ class Game(Base):
     def add_player(self, player):
         if len(self.players) == self.max_players:
             raise GameFull
+        if self.started:
+            raise GameStarted
         self.players.append(player)
 
     def count_players(self) -> int:
@@ -88,10 +91,10 @@ class Game(Base):
             raise PlayerNotInGame
         self.players.remove(player)
 
-
-class GameFull(BaseException):
-    pass
-
-
-class PlayerNotInGame(BaseException):
-    pass
+    def start(self):
+        if self.started:
+            raise GameStarted
+        if self.count_players() < self.min_players:
+            raise PreconditionsNotMet
+        self.board = Board.random_board()
+        self.started = True

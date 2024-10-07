@@ -1,59 +1,90 @@
+from os import name
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from unittest.mock import patch
+import unittest
 
+from database import Database
 from main import app
 from model import Game, Player
+from repositories import GameRepository, PlayerRepository
 
 client = TestClient(app)
 
-data_out1 = Game(
-    id=1000,
-    name="Game of Falls",
-    current_player_turn=0,
-    max_players=4,
-    min_players=2,
-    started=False,
-    players=[Player(id=10000, name="Lou")],
-    host_id=1,
-)
 
-data_out2 = Game(
-    id=2000,
-    name="Game of Thrones",
-    current_player_turn=0,
-    max_players=4,
-    min_players=2,
-    started=False,
-    players=[Player(id=20000, name="Lou^2"), Player(id=30000, name="Andy")],
-    host_id=2,
-)
+class TestGameStart(unittest.TestCase):
 
+    def setUp(self):
+        self.client = TestClient(app)
+        self.dbs = Database().session()
+        self.games_repo = GameRepository(self.dbs)
+        self.player_repo = PlayerRepository(self.dbs)
 
-def test_start_game_error_404():
-    with patch("repositories.game.GameRepository.get") as mock_get:
-        mock_get.return_value = None
+        self.host = Player(name="Ely")
+        self.player_repo.save(self.host)
 
-        response = client.put("/api/lobby/0/start")
-        assert response.status_code == 404
-        assert response.json() == {"detail": "Game dont found"}
+        self.game_1 = Game(
+            name="Game of Falls",
+            current_player_turn=0,
+            max_players=4,
+            min_players=2,
+            started=False,
+            players=[Player(name="Lou")],
+            host=self.host,
+            host_id=self.host.id,
+        )
 
+        self.game_2 = Game(
+            name="Game of Thrones",
+            current_player_turn=0,
+            max_players=4,
+            min_players=2,
+            started=False,
+            players=[Player(name="Lou^2"), Player(name="Andy")],
+            host=self.host,
+            host_id=self.host.id,
+        )
 
-def test_start_game_error_412():
-    with patch("repositories.game.GameRepository.get") as mock_get:
-        mock_get.return_value = data_out1
+        self.games_repo.save(self.game_1)
+        self.games_repo.save(self.game_2)
 
-        response = client.put("/api/lobby/1/start")
-        assert response.status_code == 412
-        assert response.json() == {
-            "detail": "Doesnt meet the minimum number of players"
-        }
+    def tearDown(self):
+        self.dbs.query(Game).delete()
+        self.dbs.query(Player).delete()
+        self.dbs.commit()
+        self.dbs.close()
 
+    def test_start_game_bad_game_id(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            response = self.client.put(
+                "/api/lobby/8975/start",
+                json={"identifier": "00000000-0000-0000-0000-000000000000"},
+            )
+            assert response.status_code == 404
+            assert response.json() == {"detail": "Game dont found"}
 
-def test_start_game_success():
-    with patch("repositories.game.GameRepository.get") as mock_get:
-        mock_get.return_value = data_out2
+    def test_start_game_without_enough_players(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            response = self.client.put(
+                f"/api/lobby/{self.game_1.id}/start",
+                json={"identifier": str(self.host.identifier)},
+            )
+            assert response.status_code == 400
+            assert response.json() == {
+                "detail": "Doesnt meet the minimum number of players"
+            }
 
-        response = client.put("/api/lobby/2/start")
-        assert response.status_code == 200
-        assert response.json() == {"status": "success!"}
+    def test_start_game_success(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            response = self.client.put(
+                f"/api/lobby/{self.game_2.id}/start",
+                json={"identifier": str(self.host.identifier)},
+            )
+            assert response.status_code == 200
+            assert response.json() == {"status": "success!"}
