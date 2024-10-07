@@ -21,8 +21,9 @@ class ManejadorConexionesLobby:
 
             if len(self.lobbies[lobby_id]) == 0:
                 del self.lobbies[lobby_id]
-#envia un mensaje a todos los jugadores en un lobby
+
+    # envia un mensaje a todos los jugadores en un lobby
     async def broadcast(self, message: str, lobby_id: int):
         if lobby_id in self.lobbies:
             for connection in self.lobbies[lobby_id]:
-                await connection.send_text(message)       #cambiar esto muy posiblemente
+                await connection.send_text(message)  # cambiar esto muy posiblemente

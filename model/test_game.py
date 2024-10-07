@@ -35,3 +35,13 @@ def test_game_has_tiles():
     g = Game(name="test game")
     g.set_defaults()
     assert len(g.board) == 36
+
+
+def test_delete_player():
+    g = Game(name="test game")
+    g.set_defaults()
+    p = Player(name="0")
+    g.add_player(p)
+    assert p in g.players
+    g.delete_player(p)
+    assert p not in g.players

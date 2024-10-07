@@ -106,7 +106,6 @@ async def create_game(
     game_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ) -> GameOut:
-
     if game_create.min_players > game_create.max_players:
         raise HTTPException(
             status_code=412,
@@ -115,7 +114,6 @@ async def create_game(
     player = player_repo.get_by_identifier(game_create.identifier)
     if player is None:
         raise HTTPException(status_code=404, detail="Jugador no encontrado")
-
     new_game = Game(
         name=game_create.name,
         host=player,
@@ -125,11 +123,8 @@ async def create_game(
         started=False,
     )
     new_game.add_player(player)
-
     game_repo.save(new_game)
-
     players_out = [PlayerOut(name=player.name) for player in new_game.players]
-
     return GameOut(
         id=new_game.id,
         name=new_game.name,
@@ -322,12 +317,11 @@ class ResponseOut(BaseModel):
 
 
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
-async def exit_game(
+def exit_game(
     id: int,
-    ident: IdentityIn, websocket: WebSocket,
+    ident: IdentityIn,
     repo: GameRepository = Depends(get_games_repo),
     repo_player: PlayerRepository = Depends(get_player_repo),
-    manager: ManejadorConexionesLobby = Depends(services.connection_manager.ManejadorConexionesLobby)
 ):
     lobby_query = repo.get(id)
     if lobby_query is None:
@@ -335,15 +329,9 @@ async def exit_game(
     elif lobby_query.started is True:
         raise HTTPException(status_code=412, detail="Game already started")
     player_exit = repo_player.get_by_identifier(ident.identifier)
-    if player_exit == lobby_query.host and lobby_query.started is False: #si aun no empezo el juego y el host quiere salir
-       
-        await manager.desconectar(websocket, id) #ver lo del id
-
+    if player_exit == lobby_query.host and lobby_query.started is False:
         repo.delete(lobby_query)
-        await manager.broadcast(f"El jugador {player_exit.name} ha salido y el lobby {id} ha sido eliminado.", id) #ver esto que onda
-        
         return ResponseOut(id=0, started=False, players=[])
-
     lobby_query.delete_player(player_exit)
     lobby_query.started = False
     repo.save(lobby_query)
@@ -351,13 +339,6 @@ async def exit_game(
         PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
         for player in lobby_query.players
     ]
-     # Desconectar el WebSocket del jugador que salió
-    await manager.desconectar(websocket, id) #ver lo del id
-
-    # Notificar a los demás jugadores que el jugador ha salido
-    await manager.broadcast(f"El jugador {player_exit.name} ha salido del lobby {id}.", id)
-
-
     return ResponseOut(
         id=lobby_query.id, started=lobby_query.started, players=list_players
     )
