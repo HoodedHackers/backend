@@ -272,6 +272,7 @@ async def start_game(
     except GameStarted:
         raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
+    selec_game.shuffle_players()
     games_repo.save(selec_game)
     return {"status": "success!"}
 
