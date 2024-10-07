@@ -22,8 +22,7 @@ class FigRepository(Repository):
         return self.db.query(FigCards).order_by(func.random()).limit(count).all()
 
 
-# Esta funcion creara solo un numero limitado de cartas para el primer sprint, pero deberia escalar
 def create_all_figs(card_repo: FigRepository):
-    for i in range(24):
+    for i in range(92):
         new_card = FigCards(name="Soy Figura")
         card_repo.save(new_card)

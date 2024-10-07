@@ -7,14 +7,14 @@ from sqlalchemy.types import Boolean, Integer, String
 from database import Base
 from .board import Board, Color
 from .player import Player
-
+from .fig_cards import HandType
 
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("game_id", Integer, ForeignKey("games.id")),
     Column("player_id", Integer, ForeignKey("players.id")),
+    Column("hand_id", HandType, ForeignKey("figHand.id"))
 )
 
 
