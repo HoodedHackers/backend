@@ -12,7 +12,7 @@ import asyncio
 from database import Database
 from repositories import GameRepository, PlayerRepository
 import services.counter
-from model import Player, Game
+from model import Player, Game, FigCards
 from model.exceptions import *
 from repositories import (
     GameRepository,
@@ -436,3 +436,49 @@ async def exitGame(
         ),
         activo=game.started,
     )
+
+
+class FigureCards(BaseModel):
+    figure_id: int
+    blocked: bool
+
+
+class PlayerFigures(BaseModel):
+    name: str
+    figures: List[FigureCards]
+    remaining_figures: int
+    turn_order: int
+
+
+class StatusGame(BaseModel):
+    name: str
+    players: List[PlayerFigures]
+    current_player: int
+
+
+@app.get("/api/lobby/{id}/status", response_model=StatusGame)
+def status_game(id: int, repo: GameRepository = Depends(get_games_repo)):
+    lobby_query = repo.get(id)
+    if lobby_query is None:
+        raise HTTPException(status_code=404, detail="Lobby not found")
+
+    name = lobby_query.name
+    current_player = lobby_query.current_player_turn
+    players = []
+
+    # TODO: Ver que implementacion se le da a los figuras
+
+    # for player in lobby_query.players:
+    #     figures = []
+    #     for fig in player.figures:
+    #         figures.append(FigureCards(figure_id=fig.id, blocked=fig.blocked))
+    #     players.append(
+    #         PlayerFigures(
+    #             name=player.name,
+    #             figures=figures,
+    #             remaining_figures=player.remaining_figures,
+    #             turn_order=player.turn_order,
+    #         )
+    #     )
+
+    return StatusGame(name=name, players=players, current_player=current_player)
