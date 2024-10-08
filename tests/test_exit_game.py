@@ -1,8 +1,7 @@
 from fastapi.testclient import TestClient
 from main import app
-from uuid import uuid4
 from main import game_repo
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from main import game_repo
 
