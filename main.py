@@ -86,11 +86,6 @@ class GameStateOutput(BaseModel):
     players: List[str]
 
 
-
-
-
-
-
 class GameIn(BaseModel):
     identifier: UUID
     name: str = Field(min_length=1, max_length=64)
@@ -384,9 +379,10 @@ async def exitGame(
         activo=game.started,
     )
 
+
 class GameIn2(BaseModel):
     game_id: int
-    players: List[str]
+    player: str
 
 
 class CardsFigOut(BaseModel):
@@ -394,13 +390,8 @@ class CardsFigOut(BaseModel):
     card_name: str
 
 
-class PlayerOut2(BaseModel):
-    player: str
-    cards_out: List[CardsFigOut]
-
-
 class SetCardsResponse(BaseModel):
-    all_cards: List[PlayerOut2]
+    all_cards: List[CardsFigOut]
 
 
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
@@ -411,23 +402,19 @@ async def repartir_cartas_figura(
     game_repo: GameRepository = Depends(get_games_repo),
 ):
     all_cards = []
-    for player in req.players:
-        identifier_player = UUID(player)
-        in_game_player = player_repo.get_by_identifier(identifier_player)
-        in_game = game_repo.get(req.game_id)
-        if in_game_player is None:
-            raise HTTPException(status_code=404, detail="Player dont found!")
-        if in_game is None:
-            raise HTTPException(status_code=404, detail="Game dont found!")
-        if not in_game_player in in_game.players:
-            continue
-        cards = card_repo.get_many(3)
-        new_cards = []
-        for card in cards:
-            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
-            new_cards.append(new_card)
-        new_dic = PlayerOut2(player=player, cards_out=new_cards)
-        all_cards.append(new_dic)
+    identifier_player = UUID(req.player)
+    in_game_player = player_repo.get_by_identifier(identifier_player)
+    in_game = game_repo.get(req.game_id)
+    if in_game_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if in_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not in_game_player in in_game.players:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    cards = card_repo.get_many(3)
+    for card in cards:
+        new_card = CardsFigOut(card_id=card.id, card_name=card.name)
+        all_cards.append(new_card)
     return SetCardsResponse(all_cards=all_cards)
 
 
@@ -439,12 +426,17 @@ async def repartir_cartas_movimiento(
     game_repo: GameRepository = Depends(get_games_repo),
 ):
     all_cards = []
-    for player in req.players:
-        cards = card_repo.get_many(3)
-        new_cards = []
-        for card in cards:
-            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
-            new_cards.append(new_card)
-        new_dic = PlayerOut2(player=player, cards_out=new_cards)
-        all_cards.append(new_dic)
+    identifier_player = UUID(req.player)
+    in_game_player = player_repo.get_by_identifier(identifier_player)
+    in_game = game_repo.get(req.game_id)
+    if in_game_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if in_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not in_game_player in in_game.players:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    cards = card_repo.get_many(3)
+    for card in cards:
+        new_card = CardsFigOut(card_id=card.id, card_name=card.name)
+        all_cards.append(new_card)
     return SetCardsResponse(all_cards=all_cards)
