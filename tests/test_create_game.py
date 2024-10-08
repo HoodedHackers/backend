@@ -15,6 +15,7 @@ from repositories.player import PlayerRepository
 from os import getenv
 from database import Database
 from main import game_repo, player_repo
+from uuid import uuid4
 
 client = TestClient(app)
 
@@ -121,3 +122,18 @@ def test_crear_partida_error_brutal(mock_game_repo):
         },
     )
     assert response.status_code == 422
+
+
+def test_creaar_partida_jugador_no_encontrado():
+    non_existent_player = uuid4()
+    response = client.post(
+        "/api/lobby",
+        json={
+            "identifier": str(non_existent_player),
+            "name": "partida1",
+            "max_players": 4,
+            "min_players": 2,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Jugador no encontrado"}
