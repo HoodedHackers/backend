@@ -1,5 +1,6 @@
 import unittest
 
+from apscheduler.triggers.base import random
 import asserts
 
 from model import Game, Player
@@ -12,6 +13,8 @@ def make_game(
     player_repo, name=None, max_players=None, min_players=None, started=None, players=[]
 ):
     host = Player(name="host")
+    for player in players:
+        player_repo.save(player)
     player_repo.save(host)
     game = Game(
         name=name,
@@ -92,3 +95,39 @@ class TestGameRepo(unittest.TestCase):
         asserts.assert_in(games[3], available_games)
         asserts.assert_not_in(games[1], available_games)
         asserts.assert_not_in(games[2], available_games)
+
+    def test_turn_order(self):
+        grepo, prepo = self.repo()
+        players = [
+            Player(name="p1"),
+            Player(name="p2"),
+            Player(name="p3"),
+            Player(name="p4"),
+        ]
+        for p in players:
+            prepo.save(p)
+        g = make_game(grepo, name="test_game", players=players)
+        grepo.save(g)
+        saved_game = grepo.get(g.id)
+        assert saved_game is not None
+        self.assertEqual(players, saved_game.ordered_players())
+
+    def test_player_info(self):
+        grepo, prepo = self.repo()
+        players = [
+            Player(name="p1"),
+            Player(name="p2"),
+            Player(name="p3"),
+        ]
+        for p in players:
+            prepo.save(p)
+        g = make_game(grepo, name="test_game", players=players[0:2])
+        grepo.save(g)
+        saved_game = grepo.get(g.id)
+        assert saved_game is not None
+        assert len(saved_game.player_info) == 2
+        saved_game.add_player(players[2])
+        grepo.save(saved_game)
+        saved_game = grepo.get(g.id)
+        assert saved_game is not None
+        assert len(saved_game.player_info) == 3

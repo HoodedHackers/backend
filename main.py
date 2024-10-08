@@ -15,6 +15,7 @@ from database import Database
 from repositories import GameRepository, PlayerRepository
 import services.counter
 from model import Player, Game
+from model.exceptions import *
 from repositories import (
     GameRepository,
     PlayerRepository,
@@ -88,7 +89,7 @@ class GameIn(BaseModel):
 
 
 class PlayerOut(BaseModel):
-    name: str
+    id_player: UUID
 
 
 class GameOut(BaseModel):
@@ -128,7 +129,9 @@ async def create_game(
 
     game_repo.save(new_game)
 
-    players_out = [PlayerOut(name=player.name) for player in new_game.players]
+    players_out = [
+        PlayerOut(id_player=UUID(str(player.identifier))) for player in new_game.players
+    ]
 
     return GameOut(
         id=new_game.id,
@@ -246,18 +249,35 @@ async def endpoint_unirse_a_partida(
     return {"status": "success!"}
 
 
+class StartGameRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+
+
 @app.put("/api/lobby/{id_game}/start")
 async def start_game(
-    id_game: int, games_repo: GameRepository = Depends(get_games_repo)
+    id_game: int,
+    start_game_request: StartGameRequest,
+    games_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
 ):
     selec_game = games_repo.get(id_game)
     if selec_game is None:
         raise HTTPException(status_code=404, detail="Game dont found")
-    if len(selec_game.players) < selec_game.min_players:
+    player = player_repo.get_by_identifier(start_game_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Requesting player not found")
+    if player != selec_game.host:
+        raise HTTPException(status_code=402, detail="Non host player request")
+    try:
+        selec_game.start()
+    except PreconditionsNotMet:
         raise HTTPException(
-            status_code=412, detail="Doesnt meet the minimum number of players"
+            status_code=400, detail="Doesnt meet the minimum number of players"
         )
+    except GameStarted:
+        raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
+    selec_game.shuffle_players()
     games_repo.save(selec_game)
     return {"status": "success!"}
 
@@ -324,6 +344,7 @@ class ResponseOut(BaseModel):
     players: List[PlayersOfGame]
 
 
+# TODO: Eliminar, la idea de esete endpoint es incorrecta.
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
 def unlock_game_not_started(
     id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
