@@ -230,12 +230,12 @@ class req_in(BaseModel):
 # intentemos conectar con el ws
 connector = ManejadorConexionesLobby()
 
-@app.put("/api/lobby/{id_game}")
-async def endpoint_unirse_a_partida(
-    req: req_in,
-    games_repo: GameRepository = Depends(get_games_repo),
-    player_repo: PlayerRepository = Depends(get_player_repo),
-):
+@app.websocket("/ws/lobby/{id_game}")
+async def join_game(ws: WebSocket, 
+                    req: req_in, 
+                    games_repo: GameRepository = Depends(get_games_repo),
+                    player_repo: PlayerRepository = Depends(get_player_repo)
+                    ):
     new_identifier = UUID(req.identifier_player)
     selec_player = player_repo.get_by_identifier(new_identifier)
     selec_game = games_repo.get(req.id_game)
@@ -245,8 +245,29 @@ async def endpoint_unirse_a_partida(
         raise HTTPException(status_code=404, detail="Game dont found!")
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
-    await connector.broadcast("refresca gilaso", selec_game.id)
-    return {"status": "success!"}
+    #Necesitaria un try?
+    await connector.broadcast({"user_name": selec_player.name, "action": "conectado"}, selec_game.id)
+    await connector.conectar(ws, selec_game.id)
+
+
+# @app.put("/api/lobby/{id_game}")
+# async def endpoint_unirse_a_partida(
+#     req: req_in,
+#     games_repo: GameRepository = Depends(get_games_repo),
+#     player_repo: PlayerRepository = Depends(get_player_repo),
+# ):
+#     new_identifier = UUID(req.identifier_player)
+#     selec_player = player_repo.get_by_identifier(new_identifier)
+#     selec_game = games_repo.get(req.id_game)
+#     if selec_player is None:
+#         raise HTTPException(status_code=404, detail="Player dont found!")
+#     if selec_game is None:
+#         raise HTTPException(status_code=404, detail="Game dont found!")
+#     selec_game.add_player(selec_player)
+#     games_repo.save(selec_game)
+
+#     await connector.broadcast("refresca gilaso", selec_game.id)
+#     return {"status": "success!"}
 
 
 class StartGameRequest(BaseModel):
