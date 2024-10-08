@@ -3,7 +3,7 @@ import logging
 
 from database import Database
 from model import Game, Player
-from repositories import PlayerRepository, GameRepository
+from repositories import GameRepository, PlayerRepository
 
 
 def main():

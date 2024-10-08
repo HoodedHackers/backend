@@ -1,8 +1,9 @@
+import unittest
 from os import name
+from unittest.mock import patch
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-import unittest
 
 from database import Database
 from main import app

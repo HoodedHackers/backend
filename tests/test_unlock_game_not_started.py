@@ -1,11 +1,9 @@
-from fastapi.testclient import TestClient
-from main import app
-from uuid import uuid4
-from main import game_repo, player_repo
-from uuid import UUID
 from unittest import skip
+from uuid import UUID, uuid4
 
-from main import game_repo, player_repo
+from fastapi.testclient import TestClient
+
+from main import app, game_repo, player_repo
 
 client = TestClient(app)
 

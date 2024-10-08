@@ -1,26 +1,20 @@
-from os import getenv
-from fastapi import FastAPI, Request, Depends, HTTPException, Response
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from fastapi.websockets import WebSocket, WebSocketDisconnect
-from fastapi import HTTPException
-from uuid import UUID, uuid4
-from pydantic import BaseModel, Field
-from typing import List, Dict
-
 import asyncio
-from database import Database
-from repositories import GameRepository, PlayerRepository
-import services.counter
-from model import Player, Game
-from model.exceptions import *
-from repositories import (
-    GameRepository,
-    PlayerRepository,
-    FigRepository,
-    create_all_figs,
-)
+from os import getenv
+from typing import Dict, List
+from uuid import UUID, uuid4
 
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.websockets import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+import services.counter
+from database import Database
+from model import Game, Player
+from model.exceptions import *
+from repositories import (FigRepository, GameRepository, PlayerRepository,
+                          create_all_figs)
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:

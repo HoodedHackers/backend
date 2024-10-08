@@ -1,6 +1,5 @@
-from fastapi.testclient import TestClient
-
 import asserts
+from fastapi.testclient import TestClient
 
 from main import app
 

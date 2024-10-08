@@ -1,9 +1,11 @@
-from fastapi.testclient import TestClient
+import asyncio
 from unittest.mock import patch
+
 import pytest
+from fastapi.testclient import TestClient
+
 from main import app
 from model import Game, Player
-import asyncio
 
 client = TestClient(app)
 
