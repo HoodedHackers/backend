@@ -13,6 +13,7 @@ from database import Database
 from repositories import GameRepository, PlayerRepository
 import services.counter
 from model import Player, Game
+from model.exceptions import *
 from repositories import (
     GameRepository,
     PlayerRepository,
@@ -88,7 +89,7 @@ class GameIn(BaseModel):
 
 
 class PlayerOut(BaseModel):
-    name: str
+    id_player: UUID
 
 
 class GameOut(BaseModel):
@@ -124,7 +125,9 @@ async def create_game(
     )
     new_game.add_player(player)
     game_repo.save(new_game)
-    players_out = [PlayerOut(name=player.name) for player in new_game.players]
+    players_out = [
+        PlayerOut(id_player=UUID(str(player.identifier))) for player in new_game.players
+    ]
     return GameOut(
         id=new_game.id,
         name=new_game.name,
@@ -238,18 +241,35 @@ async def endpoint_unirse_a_partida(
     return {"status": "success!"}
 
 
+class StartGameRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+
+
 @app.put("/api/lobby/{id_game}/start")
 async def start_game(
-    id_game: int, games_repo: GameRepository = Depends(get_games_repo)
+    id_game: int,
+    start_game_request: StartGameRequest,
+    games_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
 ):
     selec_game = games_repo.get(id_game)
     if selec_game is None:
         raise HTTPException(status_code=404, detail="Game dont found")
-    if len(selec_game.players) < selec_game.min_players:
+    player = player_repo.get_by_identifier(start_game_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Requesting player not found")
+    if player != selec_game.host:
+        raise HTTPException(status_code=402, detail="Non host player request")
+    try:
+        selec_game.start()
+    except PreconditionsNotMet:
         raise HTTPException(
-            status_code=412, detail="Doesnt meet the minimum number of players"
+            status_code=400, detail="Doesnt meet the minimum number of players"
         )
+    except GameStarted:
+        raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
+    selec_game.shuffle_players()
     games_repo.save(selec_game)
     return {"status": "success!"}
 
@@ -326,14 +346,18 @@ def exit_game(
     lobby_query = repo.get(id)
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
-    elif lobby_query.started is True:
-        raise HTTPException(status_code=412, detail="Game already started")
     player_exit = repo_player.get_by_identifier(ident.identifier)
-    if player_exit == lobby_query.host and lobby_query.started is False:
+    if player_exit is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    elif player_exit not in lobby_query.players:
+        raise HTTPException(status_code=404, detail="Player not in lobby")
+    # si el host se quiere ir y el juego no empezo, se borra el lobby
+    elif player_exit == lobby_query.host and lobby_query.started is False:
         repo.delete(lobby_query)
         return ResponseOut(id=0, started=False, players=[])
+    # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
+    # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
     lobby_query.delete_player(player_exit)
-    lobby_query.started = False
     repo.save(lobby_query)
     list_players = [
         PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
