@@ -27,7 +27,6 @@ class LobbyConnectionHandler:
                     await websocket.send_json({"error": "User id is missing"})
                     continue
 
-                user_id = UUID(user_id)
                 player = player_repo.get_by_identifier(user_id)
                 if player is None:
                     await websocket.send_json({"error": "Player not found"})
