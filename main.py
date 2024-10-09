@@ -15,6 +15,7 @@ from model import Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
+from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -243,6 +244,15 @@ async def join_game(
         raise HTTPException(status_code=404, detail="Game dont found!")
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
+    join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await join_leave_manager.broadcast(
+        {
+            "player_id": selec_player.id,
+            "action": "join",
+            "player_name": selec_player.name,
+        },
+        selec_game.id,
+    )
     return {"status": "success!"}
 
 
@@ -426,6 +436,15 @@ async def exitGame(
 
     game.delete_player(player_exit)
     games_repo.save(game)
+    join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await join_leave_manager.broadcast(
+        {
+            "player_id": player_exit.id,
+            "action": "join",
+            "player_name": player_exit.name,
+        },
+        game.id,
+    )
 
     return GamePlayerResponse(
         game_id=game.id,
