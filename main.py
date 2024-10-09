@@ -316,11 +316,11 @@ async def repartir_cartas_figura(
 
 
 class IdentityIn(BaseModel):
-    identifier: UUID
+    id_play: int
 
 
 class PlayersOfGame(BaseModel):
-    identifier: UUID
+    id_player: int
     name: str
 
 
@@ -340,7 +340,7 @@ def exit_game(
     lobby_query = repo.get(id)
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
-    player_exit = repo_player.get_by_identifier(ident.identifier)
+    player_exit = repo_player.get(ident.id_play) #ver
     if player_exit is None:
         raise HTTPException(status_code=404, detail="Player not found")
     elif player_exit not in lobby_query.players:
@@ -354,7 +354,7 @@ def exit_game(
     ):  # falta test para este caso
         repo.delete(lobby_query)
         # debo hablar con front sobre que retornar en estos casos
-        return ResponseOut(id=0, started=False)
+        return ResponseOut(id=0, started=False)  #ver esto con front
 
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
@@ -363,7 +363,7 @@ def exit_game(
     #list_player va, no va id ni started
     list_players = [
         PlayersOfGame(
-            identifier=UUID(str(player.identifier)), name=player.name
+            identifier=player.id_player, name=player.name
         )  # cambiar esto, no se debe devolver el uuid
         for player in lobby_query.players
     ]
