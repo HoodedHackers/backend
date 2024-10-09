@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 import services.counter
 from database import Database
 from model import Game, Player
-from model.exceptions import *
+from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
 
@@ -430,3 +430,31 @@ async def exitGame(
         ),
         activo=game.started,
     )
+
+
+class AdvanceTurnRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+
+
+@app.post("/api/lobby/{game_id}/advance")
+async def advance_game_turn(
+    game_id: int,
+    advance_request: AdvanceTurnRequest,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+    player = player_repo.get_by_identifier(advance_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Player is not in game")
+    if player != game.current_player():
+        raise HTTPException(status_code=401, detail="It's not your turn")
+    try:
+        game.advance_turn()
+    except PreconditionsNotMet:
+        raise HTTPException(status_code=401, detail="Game hasn't started yet")
+    return {"status": "success"}
