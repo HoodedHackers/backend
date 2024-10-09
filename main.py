@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 import services.counter
 from database import Database
 from model import Game, Player
-from model.exceptions import PreconditionsNotMet
+from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
 
