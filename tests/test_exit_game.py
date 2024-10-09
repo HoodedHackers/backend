@@ -56,6 +56,7 @@ def game_and_players():
     return game, player1, player2, player3
 
 
+
 # caso en donde el jugador no host sale y aun no empezo la partida
 def test_exit_game_success():
     game, player1, player2, player3 = game_and_players()
@@ -108,6 +109,7 @@ def test_exit_game_already_started():
 def test_exit_game_after_lobby_deleted():
     player1 = set_player_name("Test Player")
     player2 = set_player_name("Test player 2")
+
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
