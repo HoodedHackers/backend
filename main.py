@@ -483,4 +483,26 @@ async def advance_game_turn(
         game.advance_turn()
     except PreconditionsNotMet:
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
+    current_player = game.current_player()
+    assert current_player is not None
+    turn_manager = Managers.get_manager(ManagerTypes.TURNS)
+    await turn_manager.broadcast(
+        {
+            "current_turn": game.current_player_turn,
+            "game_id": game.id,
+            "player_id": current_player.id,
+        },
+        game_id,
+    )
     return {"status": "success"}
+
+
+@app.websocket("/api/lobby/{game_id}/turns")
+async def turn_change_notifier(websocket: WebSocket, game_id: int):
+    manager = Managers.get_manager(ManagerTypes.TURNS)
+    await manager.connect(websocket, game_id)
+    try:
+        while True:
+            await websocket.receive_bytes()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, game_id)

@@ -6,6 +6,7 @@ from fastapi import WebSocket
 
 class ManagerTypes(Enum):
     JOIN_LEAVE = 1
+    TURNS = 2
 
 
 class ConnectionManager:
@@ -21,20 +22,23 @@ class ConnectionManager:
         self.lobbies[lobby_id].append(websocket)
 
     def disconnect(self, websocket: WebSocket, lobby_id: int):
-        if lobby_id in self.lobbies:
-            self.lobbies[lobby_id].remove(websocket)
-            if len(self.lobbies[lobby_id]) == 0:
-                del self.lobbies[lobby_id]
+        if lobby_id not in self.lobbies:
+            return
+        self.lobbies[lobby_id].remove(websocket)
+        if len(self.lobbies[lobby_id]) == 0:
+            del self.lobbies[lobby_id]
 
     async def broadcast(self, message: Any, lobby_id: int):
-        if lobby_id in self.lobbies:
-            for connection in self.lobbies[lobby_id]:
-                await connection.send_json(message)
+        if lobby_id not in self.lobbies:
+            return
+        for connection in self.lobbies[lobby_id]:
+            await connection.send_json(message)
 
 
 class Managers:
     managers = {
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
+        ManagerTypes.TURNS: ConnectionManager(),
     }
 
     @classmethod

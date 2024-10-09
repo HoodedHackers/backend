@@ -1,9 +1,11 @@
 import pytest
-from fastapi.testclient import TestClient
 from fastapi import FastAPI, WebSocket
-from .connection_manager import ManagerTypes, Managers
+from fastapi.testclient import TestClient
+
+from .connection_manager import Managers, ManagerTypes
 
 test_app = FastAPI()
+
 
 @test_app.websocket("/ws/{lobby_id}")
 async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
@@ -19,7 +21,6 @@ async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
         manager.disconnect(websocket, lobby_id)
 
 
-
 @pytest.mark.asyncio
 async def test_websocket():
     client = TestClient(test_app)
@@ -28,10 +29,13 @@ async def test_websocket():
         data = websocket.receive_json()
         assert data == {"message": "Hello"}
 
+
 @pytest.mark.asyncio
 async def test_multiple_clients():
     client = TestClient(test_app)
-    with client.websocket_connect("/ws/1") as websocket1, client.websocket_connect("/ws/1") as websocket2:
+    with client.websocket_connect("/ws/1") as websocket1, client.websocket_connect(
+        "/ws/1"
+    ) as websocket2:
         websocket1.send_text("Hello from client 1")
         data1 = websocket1.receive_json()
         data2 = websocket2.receive_json()
