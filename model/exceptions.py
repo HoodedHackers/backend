@@ -1,4 +1,8 @@
-class PreconditionNotMet(BaseException):
+class GameStarted(BaseException):
+    pass
+
+
+class PreconditionsNotMet(BaseException):
     pass
 
 

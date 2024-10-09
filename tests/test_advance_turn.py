@@ -1,12 +1,13 @@
 import unittest
 from unittest.mock import patch
 from uuid import uuid1
+
 from fastapi.testclient import TestClient
 
-from main import app
 from database import Database
-from repositories import GameRepository, PlayerRepository
+from main import app
 from model import Game, Player
+from repositories import GameRepository, PlayerRepository
 
 
 class TestAdvanceTurn(unittest.TestCase):

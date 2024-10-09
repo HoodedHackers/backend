@@ -1,26 +1,21 @@
-from os import getenv
-from fastapi import FastAPI, Request, Depends, HTTPException, Response
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from fastapi.websockets import WebSocket, WebSocketDisconnect
-from fastapi import HTTPException
-from uuid import UUID, uuid4
-from pydantic import BaseModel, Field
-from typing import List, Dict
-
 import asyncio
-from database import Database
-from model.exceptions import PreconditionNotMet
-from repositories import GameRepository, PlayerRepository
-import services.counter
-from model import Player, Game
-from repositories import (
-    GameRepository,
-    PlayerRepository,
-    FigRepository,
-    create_all_figs,
-)
+from os import getenv
+from typing import Dict, List
+from uuid import UUID, uuid4
 
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.websockets import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+import services.counter
+from database import Database
+from model import Game, Player
+from model.exceptions import *
+from model.exceptions import PreconditionsNotMet
+from repositories import (FigRepository, GameRepository, PlayerRepository,
+                          create_all_figs)
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -87,7 +82,7 @@ class GameIn(BaseModel):
 
 
 class PlayerOut(BaseModel):
-    name: str
+    id_player: UUID
 
 
 class GameOut(BaseModel):
@@ -127,7 +122,9 @@ async def create_game(
 
     game_repo.save(new_game)
 
-    players_out = [PlayerOut(name=player.name) for player in new_game.players]
+    players_out = [
+        PlayerOut(id_player=UUID(str(player.identifier))) for player in new_game.players
+    ]
 
     return GameOut(
         id=new_game.id,
@@ -242,18 +239,35 @@ async def endpoint_unirse_a_partida(
     return {"status": "success!"}
 
 
+class StartGameRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+
+
 @app.put("/api/lobby/{id_game}/start")
 async def start_game(
-    id_game: int, games_repo: GameRepository = Depends(get_games_repo)
+    id_game: int,
+    start_game_request: StartGameRequest,
+    games_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
 ):
     selec_game = games_repo.get(id_game)
     if selec_game is None:
         raise HTTPException(status_code=404, detail="Game dont found")
-    if len(selec_game.players) < selec_game.min_players:
+    player = player_repo.get_by_identifier(start_game_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Requesting player not found")
+    if player != selec_game.host:
+        raise HTTPException(status_code=402, detail="Non host player request")
+    try:
+        selec_game.start()
+    except PreconditionsNotMet:
         raise HTTPException(
-            status_code=412, detail="Doesnt meet the minimum number of players"
+            status_code=400, detail="Doesnt meet the minimum number of players"
         )
+    except GameStarted:
+        raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
+    selec_game.shuffle_players()
     games_repo.save(selec_game)
     return {"status": "success!"}
 
@@ -320,6 +334,7 @@ class ResponseOut(BaseModel):
     players: List[PlayersOfGame]
 
 
+# TODO: Eliminar, la idea de esete endpoint es incorrecta.
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
 def unlock_game_not_started(
     id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
@@ -441,6 +456,6 @@ async def advance_game_turn(
         raise HTTPException(status_code=401, detail="It's not your turn")
     try:
         game.advance_turn()
-    except PreconditionNotMet:
+    except PreconditionsNotMet:
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
     return {"status": "success"}
