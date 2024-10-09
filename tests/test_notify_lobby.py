@@ -8,36 +8,8 @@ from database import Database
 from main import app
 from model import Player, Game
 
-client = TestClient(app)
 
-
-player_mock = Player(name="Matias", identifier="805423e9-30e3-4e9c-9745-6d3deb5d478d")
-
-game_mocks = [
-    Game(
-        id=1010,
-        name="Game of throne",
-        current_player_turn=0,
-        max_players=4,
-        min_players=2,
-        started=False,
-        players=[player_mock],
-        host_id=1,
-    ),
-    Game(
-        id=1010,
-        name="Game of throne",
-        current_player_turn=0,
-        max_players=4,
-        min_players=2,
-        started=False,
-        players=[],
-        host_id=1,
-    ),
-]
-
-
-class TestGameStart(unittest.TestCase):
+class TestNotifyLobby(unittest.TestCase):
 
     def setUp(self):
         self.client = TestClient(app)
@@ -55,30 +27,20 @@ class TestGameStart(unittest.TestCase):
         ]
         for p in self.players:
             self.player_repo.save(p)
+
         self.game_1 = Game(
+            id=1,
             name="Game of Falls",
             current_player_turn=0,
             max_players=4,
             min_players=2,
             started=False,
-            players=[self.players[0]],
-            host=self.host,
-            host_id=self.host.id,
-        )
-
-        self.game_2 = Game(
-            name="Game of Thrones",
-            current_player_turn=0,
-            max_players=4,
-            min_players=2,
-            started=False,
-            players=self.players[1:3],
+            players=[],
             host=self.host,
             host_id=self.host.id,
         )
 
         self.games_repo.save(self.game_1)
-        self.games_repo.save(self.game_2)
 
     def tearDown(self):
         self.dbs.query(Game).delete()
@@ -92,31 +54,48 @@ class TestGameStart(unittest.TestCase):
             "main.player_repo", self.player_repo
         ):
 
-            identifier = str(self.game_1.players[0].identifier)
+            identifier0 = str(self.players[0].identifier)
+            indetifier1 = str(self.players[1].identifier)
 
-            with client.websocket_connect(f"/ws/lobby/{self.game_1.id}") as websocket:
-                message_connect = {
-                    "user_identifier": identifier,
-                    "action": "connect",
-                }
+            # Se une el Lou
+            self.game_1.players.append(self.players[0])
+            with self.client.websocket_connect(
+                f"/ws/lobby/1"
+            ) as websocket0:
 
-                message_disconnect = {
-                    "user_identifier": identifier,
-                    "action": "disconnect",
-                }
+                websocket0.send_json(
+                    {"user_identifier": identifier0, "action": "connect"}
+                )
 
-                websocket.send_json(message_connect)
-
-                response = websocket.receive_json()
+                # Chequeamos que estemos solos
+                response = websocket0.receive_json()
                 assert response == {
                     "players": [
-                        {"identifier": identifier, "name": self.game_1.players[0].name}
+                        {"identifier": identifier0, "name": self.game_1.players[0].name}
                     ]
                 }
 
-                # websocket.send_json(message_disconnect)
+                # Se une el Lou^2
+                self.game_1.players.append(self.players[1])
+                with self.client.websocket_connect(
+                    f"/ws/lobby/1"
+                ) as websocket1:
 
-                # response = websocket.receive_json()
-                # assert response == {"error": "Game not found"}
+                    websocket1.send_json(
+                        {"user_identifier": indetifier1, "action": "connect"}
+                    )
 
-                # websocket.close()
+                    # Chequeamos que estemos los dos
+                    response = websocket1.receive_json()
+                    assert response == {
+                        "players": [
+                            {
+                                "identifier": identifier0,
+                                "name": self.game_1.players[0].name,
+                            },
+                            {
+                                "identifier": indetifier1,
+                                "name": self.game_1.players[1].name,
+                            },
+                        ],
+                    }

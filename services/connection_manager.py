@@ -45,7 +45,10 @@ class LobbyConnectionHandler:
                 ]
 
                 if action == "connect":
-                    await self.broadcast({"players": players}, lobby_id)
+                    await self.broadcast(
+                        {"players": players}, lobby_id
+                    )
+
                 elif action == "disconnect":
                     await self.broadcast({"players": players}, lobby_id)
                     await self.disconnect(websocket, lobby_id)
@@ -73,3 +76,8 @@ class LobbyConnectionHandler:
         if lobby_id in self.lobbies:
             for connection in self.lobbies[lobby_id]:
                 await connection.send_json(message)
+
+    async def list_connections(self, lobby_id: int):
+        if lobby_id in self.lobbies:
+            return self.lobbies[lobby_id]
+        return []
