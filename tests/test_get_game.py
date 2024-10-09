@@ -26,6 +26,7 @@ def test_get_game():
         response = client.get("/api/lobby/1")
         assert response.status_code == 200
         assert response.json() == {
+            "id": 1,
             "name": "Game of Thrones",
             "current_players": 2,
             "max_players": 4,

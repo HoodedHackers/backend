@@ -79,6 +79,7 @@ def test_exit_game_success():
 
     assert response.status_code == 200
     result = response.json()
+    print(result)
 
     assert result["game_id"] == game["id"]
     assert len(result["players"]) == 2
@@ -86,14 +87,12 @@ def test_exit_game_success():
     # Verificar estado del juego
     assert result["activo"] == True  # Asegúrate de que el estado sea correcto
     # Verificar que el jugador que salió ya no está
-    assert player2["identifier"] not in [
-        player["identifier"] for player in result["players"]
-    ]
+    assert player2["id"] not in [player["id"] for player in result["players"]]
 
     # Verificar que el jugador que queda es el correcto
-    remaining_players = [player["identifier"] for player in result["players"]]
+    remaining_players = [player["id"] for player in result["players"]]
     assert len(remaining_players) == 2
-    assert player1["identifier"] in remaining_players
+    assert player1["id"] in remaining_players
 
 
 def test_exit_game_not_started():
