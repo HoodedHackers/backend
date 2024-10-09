@@ -64,9 +64,7 @@ class TestNotifyLobby(unittest.TestCase):
             self.game_1.players.append(self.players[0])
             with self.client.websocket_connect(f"/ws/lobby/1") as websocket0:
 
-                websocket0.send_json(
-                    {"user_identifier": str(identifier0)}
-                )
+                websocket0.send_json({"user_identifier": str(identifier0)})
 
                 # Chequeamos que estemos solos
                 response = websocket0.receive_json()
@@ -78,9 +76,7 @@ class TestNotifyLobby(unittest.TestCase):
                 self.game_1.players.append(self.players[1])
                 with self.client.websocket_connect(f"/ws/lobby/1") as websocket1:
 
-                    websocket1.send_json(
-                        {"user_identifier": str(indetifier1)}
-                    )
+                    websocket1.send_json({"user_identifier": str(indetifier1)})
 
                     # Chequeamos que estemos los dos
                     response = websocket1.receive_json()

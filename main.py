@@ -507,10 +507,12 @@ async def turn_change_notifier(websocket: WebSocket, game_id: int):
     except WebSocketDisconnect:
         manager.disconnect(websocket, game_id)
 
+
 @app.websocket("/ws/lobby/{game_id}")
 async def lobby_notify_inout(websocket: WebSocket, game_id: int):
-    """ 
-    Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta.
+    """
+    Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta, enviando la lista
+    actualizada de jugadores actuales.
 
     Se espera: {user_identifier: 'valor'}
     """
@@ -523,7 +525,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int):
             if user_id is None:
                 await websocket.send_json({"error": "User id is missing"})
                 continue
-            
+
             player = player_repo.get_by_identifier(UUID(user_id))
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
@@ -540,4 +542,4 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int):
             await manager.broadcast({"players": players}, game_id)
 
     except WebSocketDisconnect:
-            manager.disconnect(websocket, game_id)
+        manager.disconnect(websocket, game_id)
