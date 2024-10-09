@@ -40,7 +40,7 @@ class LobbyConnectionHandler:
 
                 players_raw = game.players
                 players = [
-                    {"identifier": str(p.identifier), "name": p.name}
+                    {"id": p.id, "name": p.name}
                     for p in players_raw
                 ]
 

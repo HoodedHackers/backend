@@ -56,6 +56,8 @@ class TestNotifyLobby(unittest.TestCase):
 
             identifier0 = str(self.players[0].identifier)
             indetifier1 = str(self.players[1].identifier)
+            id0 = self.players[0].id
+            id1 = self.players[1].id
 
             # Se une el Lou
             self.game_1.players.append(self.players[0])
@@ -71,7 +73,7 @@ class TestNotifyLobby(unittest.TestCase):
                 response = websocket0.receive_json()
                 assert response == {
                     "players": [
-                        {"identifier": identifier0, "name": self.game_1.players[0].name}
+                        {"id": id0, "name": self.game_1.players[0].name}
                     ]
                 }
 
@@ -90,11 +92,11 @@ class TestNotifyLobby(unittest.TestCase):
                     assert response == {
                         "players": [
                             {
-                                "identifier": identifier0,
+                                "id": id0,
                                 "name": self.game_1.players[0].name,
                             },
                             {
-                                "identifier": indetifier1,
+                                "id": id1,
                                 "name": self.game_1.players[1].name,
                             },
                         ],
