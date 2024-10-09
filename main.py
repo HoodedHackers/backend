@@ -354,7 +354,7 @@ def exit_game(
     # si el host se quiere ir y el juego no empezo, se borra el lobby
     elif player_exit == lobby_query.host and lobby_query.started is False:
         repo.delete(lobby_query)
-        #brodcast
+        #brodcast avisandole a los demas jugadores que se fue el host
         return ResponseOut(players=[])
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
