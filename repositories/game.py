@@ -1,8 +1,9 @@
-from typing import Optional, List
-from repositories.general import Repository
-from model import Game, Player
+from typing import List, Optional
 
 from sqlalchemy.sql import func
+
+from model import Game, Player
+from repositories.general import Repository
 
 
 class GameRepository(Repository):

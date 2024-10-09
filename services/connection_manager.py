@@ -1,9 +1,10 @@
 from typing import Dict, List
 from uuid import UUID
+
 from fastapi import WebSocket, WebSocketDisconnect
 
-from repositories.player import PlayerRepository
 from repositories.game import GameRepository
+from repositories.player import PlayerRepository
 
 
 class LobbyConnectionHandler:
@@ -39,15 +40,10 @@ class LobbyConnectionHandler:
                     continue
 
                 players_raw = game.players
-                players = [
-                    {"id": p.id, "name": p.name}
-                    for p in players_raw
-                ]
+                players = [{"id": p.id, "name": p.name} for p in players_raw]
 
                 if action == "connect":
-                    await self.broadcast(
-                        {"players": players}, lobby_id
-                    )
+                    await self.broadcast({"players": players}, lobby_id)
 
                 elif action == "disconnect":
                     await self.broadcast({"players": players}, lobby_id)

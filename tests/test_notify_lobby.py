@@ -1,12 +1,13 @@
-from fastapi.testclient import TestClient
 import unittest
 from unittest.mock import patch
-import pytest
-from repositories import GameRepository, PlayerRepository
-from database import Database
 
+import pytest
+from fastapi.testclient import TestClient
+
+from database import Database
 from main import app
-from model import Player, Game
+from model import Game, Player
+from repositories import GameRepository, PlayerRepository
 
 
 class TestNotifyLobby(unittest.TestCase):
@@ -61,9 +62,7 @@ class TestNotifyLobby(unittest.TestCase):
 
             # Se une el Lou
             self.game_1.players.append(self.players[0])
-            with self.client.websocket_connect(
-                f"/ws/lobby/1"
-            ) as websocket0:
+            with self.client.websocket_connect(f"/ws/lobby/1") as websocket0:
 
                 websocket0.send_json(
                     {"user_identifier": identifier0, "action": "connect"}
@@ -72,16 +71,12 @@ class TestNotifyLobby(unittest.TestCase):
                 # Chequeamos que estemos solos
                 response = websocket0.receive_json()
                 assert response == {
-                    "players": [
-                        {"id": id0, "name": self.game_1.players[0].name}
-                    ]
+                    "players": [{"id": id0, "name": self.game_1.players[0].name}]
                 }
 
                 # Se une el Lou^2
                 self.game_1.players.append(self.players[1])
-                with self.client.websocket_connect(
-                    f"/ws/lobby/1"
-                ) as websocket1:
+                with self.client.websocket_connect(f"/ws/lobby/1") as websocket1:
 
                     websocket1.send_json(
                         {"user_identifier": indetifier1, "action": "connect"}

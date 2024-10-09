@@ -1,19 +1,22 @@
-from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
-from uuid import uuid4, UUID
-import pytest
+from uuid import UUID, uuid4
+
 import asserts
+import pytest
+from fastapi.testclient import TestClient
+
 from database import Database
-from model import Player
 from main import app
+from model import Player
 
 client = TestClient(app)
 
 
-@patch("main.uuid4")
-def test_set_name(mocked_uuid):
-    value = uuid4()
-    mocked_uuid.return_value = value
+def test_set_name():
     response = client.post("/api/name", json={"name": "Alice"})
     asserts.assert_equal(response.status_code, 200)
-    asserts.assert_equal(response.json(), {"name": "Alice", "identifier": str(value)})
+    values = response.json()
+    asserts.assert_in("name", values)
+    assert values["name"] == "Alice"
+    asserts.assert_in("identifier", values)
+    asserts.assert_in("id", values)

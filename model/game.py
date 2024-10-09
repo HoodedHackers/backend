@@ -1,19 +1,21 @@
-import random
-from typing import List, Dict
 import json
+import random
 from dataclasses import dataclass
+from typing import Dict, List
+
 from sqlalchemy import Column
-from sqlalchemy.orm import mapped_column, relationship, Mapped
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import ForeignKey, Table
 from sqlalchemy.sql.type_api import TypeDecorator
 from sqlalchemy.types import VARCHAR, Boolean, Integer, String
-from sqlalchemy.ext.mutable import MutableDict
+from typing_extensions import Optional
 
 from database import Base
-from .board import Board, Color
-from .player import Player
-from .exceptions import *
 
+from .board import Board, Color
+from .exceptions import *
+from .player import Player
 
 game_player_association = Table(
     "game_player_association",
@@ -157,6 +159,16 @@ class Game(Base):
         for info in higher_turns:
             info.turn_position -= 1
             self.player_info[info.player_id] = info
+
+    def current_player(self) -> Optional[Player]:
+        if len(self.players) == 0:
+            return None
+        return self.players[self.current_player_turn]
+
+    def advance_turn(self):
+        if not self.started:
+            raise PreconditionsNotMet
+        self.advance_player()
 
     def ordered_players(self) -> List[Player]:
         players = {player.id: player for player in self.players}

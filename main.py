@@ -1,27 +1,21 @@
-from os import getenv
-from fastapi import FastAPI, Request, Depends, HTTPException, Response
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from fastapi.websockets import WebSocket, WebSocketDisconnect
-from uuid import UUID, uuid4
-from pydantic import BaseModel, Field
-from typing import List, Dict
-
 import asyncio
-from database import Database
-from repositories import GameRepository, PlayerRepository
+from os import getenv
+from typing import Dict, List
+from uuid import UUID, uuid4
+
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.websockets import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
 import services.counter
-from model import Player, Game
-from model.exceptions import *
-from repositories import (
-    GameRepository,
-    PlayerRepository,
-    FigRepository,
-    create_all_figs,
-)
-
+from database import Database
+from model import Game, Player
+from model.exceptions import GameStarted, PreconditionsNotMet
+from repositories import (FigRepository, GameRepository, PlayerRepository,
+                          create_all_figs)
 from services.connection_manager import LobbyConnectionHandler
-
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -69,16 +63,6 @@ def get_card_repo(request: Request) -> FigRepository:
 
 def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
-
-
-class GameStateOutput(BaseModel):
-    name: str
-    current_players: int
-    max_players: int
-    min_players: int
-    started: bool
-    turn: int
-    players: List[str]
 
 
 class GameIn(BaseModel):
@@ -143,12 +127,26 @@ async def create_game(
     )
 
 
+class GameStateOutput(BaseModel):
+    id: int
+    name: str
+    current_players: int
+    max_players: int
+    min_players: int
+    started: bool
+    turn: int
+    players: List[str]
+
+
 @app.get("/api/lobby")
-def get_games_available(repo: GameRepository = Depends(get_games_repo)):
+def get_games_available(
+    repo: GameRepository = Depends(get_games_repo),
+) -> List[GameStateOutput]:
     lobbies_queries = repo.get_available(10)
     lobbies = []
     for lobby_query in lobbies_queries:
         lobby = GameStateOutput(
+            id=lobby_query.id,
             name=lobby_query.name,
             current_players=len(lobby_query.players),
             max_players=lobby_query.max_players,
@@ -162,6 +160,7 @@ def get_games_available(repo: GameRepository = Depends(get_games_repo)):
 
 
 connection_manager = LobbyConnectionHandler()
+
 
 @app.websocket("/ws/lobby/{lobby_id}")
 async def lobby_websocket_handler(websocket: WebSocket, lobby_id: int):
@@ -200,6 +199,7 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
     lobby = GameStateOutput(
+        id=lobby_query.id,
         name=lobby_query.name,
         current_players=len(lobby_query.players),
         max_players=lobby_query.max_players,
@@ -216,8 +216,9 @@ class SetNameRequest(BaseModel):
 
 
 class SetNameResponse(BaseModel):
+    id: int
     name: str
-    identifier: UUID
+    identifier: str
 
 
 @app.post("/api/name")
@@ -225,19 +226,21 @@ async def set_player_name(
     setNameRequest: SetNameRequest,
     player_repo: PlayerRepository = Depends(get_player_repo),
 ) -> SetNameResponse:
-    id_uuid = uuid4()
-    player_repo.save(Player(name=setNameRequest.name, identifier=id_uuid))
-    return SetNameResponse(name=setNameRequest.name, identifier=id_uuid)
+    player = Player(name=setNameRequest.name)
+    player_repo.save(player)
+    return SetNameResponse(
+        id=player.id, name=player.name, identifier=str(player.identifier)
+    )
 
 
-class req_in(BaseModel):
+class JoinGameRequest(BaseModel):
     id_game: int = Field()
     identifier_player: str = Field()
 
 
 @app.put("/api/lobby/{id_game}")
-async def endpoint_unirse_a_partida(
-    req: req_in,
+async def join_game(
+    req: JoinGameRequest,
     games_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ):
@@ -391,8 +394,8 @@ def unlock_game_not_started(
 
 
 class PlayerOutRandom(BaseModel):
+    id: int
     name: str
-    identifier: UUID
 
 
 class ExitRequest(BaseModel):  # le llega esto al endpoint
@@ -437,11 +440,38 @@ async def exitGame(
     return GamePlayerResponse(
         game_id=game.id,
         players=[
-            PlayerOutRandom(name=player.name, identifier=UUID(str(player.identifier)))
-            for player in game.players
+            PlayerOutRandom(name=player.name, id=player.id) for player in game.players
         ],
         out=ExitRequest(
             identifier=exit_request.identifier,
         ),
         activo=game.started,
     )
+
+
+class AdvanceTurnRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+
+
+@app.post("/api/lobby/{game_id}/advance")
+async def advance_game_turn(
+    game_id: int,
+    advance_request: AdvanceTurnRequest,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+    player = player_repo.get_by_identifier(advance_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Player is not in game")
+    if player != game.current_player():
+        raise HTTPException(status_code=401, detail="It's not your turn")
+    try:
+        game.advance_turn()
+    except PreconditionsNotMet:
+        raise HTTPException(status_code=401, detail="Game hasn't started yet")
+    return {"status": "success"}
