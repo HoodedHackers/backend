@@ -1,8 +1,8 @@
 from enum import Enum
 from random import randint
-from typing_extensions import List
 
 from sqlalchemy.types import VARCHAR, TypeDecorator
+from typing_extensions import List
 
 
 class Color(Enum):

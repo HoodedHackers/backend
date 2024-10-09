@@ -2,6 +2,7 @@ VENV_DIR = .venv
 PYTHON = $(VENV_DIR)/bin/python
 PIP = $(VENV_DIR)/bin/pip
 BLACK = $(VENV_DIR)/bin/black
+ISORT = $(VENV_DIR)/bin/isort
 PYTEST = $(VENV_DIR)/bin/pytest
 COVERAGE = $(VENV_DIR)/bin/coverage
 DB_PATH = "sqlite:///./local.db"
@@ -28,6 +29,7 @@ start: venv
 
 format: venv
 	$(BLACK) .
+	$(ISORT) --skip $(VENV_DIR) .
 
 test: venv
 	$(PYTEST)

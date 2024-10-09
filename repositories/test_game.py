@@ -1,12 +1,11 @@
 import unittest
 
-from apscheduler.triggers.base import random
 import asserts
+from apscheduler.triggers.base import random
 
-from model import Game, Player
-from repositories import GameRepository
-from repositories import PlayerRepository
 from database import Database
+from model import Game, Player
+from repositories import GameRepository, PlayerRepository
 
 
 def make_game(
