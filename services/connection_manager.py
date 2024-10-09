@@ -2,6 +2,7 @@ from typing import Dict, List
 from fastapi import WebSocket, WebSocketDisconnect
 
 from repositories.player import PlayerRepository
+from repositories.game import GameRepository
 
 
 class LobbyConnectionHandler:
@@ -10,7 +11,11 @@ class LobbyConnectionHandler:
         self.lobbies: Dict[int, List[WebSocket]] = {}
 
     async def listen(
-        self, websocket: WebSocket, lobby_id: int, player_repo: PlayerRepository
+        self,
+        websocket: WebSocket,
+        lobby_id: int,
+        game_repo: GameRepository,
+        player_repo: PlayerRepository,
     ):
         await self.connect(websocket, lobby_id)
         try:
@@ -26,17 +31,21 @@ class LobbyConnectionHandler:
                     await websocket.send_json({"error": "Player not found"})
                     continue
 
-                user_name = player.name
                 action = data.get("action")
+                game = game_repo.get(lobby_id)
+                if game is None:
+                    await websocket.send_json({"error": "Game not found"})
+                    continue
+
+                players_raw = game.players
+                players = [
+                    {"identifier": p.identifier, "name": p.name} for p in players_raw
+                ]
 
                 if action == "connect":
-                    await self.broadcast(
-                        {"user_name": user_name, "action": "connect"}, lobby_id
-                    )
+                    await self.broadcast({"players": players}, lobby_id)
                 elif action == "disconnect":
-                    await self.broadcast(
-                        {"user_name": user_name, "action": "disconnect"}, lobby_id
-                    )
+                    await self.broadcast({"players": players}, lobby_id)
                     await self.disconnect(websocket, lobby_id)
                 else:
                     await websocket.send_json({"error": "Invalid action"})

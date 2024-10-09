@@ -161,7 +161,7 @@ def get_games_available(repo: GameRepository = Depends(get_games_repo)):
 @app.websocket("/ws/lobby/{lobby_id}")
 async def lobby_websocket_handler(websocket: WebSocket, lobby_id: int):
     connection_manager = LobbyConnectionHandler()
-    await connection_manager.listen(websocket, lobby_id, player_repo)
+    await connection_manager.listen(websocket, lobby_id, game_repo, player_repo)
 
 
 @app.post("/api/lobby/timer")
