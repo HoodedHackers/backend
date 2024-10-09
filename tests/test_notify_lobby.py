@@ -89,12 +89,12 @@ class TestGameStart(unittest.TestCase):
     def test_connect_from_lobby(self):
 
         with patch("main.game_repo", self.games_repo), patch(
-                "main.player_repo", self.player_repo
-            ):
+            "main.player_repo", self.player_repo
+        ):
 
             identifier = str(self.game_1.players[0].identifier)
 
-            with client.websocket_connect("/ws/lobby/1010") as websocket:
+            with client.websocket_connect(f"/ws/lobby/{self.game_1.id}") as websocket:
                 message_connect = {
                     "user_identifier": identifier,
                     "action": "connect",
@@ -110,8 +110,7 @@ class TestGameStart(unittest.TestCase):
                 response = websocket.receive_json()
                 assert response == {
                     "players": [
-                        {"identifier": identifier,
-                         "name": self.game_1.players[0].name}
+                        {"identifier": identifier, "name": self.game_1.players[0].name}
                     ]
                 }
 

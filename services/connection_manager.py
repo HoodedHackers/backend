@@ -1,4 +1,5 @@
 from typing import Dict, List
+from uuid import UUID
 from fastapi import WebSocket, WebSocketDisconnect
 
 from repositories.player import PlayerRepository
@@ -26,6 +27,7 @@ class LobbyConnectionHandler:
                     await websocket.send_json({"error": "User id is missing"})
                     continue
 
+                user_id = UUID(user_id)
                 player = player_repo.get_by_identifier(user_id)
                 if player is None:
                     await websocket.send_json({"error": "Player not found"})
@@ -39,7 +41,8 @@ class LobbyConnectionHandler:
 
                 players_raw = game.players
                 players = [
-                    {"identifier": p.identifier, "name": p.name} for p in players_raw
+                    {"identifier": str(p.identifier), "name": p.name}
+                    for p in players_raw
                 ]
 
                 if action == "connect":
