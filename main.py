@@ -1,27 +1,21 @@
-from os import getenv
-from fastapi import FastAPI, Request, Depends, HTTPException, Response
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from fastapi.websockets import WebSocket, WebSocketDisconnect
-from fastapi import HTTPException
-from uuid import UUID, uuid4
-from pydantic import BaseModel, Field
-from typing import List, Dict
-
 import asyncio
-from database import Database
-from repositories import GameRepository, PlayerRepository
-import services.counter
-from model import Player, Game
-from model.exceptions import *
-from repositories import (
-    GameRepository,
-    PlayerRepository,
-    FigRepository,
-    create_all_figs,
-)
+from os import getenv
+from typing import Dict, List
+from uuid import UUID, uuid4
+
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.websockets import WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 import services.connection_manager
+import services.counter
+from database import Database
+from model import Game, Player
+from model.exceptions import *
+from repositories import (FigRepository, GameRepository, PlayerRepository,
+                          create_all_figs)
 from services.connection_manager import ManejadorConexionesLobby
 
 db_uri = getenv("DB_URI")
@@ -355,12 +349,21 @@ def exit_game(
     elif player_exit == lobby_query.host and lobby_query.started is False:
         repo.delete(lobby_query)
         return ResponseOut(id=0, started=False, players=[])
+    elif (
+        len(lobby_query.players) == 2 and lobby_query.started is True
+    ):  # falta test para este caso
+        repo.delete(lobby_query)
+        # debo hablar con front sobre que retornar en estos casos
+        return ResponseOut(id=0, started=False)
+
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
     lobby_query.delete_player(player_exit)
     repo.save(lobby_query)
     list_players = [
-        PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
+        PlayersOfGame(
+            identifier=UUID(str(player.identifier)), name=player.name
+        )  # cambiar esto, no se debe devolver el uuid
         for player in lobby_query.players
     ]
     return ResponseOut(

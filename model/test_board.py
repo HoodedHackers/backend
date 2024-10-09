@@ -1,8 +1,9 @@
-from .board import Board, Color
-
 import unittest
+
 from sqlalchemy import Integer, create_engine, text
-from sqlalchemy.orm import mapped_column, sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, mapped_column, sessionmaker
+
+from .board import Board, Color
 
 
 class Base(DeclarativeBase):

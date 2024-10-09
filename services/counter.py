@@ -1,6 +1,7 @@
+import asyncio
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import WebSocket, WebSocketDisconnect
-import asyncio
 
 
 class Counter:

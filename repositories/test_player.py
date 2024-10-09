@@ -3,9 +3,9 @@ from uuid import uuid4
 
 import asserts
 
+from database import Database
 from model import Player
 from repositories import PlayerRepository
-from database import Database
 
 
 class TestPlayerRepo(unittest.TestCase):

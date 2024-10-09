@@ -1,10 +1,10 @@
 import random
 from unittest.mock import patch
 
+from asserts import assert_equal, assert_raises
+
 from .game import Game, GameFull
 from .player import Player
-
-from asserts import assert_raises, assert_equal
 
 
 def test_add_player():

@@ -1,4 +1,5 @@
 from typing import Dict, List
+
 from fastapi import WebSocket
 
 
@@ -26,4 +27,4 @@ class ManejadorConexionesLobby:
     async def broadcast(self, message: str, lobby_id: int):
         if lobby_id in self.lobbies:
             for connection in self.lobbies[lobby_id]:
-                await connection.send_text(message)  # cambiar esto muy posiblemente
+                await connection.send_text(message)

@@ -1,11 +1,13 @@
-from fastapi.testclient import TestClient
 from unittest.mock import MagicMock, patch
-from uuid import uuid4, UUID
-import pytest
+from uuid import UUID, uuid4
+
 import asserts
+import pytest
+from fastapi.testclient import TestClient
+
 from database import Database
-from model import Player
 from main import app
+from model import Player
 
 client = TestClient(app)
 

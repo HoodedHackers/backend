@@ -1,22 +1,20 @@
-import random
-from typing import List, Dict
 import json
+import random
 from dataclasses import dataclass
+from typing import Dict, List
+
 from sqlalchemy import Column
-from sqlalchemy.orm import mapped_column, relationship, Mapped
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import ForeignKey, Table
-
-from sqlalchemy.ext.orderinglist import ordering_list
-
 from sqlalchemy.sql.type_api import TypeDecorator
 from sqlalchemy.types import VARCHAR, Boolean, Integer, String
-from sqlalchemy.ext.mutable import MutableDict
 
 from database import Base
-from .board import Board, Color
-from .player import Player
-from .exceptions import *
 
+from .board import Board, Color
+from .exceptions import *
+from .player import Player
 
 game_player_association = Table(
     "game_player_association",
