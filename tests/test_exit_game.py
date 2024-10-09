@@ -64,13 +64,10 @@ def test_exit_game_success():
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
-    print(game["name"])
     # Unirse al juego
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
     endpoint_unirse_a_partida(game["id"], player3["identifier"])
-
     start_game(game["id"], identifier=player1["identifier"])
-    print("Jugadores antes de salir:", game["players"])
 
     # El jugador sale de la partida
     response = client.patch(
@@ -79,7 +76,6 @@ def test_exit_game_success():
 
     assert response.status_code == 200
     result = response.json()
-    print(result)
 
     assert result["game_id"] == game["id"]
     assert len(result["players"]) == 2
