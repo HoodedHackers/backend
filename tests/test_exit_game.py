@@ -64,13 +64,10 @@ def test_exit_game_success():
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
-    print(game["name"])
     # Unirse al juego
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
     endpoint_unirse_a_partida(game["id"], player3["identifier"])
-
     start_game(game["id"], identifier=player1["identifier"])
-    print("Jugadores antes de salir:", game["players"])
 
     # El jugador sale de la partida
     response = client.patch(
@@ -86,14 +83,12 @@ def test_exit_game_success():
     # Verificar estado del juego
     assert result["activo"] == True  # Asegúrate de que el estado sea correcto
     # Verificar que el jugador que salió ya no está
-    assert player2["identifier"] not in [
-        player["identifier"] for player in result["players"]
-    ]
+    assert player2["id"] not in [player["id"] for player in result["players"]]
 
     # Verificar que el jugador que queda es el correcto
-    remaining_players = [player["identifier"] for player in result["players"]]
+    remaining_players = [player["id"] for player in result["players"]]
     assert len(remaining_players) == 2
-    assert player1["identifier"] in remaining_players
+    assert player1["id"] in remaining_players
 
 
 def test_exit_game_not_started():
