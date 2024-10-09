@@ -360,6 +360,7 @@ def exit_game(
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
     lobby_query.delete_player(player_exit)
     repo.save(lobby_query)
+    #list_player va, no va id ni started
     list_players = [
         PlayersOfGame(
             identifier=UUID(str(player.identifier)), name=player.name
