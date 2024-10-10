@@ -354,14 +354,14 @@ def exit_game(
     # si el host se quiere ir y el juego no empezo, se borra el lobby
     elif player_exit == lobby_query.host and lobby_query.started is False:
         repo.delete(lobby_query)
-        #brodcast avisandole a los demas jugadores que se fue el host
-        return ResponseOut(players=[])
+        #MANDO UN MENSAJE DE OK
+        #return ResponseOut(players=[])
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
         repo.delete(lobby_query)
         # debo hablar con front sobre que retornar en estos casos
-        return ResponseOut(players = [])  #ver esto con front
+        return ResponseOut(players = [])  #ver esto con front #mandar la lista de jugadore que quedar
 
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
@@ -370,11 +370,11 @@ def exit_game(
     #list_player va, no va id ni started
     list_players = [
         PlayersOfGame(
-            identifier=player.id_player, name=player.name
+            identifier=player.id_player, name=player.name 
         )  # cambiar esto, no se debe devolver el uuid
         for player in lobby_query.players
     ]
-    return ResponseOut(
+    return ResponseOut(   #aca va solo el nombre
         players=list_players
     )
 
