@@ -16,7 +16,8 @@ from model import Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
-from services.connection_manager import ManejadorConexionesLobby
+
+from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -240,6 +241,15 @@ async def join_game(
         raise HTTPException(status_code=404, detail="Game dont found!")
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
+    join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await join_leave_manager.broadcast(
+        {
+            "player_id": selec_player.id,
+            "action": "join",
+            "player_name": selec_player.name,
+        },
+        selec_game.id,
+    )
     return {"status": "success!"}
 
 
@@ -374,7 +384,7 @@ def exit_game(
         )  # cambiar esto, no se debe devolver el uuid
         for player in lobby_query.players
     ]
-    return ResponseOut(   #aca va solo el nombre
+    return ResponseOut(   #aca va solo el nombre, solo va el nombre con la lista de jugadores
         players=list_players
     )
 
@@ -404,4 +414,26 @@ async def advance_game_turn(
         game.advance_turn()
     except PreconditionsNotMet:
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
+    current_player = game.current_player()
+    assert current_player is not None
+    turn_manager = Managers.get_manager(ManagerTypes.TURNS)
+    await turn_manager.broadcast(
+        {
+            "current_turn": game.current_player_turn,
+            "game_id": game.id,
+            "player_id": current_player.id,
+        },
+        game_id,
+    )
     return {"status": "success"}
+
+
+@app.websocket("/api/lobby/{game_id}/turns")
+async def turn_change_notifier(websocket: WebSocket, game_id: int):
+    manager = Managers.get_manager(ManagerTypes.TURNS)
+    await manager.connect(websocket, game_id)
+    try:
+        while True:
+            await websocket.receive_bytes()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, game_id)

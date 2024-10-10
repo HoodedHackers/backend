@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 from uuid import uuid1
 
+import pytest
 from fastapi.testclient import TestClient
 
 from database import Database
@@ -100,3 +101,20 @@ class TestAdvanceTurn(unittest.TestCase):
                 json={"identifier": str(self.host.identifier)},
             )
             assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_ws_message(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), self.client.websocket_connect(f"/api/lobby/{self.game.id}/turns") as ws:
+            self.client.post(
+                f"/api/lobby/{self.game.id}/advance",
+                json={"identifier": str(self.host.identifier)},
+            )
+            message = await ws.receive_json()
+            assert message.get("game_id") == self.game.host_id
+            assert message.get("current_turn") == self.game.current_player_turn
+            current_player = self.game.current_player()
+            assert current_player is not None
+            assert message.get("player_id") == current_player.id
+            ws.close()
