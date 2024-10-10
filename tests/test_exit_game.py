@@ -1,22 +1,16 @@
-from fastapi.testclient import TestClient
-from main import app
-import asserts
-from unittest.mock import MagicMock
-from fastapi import Request, Depends, HTTPException
-
-from main import get_games_repo
-
-from model import Game, Player
-from unittest.mock import AsyncMock, patch
-from fastapi import FastAPI, HTTPException, Depends
-from repositories import GameRepository, PlayerRepository
-from uuid import uuid4, UUID
-from repositories.player import PlayerRepository
 from os import getenv
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from uuid import UUID, uuid4
+
+import asserts
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.testclient import TestClient
+
 from database import Database
-from main import game_repo, player_repo
-from unittest.mock import Mock
-from main import PlayerOutRandom
+from main import PlayerOutRandom, app, game_repo, get_games_repo, player_repo
+from model import Game, Player
+from repositories import GameRepository, PlayerRepository
+from repositories.player import PlayerRepository
 
 client = TestClient(app)
 

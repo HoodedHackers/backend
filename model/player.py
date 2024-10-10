@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql.sqltypes import UUID
 from sqlalchemy.types import Integer, String
 

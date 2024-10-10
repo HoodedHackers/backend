@@ -1,8 +1,9 @@
-from typing import Optional, List
+from typing import List, Optional
+
+from sqlalchemy import func
 
 from model import FigCards
 from repositories.general import Repository
-from sqlalchemy import func
 
 
 class FigRepository(Repository):
