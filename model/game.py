@@ -17,14 +17,12 @@ from .board import Board, Color
 from .exceptions import *
 from .player import Player
 from .exceptions import *
-from .fig_cards import HandType
 
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
     Column("game_id", Integer, ForeignKey("games.id")),
-    Column("player_id", Integer, ForeignKey("players.id")),
-    Column("hand_id", HandType, ForeignKey("figHand.id"))
+    Column("player_id", Integer, ForeignKey("players.id"))
 )
 
 
@@ -32,17 +30,22 @@ game_player_association = Table(
 class PlayerInfo:
     player_id: int
     turn_position: int
-
+    hand_fig: List[int]
+    hand_mov: List[int]
+    fig: List[int]
     def to_dict(self):
         return {
             "player_id": self.player_id,
             "turn_position": self.turn_position,
+            "hand_fig": self.hand_fig,
+            "hand_mov": self.hand_mov,
+            "fig": self.fig
         }
 
     @staticmethod
     def from_dict(data: dict):
         return PlayerInfo(
-            player_id=data["player_id"], turn_position=data["turn_position"]
+            player_id=data["player_id"], turn_position=data["turn_position"], hand_fig=data["hand_fig"], hand_mov=data["hand_mov"], fig=data["fig"]
         )
 
 
@@ -92,7 +95,7 @@ class Game(Base):
             self.player_info = {}
             for index, player in enumerate(self.players):
                 self.player_info[player.id] = PlayerInfo(
-                    player_id=player.id, turn_position=index
+                    player_id=player.id, turn_position=index, hand_fig=[], hand_mov=[], fig=[]
                 )
 
     def __eq__(self, other):
@@ -141,7 +144,7 @@ class Game(Base):
             raise GameStarted
         self.players.append(player)
         self.player_info[player.id] = PlayerInfo(
-            player_id=player.id, turn_position=len(self.players) - 1
+            player_id=player.id, turn_position=len(self.players) - 1, hand_fig=[], hand_mov=[], fig=[]
         )
 
     def count_players(self) -> int:

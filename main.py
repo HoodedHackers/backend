@@ -296,7 +296,6 @@ class GameIn2(BaseModel):
 
 class CardsFigOut(BaseModel):
     card_id: int
-    card_name: str
 
 class SetCardsResponse(BaseModel):
     all_cards: List[CardsFigOut]
@@ -321,7 +320,7 @@ async def repartir_cartas_figura(
         raise HTTPException(status_code=404, detail="Player dont found!")
     cards = card_repo.get_many(3)
     for card in cards:
-        new_card = CardsFigOut(card_id=card.id, card_name=card.name)
+        new_card = CardsFigOut(card_id=card.id)
         all_cards.append(new_card)
     return SetCardsResponse(all_cards=all_cards)
 

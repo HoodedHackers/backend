@@ -3,38 +3,37 @@ from sqlalchemy.types import Integer, String
 from typing import List
 from database import Base
 from sqlalchemy.types import VARCHAR, TypeDecorator
-from repositories import FigRepository
-from main import session
 
-repo = FigRepository(session)
+class CoordType(TypeDecorator):
+
+    impl = VARCHAR
+
+    def process_bind_param(self, value: List[tuple[int, int]] | None, dialect):
+        if value is None:
+            return None
+        return ','.join(f'({x}, {y})' for x, y in value)
+
+    def process_result_value(self, value, dialect) -> List[tuple[int, int]]:
+        if not value:
+            return []
+        tuples = value.split('),(')
+        coord= []
+        for item in tuples:
+            item = item.strip('() ')
+            x, y = map(int, item.split(','))
+            coord.append((x, y))
+        return coord
+
 class FigCards(Base):
     __tablename__ = "figCards"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(64))
+    coord: Mapped[List[tuple[int, int]]] = mapped_column(CoordType)
+    color: Mapped[int] = mapped_column(Integer)
 
-class HandType(TypeDecorator):
-    impl = VARCHAR
+all_coord = {
+    1: [(0,0), (1,0), (2,0), (1,1), (1,2)],
+    2: [(0,0), (0,1), (1,1), (1,2), (1,3)],
+    3: [(1,0), (1,1), (1,2), (0,2), (0,3)],
+}
 
-    def process_bind_param(self, value: List[FigCards] | None, dialect):
-        if value is None:
-            return None
-        return "".join(f"{c.id}" for c in value)
-    
-    def process_result_value(self, value, dialect) -> List[FigCards]:
-        cards = []
-        if value is None:
-            return cards
-        for c in value:
-            c = int(c)
-            card = repo.get(c)
-            if card is None:
-                continue
-            cards.append(card)
-        return cards
-    
-class Hand(Base):
-    __tablename__ = "figHand"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    cards = relationship("FigCards")
