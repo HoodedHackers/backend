@@ -164,10 +164,14 @@ async def start_timer():
     return Response(status_code=200, content="Timer finished")
 
 
-@app.websocket("/ws/timer")
-async def timer_websocket(websocket: WebSocket):
-    timer = services.counter.Counter()
-    await timer.listen(websocket)
+timer = services.counter.Counter()
+
+
+@app.websocket("/ws/timer/{id_game}")
+async def timer_websocket(websocket: WebSocket, id_game: int):
+
+    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await timer.listen(websocket, id_game, manager, game_repo)
 
 
 @app.websocket("/ws/api/lobby")
