@@ -56,7 +56,6 @@ def game_and_players():
     return game, player1, player2, player3
 
 
-
 # caso en donde el jugador no host sale y aun no empezo la partida
 def test_exit_game_success():
     game, player1, player2, player3 = game_and_players()

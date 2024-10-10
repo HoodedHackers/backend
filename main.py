@@ -16,7 +16,6 @@ from model import Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
-
 from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
@@ -66,15 +65,22 @@ def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
 
 
+# no se si esta bien
+def get_connection_manager(
+    request: Request,
+) -> services.connection_manager.ConnectionManager:
+    return Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+
+
 class GameIn(BaseModel):
-    identifier: UUID 
+    identifier: UUID
     name: str = Field(min_length=1, max_length=64)
     max_players: int = Field(ge=2, le=4)
     min_players: int = Field(ge=2, le=4)
 
 
 class PlayerOut(BaseModel):
-    id_player: UUID #NO LE ENVIO ESTO id int 
+    id_player: UUID  # NO LE ENVIO ESTO id int
 
 
 class GameOut(BaseModel):
@@ -338,7 +344,7 @@ class IdentityIn(BaseModel):
 
 
 class PlayersOfGame(BaseModel):
-    id_player: int
+    # id_player: int
     name: str
 
 
@@ -347,44 +353,59 @@ class ResponseOut(BaseModel):
 
 
 @app.patch("/api/lobby/{id}", response_model=ResponseOut)
-def exit_game(
+async def exit_game(
     id: int,
     ident: IdentityIn,
     repo: GameRepository = Depends(get_games_repo),
     repo_player: PlayerRepository = Depends(get_player_repo),
+    # websocket: WebSocket,
+    manager: services.connection_manager.ConnectionManager = Depends(
+        get_connection_manager
+    ),
 ):
     lobby_query = repo.get(id)
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
-    player_exit = repo_player.get(ident.id_play) #ver
+    player_exit = repo_player.get(ident.id_play)  # ver
     if player_exit is None:
         raise HTTPException(status_code=404, detail="Player not found")
     elif player_exit not in lobby_query.players:
         raise HTTPException(status_code=404, detail="Player not in lobby")
+
     # si el host se quiere ir y el juego no empezo, se borra el lobby
     elif player_exit == lobby_query.host and lobby_query.started is False:
+        # aca hacer un disconect
+        await manager.broadcast({"action": "delete"}, id)
+        await manager.disconnect(websocket, id)
+
         repo.delete(lobby_query)
-        #MANDO UN MENSAJE DE OK
-        #return ResponseOut(players=[])
+        # MANDO UN MENSAJE DE OK, un mensaje
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
+        # aca hacer un broadcast de victoria notificando a los otros jugadores
+        # agregar ws de entradas y salidas de jugadores, se desconecta desde el front
         repo.delete(lobby_query)
         # debo hablar con front sobre que retornar en estos casos
-        return ResponseOut(players = [])  #ver esto con front #mandar la lista de jugadore que quedar
+        return ResponseOut(
+            players=[]
+        )  # ver esto con front #mandar la lista de jugadore que quedar
 
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
+    # aca utilizo un broadcast avisando a otros jugadores
     lobby_query.delete_player(player_exit)
+    # utilizo el de entradas y salidas para enviar la lista de jugadores
     repo.save(lobby_query)
-    #list_player va, no va id ni started
+    # list_player va, no va id ni started
     list_players = [
         PlayersOfGame(
-            identifier=player.id_player, name=player.name 
+            # identifier=player.id_player,
+            name=player.name
         )  # cambiar esto, no se debe devolver el uuid
         for player in lobby_query.players
     ]
-    return ResponseOut(   #aca va solo el nombre, solo va el nombre con la lista de jugadores
+    return ResponseOut(  # aca va solo el nombre, solo va el nombre con la lista de jugadores
         players=list_players
     )
 

@@ -50,6 +50,7 @@ def test_delete_player():
     g.delete_player(p)
     assert p not in g.players
 
+
 def test_advance_turn():
     g = Game(name="test game")
     g.set_defaults()
