@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from sqlalchemy import func
 
-from model import FigCards
+from model import FigCards, all_coord
 from repositories.general import Repository
 
 
@@ -24,6 +24,7 @@ class FigRepository(Repository):
 
 
 def create_all_figs(card_repo: FigRepository):
-    for i in range(92):
-        new_card = FigCards(name="Soy Figura")
+    for i in range(1, len(all_coord)+1):
+        c = 1 if len(all_coord[i]) == 4 else 0
+        new_card = FigCards(id=i, coord=all_coord[i], color=c)
         card_repo.save(new_card)
