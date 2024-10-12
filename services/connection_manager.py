@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List
 
@@ -9,22 +10,31 @@ class ManagerTypes(Enum):
     TURNS = 2
 
 
+@dataclass
+class PlayerWs:
+    id_player: int
+    websockets: WebSocket
+
+
 class ConnectionManager:
-    lobbies: Dict[int, List[WebSocket]]
+    lobbies: Dict[int, List[PlayerWs]]
 
     def __init__(self):
         self.lobbies = {}
 
-    async def connect(self, websocket: WebSocket, lobby_id: int):
+    async def connect(self, websocket: WebSocket, lobby_id: int, player_id: int):
         await websocket.accept()
         if lobby_id not in self.lobbies:
             self.lobbies[lobby_id] = []
-        self.lobbies[lobby_id].append(websocket)
 
-    def disconnect(self, websocket: WebSocket, lobby_id: int):
+        self.lobbies[lobby_id].append(PlayerWs(player_id, websocket))
+
+    def disconnect(self, websocket: WebSocket, lobby_id: int, player_id: int):
         if lobby_id not in self.lobbies:
             return
-        self.lobbies[lobby_id].remove(websocket)
+        for player in self.lobbies[lobby_id]:
+            if player.id_player == player_id and player.websockets == websocket:
+                self.lobbies[lobby_id].remove(player)
         if len(self.lobbies[lobby_id]) == 0:
             del self.lobbies[lobby_id]
 
@@ -32,7 +42,7 @@ class ConnectionManager:
         if lobby_id not in self.lobbies:
             return
         for connection in self.lobbies[lobby_id]:
-            await connection.send_json(message)
+            await connection.websockets.send_json(message)
 
 
 class Managers:

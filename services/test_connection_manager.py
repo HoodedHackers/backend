@@ -10,7 +10,8 @@ test_app = FastAPI()
 @test_app.websocket("/ws/{lobby_id}")
 async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
     manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-    await manager.connect(websocket, lobby_id)
+    player_id = 1
+    await manager.connect(websocket, lobby_id, player_id)
     try:
         while True:
             data = await websocket.receive_text()
@@ -18,7 +19,7 @@ async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
     except Exception as e:
         print(f"Connection error: {e}")
     finally:
-        manager.disconnect(websocket, lobby_id)
+        manager.disconnect(websocket, lobby_id, player_id)
 
 
 @pytest.mark.asyncio
