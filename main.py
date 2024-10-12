@@ -343,27 +343,27 @@ class IdentityIn(BaseModel):
     id_play: int
 
 
-class PlayersOfGame(BaseModel):
+#class PlayersOfGame(BaseModel):
     # id_player: int
-    name: str
+ #   name: str
 
 
-class ResponseOut(BaseModel):
-    players: List[PlayersOfGame]
+#class ResponseOut(BaseModel):
+ #   players: List[PlayersOfGame]
 
 
-@app.patch("/api/lobby/{id}", response_model=ResponseOut)
+@app.patch("/api/lobby/{id}")
 async def exit_game(
     id: int,
     ident: IdentityIn,
     repo: GameRepository = Depends(get_games_repo),
     repo_player: PlayerRepository = Depends(get_player_repo),
-    # websocket: WebSocket,
-    manager: services.connection_manager.ConnectionManager = Depends(
-        get_connection_manager
-    ),
+    websocket: WebSocket,
+    
 ):
+    #puedo usar manager.get_manager
     lobby_query = repo.get(id)
+    leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
     player_exit = repo_player.get(ident.id_play)  # ver
@@ -371,25 +371,27 @@ async def exit_game(
         raise HTTPException(status_code=404, detail="Player not found")
     elif player_exit not in lobby_query.players:
         raise HTTPException(status_code=404, detail="Player not in lobby")
-
+    
     # si el host se quiere ir y el juego no empezo, se borra el lobby
     elif player_exit == lobby_query.host and lobby_query.started is False:
         # aca hacer un disconect
-        await manager.broadcast({"action": "delete"}, id)
-        await manager.disconnect(websocket, id)
+        await leave_manager.broadcast({"action": "el host salio"}, id)
+        await leave_manager.disconnect(websocket, id)
 
         repo.delete(lobby_query)
         # MANDO UN MENSAJE DE OK, un mensaje
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
+        
         # aca hacer un broadcast de victoria notificando a los otros jugadores
+        await leave_manager.broadcast({"action": "Hay un ganador"}, id )
         # agregar ws de entradas y salidas de jugadores, se desconecta desde el front
         repo.delete(lobby_query)
         # debo hablar con front sobre que retornar en estos casos
-        return ResponseOut(
-            players=[]
-        )  # ver esto con front #mandar la lista de jugadore que quedar
+        #return ResponseOut(
+         #   players=[]
+        #)  # ver esto con front #mandar la lista de jugadore que quedar
 
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
@@ -398,16 +400,17 @@ async def exit_game(
     # utilizo el de entradas y salidas para enviar la lista de jugadores
     repo.save(lobby_query)
     # list_player va, no va id ni started
-    list_players = [
-        PlayersOfGame(
+    #list_players = [
+       # PlayersOfGame(
             # identifier=player.id_player,
-            name=player.name
-        )  # cambiar esto, no se debe devolver el uuid
-        for player in lobby_query.players
-    ]
-    return ResponseOut(  # aca va solo el nombre, solo va el nombre con la lista de jugadores
-        players=list_players
-    )
+        #    name=player.name
+        #)  # cambiar esto, no se debe devolver el uuid
+        #for player in lobby_query.players
+    #]
+    return {"status": "success"}
+#ResponseOut(  # aca va solo el nombre, solo va el nombre con la lista de jugadores
+ #       players=list_players
+    
 
 
 class AdvanceTurnRequest(BaseModel):
