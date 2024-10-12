@@ -364,15 +364,19 @@ async def exit_game(
     elif player_exit == lobby_query.host and lobby_query.started is False:
         # aca hacer un disconect
         await leave_manager.broadcast({"action": "el host salio"}, id)
-        await leave_manager.disconnect(websocket, id)
+        await leave_manager.disconnect(websocket, id, player_exit.id)
 
         repo.delete(lobby_query)
         # MANDO UN MENSAJE DE OK, un mensaje
+        #el endopint de Mati detecta automaticamente cuando es que un 
+        # jugador sale o cuando se une asi que aca no debo hacer nada mas
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
         # aca hacer un broadcast de victoria notificando a los otros jugadores
         await leave_manager.broadcast({"action": "Hay un ganador"}, id )
+        #preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
+        # y luego esperar un cachito y borrar la partida
         # agregar ws de entradas y salidas de jugadores, se desconecta desde el front
         repo.delete(lobby_query)
        
