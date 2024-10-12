@@ -20,9 +20,6 @@ def test_deal():
     g.add_player(p1)
     response = client.post(
         "/api/partida/en_curso",
-        json={
-            "game_id": 1,
-            "players": "0123456789abcdef0123456789abcdef"
-        },
+        json={"game_id": 1, "players": "0123456789abcdef0123456789abcdef"},
     )
     asserts.assert_equal(response.status_code, 200)

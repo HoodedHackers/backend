@@ -1,4 +1,5 @@
 import asyncio
+import random
 from os import getenv
 from typing import Dict, List
 from uuid import UUID, uuid4
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import Game, Player
+from model import TOTAL_HAND_FIG, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
@@ -289,27 +290,34 @@ async def start_game(
     return {"status": "success!"}
 
 
+@app.websocket("/api/lobby/{game_id}/deal")
+async def deal_cards_hand(websocket: WebSocket, game_id: int):
+    manager = Managers.get_manager(ManagerTypes.HAND_FIG_DEAL)
+    await manager.connect(websocket, game_id)
+    try:
+        while True:
+            await websocket.receive_bytes()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, game_id)
+
+
 class GameIn2(BaseModel):
     game_id: int
     player: str
+    count: int
 
-class CardsFigOut(BaseModel):
-    card_id: int
-    card_coord: List[tuple[int, int]]
-    card_color: int
 
 class SetCardsResponse(BaseModel):
-    all_cards: List[CardsFigOut]
+    all_cards: List[int]
 
 
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
 async def repartir_cartas_figura(
     req: GameIn2,
-    card_repo: FigRepository = Depends(get_card_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
-    all_cards = []
+    cards = []
     identifier_player = UUID(req.player)
     in_game_player = player_repo.get_by_identifier(identifier_player)
     in_game = game_repo.get(req.game_id)
@@ -319,12 +327,30 @@ async def repartir_cartas_figura(
         raise HTTPException(status_code=404, detail="Game dont found!")
     if not in_game_player in in_game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
-    fig_discard = in_game.player_info[in_game_player.id].fig
-    cards = card_repo.get_many(3)
-    for card in cards:
-        new_card = CardsFigOut(card_id=card.id, card_coord=card.coord, card_color=card.color)
-        all_cards.append(new_card)
-    return SetCardsResponse(all_cards=all_cards)
+
+    fig_total = in_game.player_info[in_game_player.id].fig
+    fig_hand = in_game.player_info[in_game_player.id].hand_fig
+    req_total_hand = req.count + len(fig_hand)
+    expec_count_card = TOTAL_HAND_FIG - len(fig_hand)
+
+    if len(fig_total) == 0 or len(fig_hand) == TOTAL_HAND_FIG:
+        return SetCardsResponse(all_cards=[])
+    # se supone que al finalizar el turno las cartas ya fueron descartadas y por tanto la mano ha sido actualizada
+    if req.count > TOTAL_HAND_FIG or (
+        TOTAL_HAND_FIG > req_total_hand and len(fig_total) >= expec_count_card
+    ):
+        req.count = TOTAL_HAND_FIG - len(fig_hand)
+
+    for _ in range(req.count):
+        id = random.choice(fig_total)
+        fig_total.remove(id)
+        cards.append(id)
+
+    deal_manager = Managers.get_manager(ManagerTypes.HAND_FIG_DEAL)
+    await deal_manager.broadcast(
+        {"cards": cards, "player": in_game_player.id}, in_game.id
+    )
+    return SetCardsResponse(all_cards=cards)
 
 
 class IdentityIn(BaseModel):
