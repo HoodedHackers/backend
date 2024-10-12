@@ -340,26 +340,14 @@ async def repartir_cartas_figura(
 
 
 class IdentityIn(BaseModel):
-    id_play: int
-
-
-#class PlayersOfGame(BaseModel):
-    # id_player: int
- #   name: str
-
-
-#class ResponseOut(BaseModel):
- #   players: List[PlayersOfGame]
-
+    id_play: str
 
 @app.patch("/api/lobby/{id}")
 async def exit_game(
     id: int,
     ident: IdentityIn,
     repo: GameRepository = Depends(get_games_repo),
-    repo_player: PlayerRepository = Depends(get_player_repo),
-    websocket: WebSocket,
-    
+    repo_player: PlayerRepository = Depends(get_player_repo),    
 ):
     #puedo usar manager.get_manager
     lobby_query = repo.get(id)
@@ -383,33 +371,20 @@ async def exit_game(
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
-        
         # aca hacer un broadcast de victoria notificando a los otros jugadores
         await leave_manager.broadcast({"action": "Hay un ganador"}, id )
         # agregar ws de entradas y salidas de jugadores, se desconecta desde el front
         repo.delete(lobby_query)
-        # debo hablar con front sobre que retornar en estos casos
-        #return ResponseOut(
-         #   players=[]
-        #)  # ver esto con front #mandar la lista de jugadore que quedar
-
+       
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
     # aca utilizo un broadcast avisando a otros jugadores
     lobby_query.delete_player(player_exit)
     # utilizo el de entradas y salidas para enviar la lista de jugadores
     repo.save(lobby_query)
-    # list_player va, no va id ni started
-    #list_players = [
-       # PlayersOfGame(
-            # identifier=player.id_player,
-        #    name=player.name
-        #)  # cambiar esto, no se debe devolver el uuid
-        #for player in lobby_query.players
-    #]
+  
     return {"status": "success"}
-#ResponseOut(  # aca va solo el nombre, solo va el nombre con la lista de jugadores
- #       players=list_players
+
     
 
 
