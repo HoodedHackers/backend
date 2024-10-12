@@ -1,22 +1,16 @@
-from fastapi.testclient import TestClient
-from main import app
-import asserts
-from unittest.mock import MagicMock
-from fastapi import Request, Depends, HTTPException
-
-from main import get_games_repo
-
-from model import Game, Player
-from unittest.mock import AsyncMock, patch
-from fastapi import FastAPI, HTTPException, Depends
-from repositories import GameRepository, PlayerRepository
-from uuid import uuid4, UUID
-from repositories.player import PlayerRepository
 from os import getenv
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from uuid import UUID, uuid4
+
+import asserts
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.testclient import TestClient
+
 from database import Database
-from main import game_repo, player_repo
-from unittest.mock import Mock
-from main import PlayerOutRandom
+from main import PlayerOutRandom, app, game_repo, get_games_repo, player_repo
+from model import Game, Player
+from repositories import GameRepository, PlayerRepository
+from repositories.player import PlayerRepository
 
 client = TestClient(app)
 
@@ -53,8 +47,10 @@ def endpoint_unirse_a_partida(game_id: int, player_identifier: str):
     return response.json()
 
 
-def start_game(game_id: int):
-    response = client.put(f"/api/lobby/{game_id}/start")
+def start_game(game_id: int, identifier: str):
+    response = client.put(
+        f"/api/lobby/{game_id}/start", json={"identifier": identifier}
+    )
     assert response.status_code == 200
     return response.json()
 
@@ -68,13 +64,10 @@ def test_exit_game_success():
     game = create_game(
         identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
     )
-    print(game["name"])
     # Unirse al juego
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
     endpoint_unirse_a_partida(game["id"], player3["identifier"])
-
-    start_game(game["id"])
-    print("Jugadores antes de salir:", game["players"])
+    start_game(game["id"], identifier=player1["identifier"])
 
     # El jugador sale de la partida
     response = client.patch(
@@ -90,14 +83,12 @@ def test_exit_game_success():
     # Verificar estado del juego
     assert result["activo"] == True  # Asegúrate de que el estado sea correcto
     # Verificar que el jugador que salió ya no está
-    assert player2["identifier"] not in [
-        player["identifier"] for player in result["players"]
-    ]
+    assert player2["id"] not in [player["id"] for player in result["players"]]
 
     # Verificar que el jugador que queda es el correcto
-    remaining_players = [player["identifier"] for player in result["players"]]
+    remaining_players = [player["id"] for player in result["players"]]
     assert len(remaining_players) == 2
-    assert player1["identifier"] in remaining_players
+    assert player1["id"] in remaining_players
 
 
 def test_exit_game_not_started():
@@ -145,7 +136,7 @@ def test_exit_game_min_players():
     endpoint_unirse_a_partida(game["id"], player2["identifier"])
 
     # Iniciar el juego
-    start_game(game["id"])
+    start_game(game["id"], identifier=player1["identifier"])
 
     # El jugador 1 sale de la partida
     response = client.patch(

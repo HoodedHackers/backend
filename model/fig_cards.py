@@ -1,7 +1,7 @@
-from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy import Column
-from sqlalchemy.types import Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.schema import ForeignKey, Table
+from sqlalchemy.types import Integer, String
 
 from database import Base
 

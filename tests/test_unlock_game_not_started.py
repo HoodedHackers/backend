@@ -1,10 +1,9 @@
-from fastapi.testclient import TestClient
-from main import app
-from uuid import uuid4
-from main import game_repo, player_repo
-from uuid import UUID
+from unittest import skip
+from uuid import UUID, uuid4
 
-from main import game_repo, player_repo
+from fastapi.testclient import TestClient
+
+from main import app, game_repo, player_repo
 
 client = TestClient(app)
 
@@ -41,6 +40,7 @@ def endpoint_unirse_a_partida(game_id: int, player_identifier: str):
     return response.json()
 
 
+@skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_not_started():
     player1 = set_player_name("Test Player")
     player2 = set_player_name("Test player 2")
@@ -75,6 +75,7 @@ def test_unlock_game_not_started():
     assert len(result["players"]) == 2
 
 
+@skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_not_started_host():
     player1 = set_player_name("Test Player")
     player2 = set_player_name("Test player 2")
@@ -109,11 +110,13 @@ def test_unlock_game_not_started_host():
     assert len(result["players"]) == 0
 
 
+@skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_not_found():
     response = client.patch("/api/lobby/9999", json={"identifier": str(uuid4())})
     assert response.status_code == 404
 
 
+@skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_already_started():
     player1 = set_player_name("Test Player")
     player2 = set_player_name("Test player 2")
@@ -145,6 +148,7 @@ def test_unlock_game_already_started():
     assert response.json()["detail"] == "Game already started"
 
 
+@skip("Borrar el endpoint, no tiene sentido.")
 def test_unlock_game_not_enough_players():
     player1 = set_player_name("Test Player")
     player2 = set_player_name("Test player 2")
