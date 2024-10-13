@@ -29,11 +29,11 @@ class ConnectionManager:
 
         self.lobbies[lobby_id].append(PlayerWs(player_id, websocket))
 
-    def disconnect(self, websocket: WebSocket, lobby_id: int, player_id: int):
+    def disconnect(self, lobby_id: int, player_id: int):
         if lobby_id not in self.lobbies:
             return
         for player in self.lobbies[lobby_id]:
-            if player.id_player == player_id and player.websockets == websocket:
+            if player.id_player == player_id:
                 self.lobbies[lobby_id].remove(player)
         if len(self.lobbies[lobby_id]) == 0:
             del self.lobbies[lobby_id]
