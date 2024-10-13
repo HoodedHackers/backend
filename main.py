@@ -72,7 +72,8 @@ class GameIn(BaseModel):
 
 
 class PlayerOut(BaseModel):
-    id_player: UUID  
+    id_player: UUID
+
 
 class GameOut(BaseModel):
     id: int
@@ -89,7 +90,7 @@ async def create_game(
     game_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ) -> GameOut:
-    
+
     if game_create.min_players > game_create.max_players:
         raise HTTPException(
             status_code=412,
@@ -98,7 +99,7 @@ async def create_game(
     player = player_repo.get_by_identifier(game_create.identifier)
     if player is None:
         raise HTTPException(status_code=404, detail="Jugador no encontrado")
-    
+
     new_game = Game(
         name=game_create.name,
         host=player,
@@ -337,16 +338,17 @@ async def repartir_cartas_figura(
 class IdentityIn(BaseModel):
     id_play: str
 
+
 @app.patch("/api/lobby/{lobby_id}")
 async def exit_game(
     lobby_id: int,
     ident: IdentityIn,
     repo: GameRepository = Depends(get_games_repo),
-    repo_player: PlayerRepository = Depends(get_player_repo),    
+    repo_player: PlayerRepository = Depends(get_player_repo),
 ):
     lobby_query = repo.get(lobby_id)
     leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-    
+
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
     player_exit = repo_player.get_by_identifier(UUID(ident.id_play))
@@ -354,34 +356,32 @@ async def exit_game(
         raise HTTPException(status_code=404, detail="Player not found")
     elif player_exit not in lobby_query.players:
         raise HTTPException(status_code=404, detail="Player not in lobby")
-    
+
     # si el host se quiere ir y el juego no empezo, se borra el lobby
     elif player_exit == lobby_query.host and lobby_query.started is False:
         await leave_manager.broadcast({"action": "el host salio"}, player_exit.id)
         leave_manager.remove_lobby(lobby_id)
 
         repo.delete(lobby_query)
-        #el endopint de Mati detecta automaticamente cuando es que un jugador sale o cuando se une asi que aca no debo hacer nada mas
+        # el endopint de Mati detecta automaticamente cuando es que un jugador sale o cuando se une asi que aca no debo hacer nada mas
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
         await leave_manager.broadcast({"action": "Hay un ganador"}, player_exit.id)
-        #preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
+        # preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
         # y luego esperar un cachito y borrar la partida
         repo.delete(lobby_query)
-       
+
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
     # aca utilizo un broadcast avisando a otros jugadores
-    await leave_manager.broadcast({"action": "salio un jugador" }, player_exit.id)
+    await leave_manager.broadcast({"action": "salio un jugador"}, player_exit.id)
     leave_manager.disconnect(lobby_id, player_exit.id)
     lobby_query.delete_player(player_exit)
     # utilizo el de entradas y salidas para enviar la lista de jugadores
-    #repo.save(lobby_query)
-  
-    return {"status": "success"}
+    # repo.save(lobby_query)
 
-    
+    return {"status": "success"}
 
 
 class AdvanceTurnRequest(BaseModel):

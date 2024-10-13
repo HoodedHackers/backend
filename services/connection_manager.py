@@ -48,6 +48,7 @@ class ConnectionManager:
         if lobby_id in self.lobbies:
             del self.lobbies[lobby_id]
 
+
 class Managers:
     managers = {
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),

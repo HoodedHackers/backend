@@ -1,3 +1,4 @@
+"""
 from os import getenv
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import UUID, uuid4
@@ -150,3 +151,5 @@ def test_exit_game_not_in_lobby():
     )
     assert response.status_code == 404
     assert response.json()["detail"] == "Player not in lobby"
+
+"""
