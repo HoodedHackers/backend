@@ -9,7 +9,6 @@ from fastapi.websockets import WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-import services.connection_manager
 import services.counter
 from database import Database
 from model import Game, Player
@@ -65,13 +64,6 @@ def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
 
 
-# no se si esta bien
-def get_connection_manager(
-    request: Request,
-) -> services.connection_manager.ConnectionManager:
-    return Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-
-
 class GameIn(BaseModel):
     identifier: UUID
     name: str = Field(min_length=1, max_length=64)
@@ -80,8 +72,7 @@ class GameIn(BaseModel):
 
 
 class PlayerOut(BaseModel):
-    id_player: UUID  # NO LE ENVIO ESTO id int
-
+    id_player: UUID  
 
 class GameOut(BaseModel):
     id: int
@@ -98,6 +89,7 @@ async def create_game(
     game_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ) -> GameOut:
+    
     if game_create.min_players > game_create.max_players:
         raise HTTPException(
             status_code=412,
@@ -106,6 +98,7 @@ async def create_game(
     player = player_repo.get_by_identifier(game_create.identifier)
     if player is None:
         raise HTTPException(status_code=404, detail="Jugador no encontrado")
+    
     new_game = Game(
         name=game_create.name,
         host=player,
@@ -116,9 +109,11 @@ async def create_game(
     )
     new_game.add_player(player)
     game_repo.save(new_game)
+
     players_out = [
         PlayerOut(id_player=UUID(str(player.identifier))) for player in new_game.players
     ]
+
     return GameOut(
         id=new_game.id,
         name=new_game.name,
@@ -342,16 +337,16 @@ async def repartir_cartas_figura(
 class IdentityIn(BaseModel):
     id_play: str
 
-@app.patch("/api/lobby/{id}")
+@app.patch("/api/lobby/{lobby_id}")
 async def exit_game(
-    id: int,
+    lobby_id: int,
     ident: IdentityIn,
     repo: GameRepository = Depends(get_games_repo),
     repo_player: PlayerRepository = Depends(get_player_repo),    
 ):
-    #puedo usar manager.get_manager
-    lobby_query = repo.get(id)
+    lobby_query = repo.get(lobby_id)
     leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
     player_exit = repo_player.get(ident.id_play)  # ver
@@ -364,7 +359,7 @@ async def exit_game(
     elif player_exit == lobby_query.host and lobby_query.started is False:
         # aca hacer un disconect
         await leave_manager.broadcast({"action": "el host salio"}, id)
-        await leave_manager.disconnect(websocket, id, player_exit.id)
+        await leave_manager.disconnect(websocket, lobby_id, player_exit.id)
 
         repo.delete(lobby_query)
         # MANDO UN MENSAJE DE OK, un mensaje
@@ -385,7 +380,7 @@ async def exit_game(
     # aca utilizo un broadcast avisando a otros jugadores
     lobby_query.delete_player(player_exit)
     # utilizo el de entradas y salidas para enviar la lista de jugadores
-    repo.save(lobby_query)
+    #repo.save(lobby_query)
   
     return {"status": "success"}
 
