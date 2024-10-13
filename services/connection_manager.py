@@ -7,6 +7,7 @@ from fastapi import WebSocket
 class ManagerTypes(Enum):
     JOIN_LEAVE = 1
     TURNS = 2
+    START_GAME = 3
 
 
 class ConnectionManager:
@@ -39,6 +40,7 @@ class Managers:
     managers = {
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
         ManagerTypes.TURNS: ConnectionManager(),
+        ManagerTypes.START_GAME: ConnectionManager(),
     }
 
     @classmethod

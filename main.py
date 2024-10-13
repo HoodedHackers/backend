@@ -285,6 +285,13 @@ async def start_game(
         raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
     selec_game.shuffle_players()
+    message_players = Managers.get_manager(ManagerTypes.START_GAME)
+    await message_players.broadcast(
+        {
+            "status": "start_game",
+        },
+        selec_game.id,
+    )
     games_repo.save(selec_game)
     return {"status": "success!"}
 
