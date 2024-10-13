@@ -349,7 +349,7 @@ async def exit_game(
     
     if lobby_query is None:
         raise HTTPException(status_code=404, detail="Lobby not found")
-    player_exit = repo_player.get(ident.id_play)  # ver
+    player_exit = repo_player.get_by_identifier(UUID(ident.id_play))
     if player_exit is None:
         raise HTTPException(status_code=404, detail="Player not found")
     elif player_exit not in lobby_query.players:
@@ -357,27 +357,24 @@ async def exit_game(
     
     # si el host se quiere ir y el juego no empezo, se borra el lobby
     elif player_exit == lobby_query.host and lobby_query.started is False:
-        # aca hacer un disconect
-        await leave_manager.broadcast({"action": "el host salio"}, id)
-        await leave_manager.disconnect(websocket, lobby_id, player_exit.id)
+        await leave_manager.broadcast({"action": "el host salio"}, player_exit.id)
+        leave_manager.remove_lobby(lobby_id)
 
         repo.delete(lobby_query)
-        # MANDO UN MENSAJE DE OK, un mensaje
-        #el endopint de Mati detecta automaticamente cuando es que un 
-        # jugador sale o cuando se une asi que aca no debo hacer nada mas
+        #el endopint de Mati detecta automaticamente cuando es que un jugador sale o cuando se une asi que aca no debo hacer nada mas
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
-        # aca hacer un broadcast de victoria notificando a los otros jugadores
-        await leave_manager.broadcast({"action": "Hay un ganador"}, id )
+        await leave_manager.broadcast({"action": "Hay un ganador"}, player_exit.id)
         #preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
         # y luego esperar un cachito y borrar la partida
-        # agregar ws de entradas y salidas de jugadores, se desconecta desde el front
         repo.delete(lobby_query)
        
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
     # aca utilizo un broadcast avisando a otros jugadores
+    await leave_manager.broadcast({"action": "salio un jugador" }, player_exit.id)
+    leave_manager.disconnect(lobby_id, player_exit.id)
     lobby_query.delete_player(player_exit)
     # utilizo el de entradas y salidas para enviar la lista de jugadores
     #repo.save(lobby_query)

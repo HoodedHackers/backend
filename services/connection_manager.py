@@ -44,6 +44,9 @@ class ConnectionManager:
         for connection in self.lobbies[lobby_id]:
             await connection.websockets.send_json(message)
 
+    def remove_lobby(self, lobby_id: int):
+        if lobby_id in self.lobbies:
+            del self.lobbies[lobby_id]
 
 class Managers:
     managers = {
