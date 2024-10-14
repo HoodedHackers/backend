@@ -498,18 +498,18 @@ async def advance_game_turn(
 
 
 @app.websocket("/api/lobby/{game_id}/turns")
-async def turn_change_notifier(websocket: WebSocket, game_id: int):
+async def turn_change_notifier(websocket: WebSocket, game_id: int,player_id: int):
     manager = Managers.get_manager(ManagerTypes.TURNS)
-    await manager.connect(websocket, game_id)
+    await manager.connect(websocket, game_id, player_id)
     try:
         while True:
             await websocket.receive_bytes()
     except WebSocketDisconnect:
-        manager.disconnect(websocket, game_id)
+        manager.disconnect(game_id, player_id)
 
 
 @app.websocket("/ws/lobby/{game_id}")
-async def lobby_notify_inout(websocket: WebSocket, game_id: int):
+async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int):
     """
     Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta, enviando la lista
     actualizada de jugadores actuales.
@@ -517,7 +517,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int):
     Se espera: {user_identifier: 'valor'}
     """
     manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-    await manager.connect(websocket, game_id)
+    await manager.connect(websocket, game_id, player_id)
     try:
         while True:
             data = await websocket.receive_json()
@@ -542,4 +542,4 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int):
             await manager.broadcast({"players": players}, game_id)
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket, game_id)
+        manager.disconnect(game_id, player_id)
