@@ -7,10 +7,10 @@ from .connection_manager import Managers, ManagerTypes
 test_app = FastAPI()
 
 
-@test_app.websocket("/ws/{lobby_id}")
-async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
+@test_app.websocket("/ws/{lobby_id}/{player_id}")
+async def websocket_endpoint(websocket: WebSocket, lobby_id: int, player_id: int):
     manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-    await manager.connect(websocket, lobby_id)
+    await manager.connect(websocket, lobby_id, player_id)
     try:
         while True:
             data = await websocket.receive_text()
@@ -18,13 +18,13 @@ async def websocket_endpoint(websocket: WebSocket, lobby_id: int):
     except Exception as e:
         print(f"Connection error: {e}")
     finally:
-        manager.disconnect(websocket, lobby_id)
+        manager.disconnect(lobby_id, player_id)
 
 
 @pytest.mark.asyncio
 async def test_websocket():
     client = TestClient(test_app)
-    with client.websocket_connect("/ws/1") as websocket:
+    with client.websocket_connect("/ws/1/1") as websocket:
         websocket.send_text("Hello")
         data = websocket.receive_json()
         assert data == {"message": "Hello"}
@@ -33,8 +33,8 @@ async def test_websocket():
 @pytest.mark.asyncio
 async def test_multiple_clients():
     client = TestClient(test_app)
-    with client.websocket_connect("/ws/1") as websocket1, client.websocket_connect(
-        "/ws/1"
+    with client.websocket_connect("/ws/1/1") as websocket1, client.websocket_connect(
+        "/ws/1/2"
     ) as websocket2:
         websocket1.send_text("Hello from client 1")
         data1 = websocket1.receive_json()
