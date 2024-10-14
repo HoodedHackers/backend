@@ -498,11 +498,48 @@ async def advance_game_turn(
 
 
 @app.websocket("/api/lobby/{game_id}/turns")
-async def turn_change_notifier(websocket: WebSocket, game_id: int):
+async def turn_change_notifier(websocket: WebSocket, game_id: int,player_id: int):
     manager = Managers.get_manager(ManagerTypes.TURNS)
-    await manager.connect(websocket, game_id)
+    await manager.connect(websocket, game_id, player_id)
     try:
         while True:
             await websocket.receive_bytes()
     except WebSocketDisconnect:
-        manager.disconnect(websocket, game_id)
+        manager.disconnect(game_id, player_id)
+
+
+@app.websocket("/ws/lobby/{game_id}")
+async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta, enviando la lista
+    actualizada de jugadores actuales.
+
+    Se espera: {user_identifier: 'valor'}
+    """
+    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            user_id = data.get("user_identifier")
+            if user_id is None:
+                await websocket.send_json({"error": "User id is missing"})
+                continue
+
+            player = player_repo.get_by_identifier(UUID(user_id))
+            if player is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+
+            game = game_repo.get(game_id)
+            if game is None:
+                await websocket.send_json({"error": "Game not found"})
+                continue
+
+            players_raw = game.players
+            players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
+
+            await manager.broadcast({"players": players}, game_id)
+
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
