@@ -1,4 +1,3 @@
-"""
 import unittest
 from unittest.mock import patch
 from uuid import uuid1
@@ -119,4 +118,3 @@ class TestAdvanceTurn(unittest.TestCase):
             assert current_player is not None
             assert message.get("player_id") == current_player.id
             ws.close()
-"""

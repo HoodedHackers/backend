@@ -59,6 +59,60 @@ def game_and_players():
     return game, player1, player2, player3
 
 
+
+@app.websocket("/ws/{lobby_id}/{player_id}")
+async def websocket_endpoint(websocket: WebSocket, lobby_id: int, player_id: int):
+    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await manager.connect(websocket, lobby_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await manager.broadcast({"message": data}, lobby_id)
+    except Exception as e:
+        print(f"Connection error: {e}")
+    finally:
+        manager.disconnect(lobby_id, player_id)
+
+
+
+@pytest.mark.asyncio
+async def test_broadcast_message_on_exit():
+    # Crear jugadores y juego
+    player1 = set_player_name("Player 1")
+    player2 = set_player_name("Player 2")
+    game = create_game(
+        identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
+    )
+    endpoint_unirse_a_partida(game["id"], player2["identifier"])
+
+    # Establecer la conexión WebSocket para escuchar mensajes
+    try:
+        with client.websocket_connect(f"/ws/{game['id']}/{player1['identifier']}") as websocket1, client.websocket_connect(f"/ws/{game['id']}/{player2['identifier']}") as websocket2:
+            
+            # Ejecutar la salida de un jugador
+            response = client.patch(
+                f"/api/lobby/{game['id']}", json={"id_play": player2["identifier"]}
+            )
+
+            # Verificar que la respuesta del endpoint sea exitosa
+            assert response.status_code == 200
+            result = response.json()
+            assert result["status"] == "success"
+
+            # Esperar y verificar el mensaje de broadcast recibido por el jugador 1
+            received_message1 = websocket1.receive_json()
+            assert received_message1 == {"action": "salio un jugador"}  # Ajusta el mensaje esperado según tu lógica
+
+            # Intentar recibir otro mensaje en el websocket del jugador 2 (debe fallar)
+            with pytest.raises(WebSocketDisconnect):
+                websocket2.receive_json()
+
+    except WebSocketDisconnect as e:
+        pytest.fail(f"WebSocket disconnected unexpectedly: {e}")
+
+
+
+
 # caso en donde el jugador no host sale y aun no empezo la partida
 @pytest.mark.asyncio
 async def test_exit_game_success():
