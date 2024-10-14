@@ -61,7 +61,7 @@ class TestNotifyLobby(unittest.TestCase):
             id1 = self.players[1].id
 
             # Se une el Lou
-            self.game_1.players.append(self.players[0])
+            self.game_1.add_player(self.players[0])
             with self.client.websocket_connect(f"/ws/lobby/1?player_id={id0}") as websocket0:
 
                 websocket0.send_json({"user_identifier": str(identifier0)})
@@ -69,11 +69,11 @@ class TestNotifyLobby(unittest.TestCase):
                 # Chequeamos que estemos solos
                 response = websocket0.receive_json()
                 assert response == {
-                    "players": [{"id": id0, "name": self.game_1.players[0].name}]
+                    "players": [{"player_id": id0, "player_name": self.game_1.players[0].name}]
                 }
 
                 # Se une el Lou^2
-                self.game_1.players.append(self.players[1])
+                self.game_1.add_player(self.players[1])
                 with self.client.websocket_connect(f"/ws/lobby/1?player_id={id1}") as websocket1:
 
                     websocket1.send_json({"user_identifier": str(indetifier1)})
@@ -83,12 +83,12 @@ class TestNotifyLobby(unittest.TestCase):
                     assert response == {
                         "players": [
                             {
-                                "id": id0,
-                                "name": self.game_1.players[0].name,
+                                "player_id": id0,
+                                "player_name": self.game_1.players[0].name,
                             },
                             {
-                                "id": id1,
-                                "name": self.game_1.players[1].name,
+                                "player_id": id1,
+                                "player_name": self.game_1.players[1].name,
                             },
                         ],
                     }
