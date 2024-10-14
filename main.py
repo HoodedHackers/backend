@@ -395,14 +395,18 @@ async def websocket_endpoint(websocket: WebSocket, lobby_id: int, player_id: int
     try:
         # Bucle para recibir mensajes constantemente mientras la conexión esté abierta
         while True:
-            # Recibir un mensaje del cliente
-            data = await websocket.receive_json()
-            # Procesar los datos recibidos
-            # Aquí puedes manejar la lógica relacionada con el lobby y el jugador
-            print(f"Mensaje recibido de lobby {lobby_id}, jugador {player_id}: {data}")
-            
-            # Enviar una respuesta al cliente si es necesario
-            await manager.broadcast(f"Echo: {data}", lobby_id)
+            try:
+                # Recibir un mensaje del cliente
+                data = await websocket.receive_json()
+                # Procesar los datos recibidos
+                # Aquí puedes manejar la lógica relacionada con el lobby y el jugador
+                print(f"Mensaje recibido de lobby {lobby_id}, jugador {player_id}: {data}")
+                
+                # Enviar una respuesta al cliente si es necesario
+                await manager.broadcast(f"Echo: {data}", lobby_id)
+            except asyncio.TimeoutError:
+                print(f"El jugador {player_id} se ha desconectado del lobby {lobby_id}")
+                break
 
     except WebSocketDisconnect:
         print(f"El jugador {player_id} se ha desconectado del lobby {lobby_id}")
