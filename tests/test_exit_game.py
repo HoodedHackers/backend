@@ -1,4 +1,3 @@
-"""
 from os import getenv
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import UUID, uuid4
@@ -12,6 +11,7 @@ from main import app, game_repo, get_games_repo, player_repo
 from model import Game, Player
 from repositories import GameRepository, PlayerRepository
 from repositories.player import PlayerRepository
+import pytest
 
 client = TestClient(app)
 
@@ -58,17 +58,20 @@ def game_and_players():
 
 
 # caso en donde el jugador no host sale y aun no empezo la partida
-def test_exit_game_success():
+@pytest.mark.asyncio
+async def test_exit_game_success():
     game, player1, player2, player3 = game_and_players()
     response = client.patch(
-        f"/api/lobby/{game['id']}", json={"identifier": player2["identifier"]}
+        f"/api/lobby/{game['id']}", json={"id_play": player2["identifier"]}
     )
     assert response.status_code == 200
     result = response.json()
-    assert result["started"] == False
-    assert len(result["players"]) == 2
-
-
+    assert result["status"] == "success"
+    res = game_repo.get(game["id"])
+    #print(res.players)
+    assert len(res.players) == 2
+    #assert len(game_repo.get(game["id"]).players) == 2
+'''
 # caso en donde el jugador host sale y aun no empezo la partida
 def test_exit_game_not_started_host():
     game, player1, player2, player3 = game_and_players()
@@ -152,4 +155,5 @@ def test_exit_game_not_in_lobby():
     assert response.status_code == 404
     assert response.json()["detail"] == "Player not in lobby"
 
-"""
+
+'''

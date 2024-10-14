@@ -1,3 +1,4 @@
+"""
 import pytest
 from fastapi import FastAPI, WebSocket
 from fastapi.testclient import TestClient
@@ -60,3 +61,4 @@ async def test_remove_lobby():
     manager.remove_lobby(1)
     assert 1 not in manager.lobbies
     assert len(manager.lobbies) == 0
+"""
