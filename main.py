@@ -11,21 +11,11 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-
-import services.counter
-from model import Player, Game
+from model import Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
+from repositories import (CardsMovRepository, FigRepository, GameRepository,
+                          PlayerRepository, create_all_figs, create_all_mov)
 from services import Managers, ManagerTypes
-from create_cards import create_all_mov
-from repositories import (
-    GameRepository,
-    PlayerRepository,
-    CardsMovRepository,
-    FigRepository,
-    create_all_figs,
-)
-
-
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -43,6 +33,7 @@ player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
 move_repo = CardsMovRepository(session)
 card_repo = FigRepository(session)
+move_repo = CardsMovRepository(session)
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,7 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 create_all_figs(card_repo)
-
+create_all_mov(move_repo)
 
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
@@ -304,9 +295,11 @@ async def start_game(
     games_repo.save(selec_game)
     return {"status": "success!"}
 
+
 class GameIn2(BaseModel):
     game_id: int
     player: str
+    count: int
 
 
 class SetCardsResponse(BaseModel):
@@ -320,24 +313,19 @@ async def repartir_cartas_figura(
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
-    all_cards = []
-    for player in req.player:
-        identifier_player = UUID(player)
-        in_game_player = player_repo.get_by_identifier(identifier_player)
-        in_game = game_repo.get(req.game_id)
-        if in_game_player is None:
-            raise HTTPException(status_code=404, detail="Player dont found!")
-        if in_game is None:
-            raise HTTPException(status_code=404, detail="Game dont found!")
-        if not in_game_player in in_game.players:
-            continue
-        cards = card_repo.get_many(3)
-        new_cards = []
-        for card in cards:
-            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
-            new_cards.append(new_card)
-        new_dic = PlayerOut2(player=player, cards_out=new_cards)
-        all_cards.append(new_dic)
+    cards = [card.id for card in card_repo.get_many(3)]
+    identifier_player = UUID(req.player)
+    in_game_player = player_repo.get_by_identifier(identifier_player)
+    in_game = game_repo.get(req.game_id)
+    if in_game_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if in_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not in_game_player in in_game.players:
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+    return SetCardsResponse(all_cards=cards)
+
     return SetCardsResponse(all_cards=all_cards)
 
 
@@ -512,6 +500,7 @@ async def turn_change_notifier(websocket: WebSocket, game_id: int):
     except WebSocketDisconnect:
         manager.disconnect(websocket, game_id)
 
+
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
 async def repartir_cartas_movimiento(
     req: GameIn2,
@@ -519,8 +508,8 @@ async def repartir_cartas_movimiento(
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
-    all_cards = []
-    identifier_player = UUID(req.players)
+    all_cards = [card.id for card in card_repo.get_many(req.count)]
+    identifier_player = UUID(req.player)
     in_game_player = player_repo.get_by_identifier(identifier_player)
     in_game = game_repo.get(req.game_id)
     if in_game_player is None:
@@ -529,8 +518,4 @@ async def repartir_cartas_movimiento(
         raise HTTPException(status_code=404, detail="Game dont found!")
     if not in_game_player in in_game.players:
         raise HTTPException(status_code=404, detail="Player dont found!")
-    cards = card_repo.get_many(3)
-    for card in cards:
-        new_card = CardsFigOut(card_id=card.id, card_name=card.name)
-        all_cards.append(new_card)
     return SetCardsResponse(all_cards=all_cards)
