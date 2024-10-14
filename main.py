@@ -370,6 +370,7 @@ async def exit_game(
         await leave_manager.broadcast({"action": "Hay un ganador"}, player_exit.id)
         # preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
         # y luego esperar un cachito y borrar la partida
+        await asyncio.sleep(5)
         repo.delete(lobby_query)
         return {"status": "success"}
 
@@ -384,31 +385,31 @@ async def exit_game(
 
     return {"status": "success"}
 
-"""
 
-@app.websocket("/ws/{lobby_id}/{player_id}")
+@app.websocket("/ws/api/lobby/exit_game/{lobby_id}/{player_id}")
 async def websocket_endpoint(websocket: WebSocket, lobby_id: int, player_id: int):
-    await websocket.accept()  # Aceptar la conexión WebSocket
-
+    #await websocket.accept()  # Aceptar la conexión WebSocket
+    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await manager.connect(websocket, lobby_id, player_id)
+    
     try:
         # Bucle para recibir mensajes constantemente mientras la conexión esté abierta
         while True:
             # Recibir un mensaje del cliente
             data = await websocket.receive_json()
-            
             # Procesar los datos recibidos
             # Aquí puedes manejar la lógica relacionada con el lobby y el jugador
             print(f"Mensaje recibido de lobby {lobby_id}, jugador {player_id}: {data}")
             
             # Enviar una respuesta al cliente si es necesario
-            await websocket.send_json(f"Echo: {data}")
+            await manager.broadcast(f"Echo: {data}", lobby_id)
 
     except WebSocketDisconnect:
         print(f"El jugador {player_id} se ha desconectado del lobby {lobby_id}")
         # Manejar la desconexión aquí
-"""
-
-
+    finally:
+        # Asegurarse de que la conexión se cierre correctamente
+        manager.disconnect(lobby_id, player_id)
 
 
 
