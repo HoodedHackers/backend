@@ -3,6 +3,7 @@ from os import getenv
 from typing import Dict, List
 from uuid import UUID, uuid4
 
+import random 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -13,8 +14,8 @@ import services.counter
 from database import Database
 from model import Game, Player, TOTAL_HAND_MOV
 from model.exceptions import GameStarted, PreconditionsNotMet
-from repositories import (CardsMovRepository, FigRepository, GameRepository,
-                          PlayerRepository, create_all_figs, create_all_mov)
+from repositories import (FigRepository, GameRepository,
+                          PlayerRepository, create_all_figs)
 from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
@@ -31,9 +32,7 @@ session = db.get_session()
 
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
-move_repo = CardsMovRepository(session)
 card_repo = FigRepository(session)
-move_repo = CardsMovRepository(session)
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,14 +42,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 create_all_figs(card_repo)
-create_all_mov(move_repo)
 
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
     request.state.player_repo = player_repo
     request.state.card_repo = card_repo
-    request.state.move_repo = move_repo
     response = await call_next(request)
     return response
 
@@ -65,10 +62,6 @@ def get_card_repo(request: Request) -> FigRepository:
 
 def get_player_repo(request: Request) -> PlayerRepository:
     return request.state.player_repo
-
-
-def get_move_repo(request: Request) -> CardsMovRepository:
-    return request.state.move_repo
 
 
 class GameIn(BaseModel):
@@ -299,7 +292,6 @@ async def start_game(
 class GameIn2(BaseModel):
     game_id: int
     player: str
-    count: int
 
 
 class SetCardsResponse(BaseModel):
@@ -504,7 +496,6 @@ async def advance_game_turn(
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
 async def repartir_cartas_movimiento(
     req: GameIn2,
-    card_repo: CardsMovRepository = Depends(get_move_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
@@ -517,13 +508,11 @@ async def repartir_cartas_movimiento(
     if in_game is None:
         raise HTTPException(status_code=404, detail="Game dont found!")
     if not in_game_player in in_game.players:
-        raise HTTPException(status_code=404, detail="Player dont found!")    
-
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    
     mov_hand = in_game.player_info[in_game_player.id].hand_mov
-    expec_count_card = TOTAL_HAND_MOV - len(mov_hand)
-
-    req.count = expec_count_card if req.count != expec_count_card else req.count
-
-    all_cards = [card.id for card in card_repo.get_many(req.count)]
-
+    count = TOTAL_HAND_MOV - len(mov_hand)
+     
+    all_cards = [random.randint(1, 49) for _ in range(count)]
+    
     return SetCardsResponse(all_cards=all_cards)

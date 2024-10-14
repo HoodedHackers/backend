@@ -1,10 +1,6 @@
 import math
 from typing import List
-
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.types import VARCHAR, Integer, String, TypeDecorator
-
-from database import Base
+from pydantic import BaseModel
 from model.board import SIZE_BOARD
 
 BOARD_MAX_SIDE = math.sqrt(SIZE_BOARD) - 1
@@ -12,34 +8,6 @@ BOARD_MIN_SIDE = 0
 BUNDLE_MOV = 7
 
 TOTAL_HAND_MOV = 3
-
-class DistType(TypeDecorator):
-
-    impl = VARCHAR
-
-    def process_bind_param(self, value: List[tuple[int, int]] | None, dialect):
-        if value is None:
-            return None
-        return ",".join(f"({x}, {y})" for x, y in value)
-
-    def process_result_value(self, value, dialect) -> List[tuple[int, int]]:
-        if not value:
-            return []
-        tuples = value.split("),(")
-        coord = []
-        for item in tuples:
-            item = item.strip("() ")
-            x, y = map(int, item.split(","))
-            coord.append((x, y))
-        return coord
-
-
-class MoveCards(Base):
-    __tablename__ = "moveCards"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    dist: Mapped[List[tuple[int, int]]] = mapped_column(DistType)
-
 
 all_dist = {
     # (i+-num, j+-num) si no tiene signo es un valor, no una distancia
@@ -51,3 +19,12 @@ all_dist = {
     6: [(-2, -1), (-1, +2), (+2, +1), (+1, -2)],
     7: [(BOARD_MIN_SIDE, +-0), (+-0, BOARD_MIN_SIDE), (BOARD_MAX_SIDE, +-0), (+-0, BOARD_MAX_SIDE)],
 }
+
+class MoveCards(BaseModel):
+    id: int 
+    dist: List[tuple[int, int]]
+ 
+    def create_card(self, id: int):
+        self.id = id
+        valor = BUNDLE_MOV if id % BUNDLE_MOV == 0 else id % len(all_dist)
+        self.dist = all_dist[valor]
