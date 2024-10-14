@@ -384,6 +384,33 @@ async def exit_game(
 
     return {"status": "success"}
 
+"""
+
+@app.websocket("/ws/{lobby_id}/{player_id}")
+async def websocket_endpoint(websocket: WebSocket, lobby_id: int, player_id: int):
+    await websocket.accept()  # Aceptar la conexión WebSocket
+
+    try:
+        # Bucle para recibir mensajes constantemente mientras la conexión esté abierta
+        while True:
+            # Recibir un mensaje del cliente
+            data = await websocket.receive_json()
+            
+            # Procesar los datos recibidos
+            # Aquí puedes manejar la lógica relacionada con el lobby y el jugador
+            print(f"Mensaje recibido de lobby {lobby_id}, jugador {player_id}: {data}")
+            
+            # Enviar una respuesta al cliente si es necesario
+            await websocket.send_json(f"Echo: {data}")
+
+    except WebSocketDisconnect:
+        print(f"El jugador {player_id} se ha desconectado del lobby {lobby_id}")
+        # Manejar la desconexión aquí
+"""
+
+
+
+
 
 class AdvanceTurnRequest(BaseModel):
     identifier: UUID = Field(UUID)
@@ -423,6 +450,8 @@ async def advance_game_turn(
     )
     return {"status": "success"}
 
+
+#Preguntar por esta parte
 
 @app.websocket("/api/lobby/{game_id}/turns")
 async def turn_change_notifier(websocket: WebSocket, game_id: int):
