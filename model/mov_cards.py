@@ -7,9 +7,11 @@ from sqlalchemy.types import VARCHAR, Integer, String, TypeDecorator
 from database import Base
 from model.board import SIZE_BOARD
 
-BOARD_SIDE = math.sqrt(SIZE_BOARD) - 1
+BOARD_MAX_SIDE = math.sqrt(SIZE_BOARD) - 1
+BOARD_MIN_SIDE = 0
 BUNDLE_MOV = 7
 
+TOTAL_HAND_MOV = 3
 
 class DistType(TypeDecorator):
 
@@ -42,10 +44,10 @@ class MoveCards(Base):
 all_dist = {
     # (i+-num, j+-num) si no tiene signo es un valor, no una distancia
     1: [(-+2, -+2)],
-    2: [(-+2, None), (None, -+2)],
-    3: [(-+1, None), (None, -+1)],
+    2: [(-+2, +-0), (+-0, -+2)],
+    3: [(-+1, +-0), (+-0, -+1)],
     4: [(-+1, -+1)],
     5: [(-2, +1), (-1, -2), (+2, -1), (+1, +2)],
     6: [(-2, -1), (-1, +2), (+2, +1), (+1, -2)],
-    7: [(0, None), (None, 0), (SIZE_BOARD, None), (None, SIZE_BOARD)],
+    7: [(BOARD_MIN_SIDE, +-0), (+-0, BOARD_MIN_SIDE), (BOARD_MAX_SIDE, +-0), (+-0, BOARD_MAX_SIDE)],
 }

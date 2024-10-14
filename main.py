@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import Game, Player
+from model import Game, Player, TOTAL_HAND_MOV
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (CardsMovRepository, FigRepository, GameRepository,
                           PlayerRepository, create_all_figs, create_all_mov)
@@ -490,15 +490,15 @@ async def advance_game_turn(
     return {"status": "success"}
 
 
-@app.websocket("/api/lobby/{game_id}/turns")
-async def turn_change_notifier(websocket: WebSocket, game_id: int):
-    manager = Managers.get_manager(ManagerTypes.TURNS)
-    await manager.connect(websocket, game_id)
-    try:
-        while True:
-            await websocket.receive_bytes()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket, game_id)
+# @app.websocket("/api/lobby/{game_id}/turns")
+# async def turn_change_notifier(websocket: WebSocket, game_id: int):
+#     manager = Managers.get_manager(ManagerTypes.TURNS)
+#     await manager.connect(websocket, game_id)
+#     try:
+#         while True:
+#             await websocket.receive_bytes()
+#     except WebSocketDisconnect:
+#         manager.disconnect(websocket, game_id)
 
 
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
@@ -508,7 +508,7 @@ async def repartir_cartas_movimiento(
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
-    all_cards = [card.id for card in card_repo.get_many(req.count)]
+    
     identifier_player = UUID(req.player)
     in_game_player = player_repo.get_by_identifier(identifier_player)
     in_game = game_repo.get(req.game_id)
@@ -517,5 +517,13 @@ async def repartir_cartas_movimiento(
     if in_game is None:
         raise HTTPException(status_code=404, detail="Game dont found!")
     if not in_game_player in in_game.players:
-        raise HTTPException(status_code=404, detail="Player dont found!")
+        raise HTTPException(status_code=404, detail="Player dont found!")    
+
+    mov_hand = in_game.player_info[in_game_player.id].hand_mov
+    expec_count_card = TOTAL_HAND_MOV - len(mov_hand)
+
+    req.count = expec_count_card if req.count != expec_count_card else req.count
+
+    all_cards = [card.id for card in card_repo.get_many(req.count)]
+
     return SetCardsResponse(all_cards=all_cards)
