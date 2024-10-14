@@ -363,7 +363,7 @@ async def exit_game(
         leave_manager.remove_lobby(lobby_id)
 
         repo.delete(lobby_query)
-        # el endopint de Mati detecta automaticamente cuando es que un jugador sale o cuando se une asi que aca no debo hacer nada mas
+        return {"status": "success"}
     elif (
         len(lobby_query.players) == 2 and lobby_query.started is True
     ):  # falta test para este caso
@@ -371,6 +371,7 @@ async def exit_game(
         # preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
         # y luego esperar un cachito y borrar la partida
         repo.delete(lobby_query)
+        return {"status": "success"}
 
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
