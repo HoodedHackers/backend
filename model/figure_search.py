@@ -71,10 +71,23 @@ class CandidateShape:
     offset: Tuple[int, int]
     color: Color
 
+    def edges(self) -> List[Tuple[int, int]]:
+        positions = []
+        for p in self.figure.positions:
+            for q in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                j = add(add(self.offset, q), p)
+                x, y = j
+                if x < 0 or x >= 6 or y < 0 or y >= 6:
+                    continue
+                if j in self.figure.positions or j in positions:
+                    continue
+                positions.append(j)
+        return positions
 
-def find_candidate_figures(board: List[Color], figures: List[Figure]):
+
+def find_figures(board: List[Color], figures: List[Figure]):
     offsets = [(x, y) for x in range(6) for y in range(6)]
-    candidate_shapes = []
+    candidate_shapes: List[CandidateShape] = []
     for fig in figures:
         for offset in offsets:
             (x, y) = offset
@@ -87,7 +100,13 @@ def find_candidate_figures(board: List[Color], figures: List[Figure]):
                 candidate_shapes.append(
                     CandidateShape(figure=fig, offset=offset, color=colors.pop())
                 )
-    return candidate_shapes
+    final_shapes = []
+    for c in candidate_shapes:
+        indices = map(lambda pos: pos[0] + pos[1] * 6, c.edges())
+        colors = set(board[index] for index in indices)
+        if all(color != c.color for color in colors):
+            final_shapes.append(c)
+    return final_shapes
 
 
 figures = [Figure(positions=[(0, 0), (0, 1), (0, 2), (1, 2)])]
