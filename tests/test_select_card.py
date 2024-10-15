@@ -91,8 +91,15 @@ class TestSelectCard(unittest.TestCase):
                     assert data == {"status": "success"}
 
                     # Comprobamos que se haya efectuado el broadcast
-                    data = websocket0.receive_json()
-                    assert data == {
+                    data1 = websocket0.receive_json()
+                    assert data1 == {
+                        "player_name": self.players[0].name,
+                        "player_id": player_id0,
+                        "card_id": card_id0,
+                        "card_name": self.fig_cards[0].name,
+                    }
+                    data2 = websocket1.receive_json()
+                    assert data2 == {
                         "player_name": self.players[0].name,
                         "player_id": player_id0,
                         "card_id": card_id0,
