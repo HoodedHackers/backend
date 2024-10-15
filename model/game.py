@@ -42,7 +42,9 @@ class PlayerInfo:
     @staticmethod
     def from_dict(data: dict):
         return PlayerInfo(
-            player_id=data["player_id"], turn_position=data["turn_position"],  hand_mov=data["hand_mov"]
+            player_id=data["player_id"],
+            turn_position=data["turn_position"],
+            hand_mov=data["hand_mov"],
         )
 
 
@@ -92,7 +94,9 @@ class Game(Base):
             self.player_info = {}
             for index, player in enumerate(self.players):
                 self.player_info[player.id] = PlayerInfo(
-                    player_id=player.id, turn_position=index,  hand_mov=[],
+                    player_id=player.id,
+                    turn_position=index,
+                    hand_mov=[],
                 )
 
     def __eq__(self, other):
@@ -141,7 +145,9 @@ class Game(Base):
             raise GameStarted
         self.players.append(player)
         self.player_info[player.id] = PlayerInfo(
-            player_id=player.id, turn_position=len(self.players) - 1, hand_mov=[],
+            player_id=player.id,
+            turn_position=len(self.players) - 1,
+            hand_mov=[],
         )
 
     def count_players(self) -> int:

@@ -1,6 +1,8 @@
 import math
 from typing import List
+
 from pydantic import BaseModel
+
 from model.board import SIZE_BOARD
 
 BOARD_MAX_SIDE = math.sqrt(SIZE_BOARD) - 1
@@ -17,13 +19,19 @@ all_dist = {
     4: [(-+1, -+1)],
     5: [(-2, +1), (-1, -2), (+2, -1), (+1, +2)],
     6: [(-2, -1), (-1, +2), (+2, +1), (+1, -2)],
-    7: [(BOARD_MIN_SIDE, +-0), (+-0, BOARD_MIN_SIDE), (BOARD_MAX_SIDE, +-0), (+-0, BOARD_MAX_SIDE)],
+    7: [
+        (BOARD_MIN_SIDE, +-0),
+        (+-0, BOARD_MIN_SIDE),
+        (BOARD_MAX_SIDE, +-0),
+        (+-0, BOARD_MAX_SIDE),
+    ],
 }
 
+
 class MoveCards(BaseModel):
-    id: int 
+    id: int
     dist: List[tuple[int, int]]
- 
+
     def create_card(self, id: int):
         self.id = id
         valor = BUNDLE_MOV if id % BUNDLE_MOV == 0 else id % len(all_dist)

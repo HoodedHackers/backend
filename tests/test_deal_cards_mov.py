@@ -1,16 +1,17 @@
-from uuid import UUID
 import unittest
 from unittest.mock import patch
+from uuid import UUID
+
 import asserts
 from fastapi.testclient import TestClient
 
+from database import Database
 from main import app, game_repo, player_repo
 from model import Game, Player
 from repositories import GameRepository, PlayerRepository
-from database import Database
-
 
 client = TestClient(app)
+
 
 class TestSelectCard(unittest.TestCase):
 
@@ -52,7 +53,9 @@ class TestSelectCard(unittest.TestCase):
 
     def test_deal_mov(self):
 
-        with patch("main.game_repo", self.games_repo), patch("main.player_repo", self.player_repo):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
 
             self.game.add_player(self.players[0])
 

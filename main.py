@@ -1,9 +1,9 @@
 import asyncio
+import random
 from os import getenv
 from typing import Dict, List
 from uuid import UUID, uuid4
 
-import random 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.websockets import WebSocket, WebSocketDisconnect
@@ -12,10 +12,10 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import Game, Player, TOTAL_HAND_MOV
+from model import TOTAL_HAND_MOV, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
-from repositories import (FigRepository, GameRepository,
-                          PlayerRepository, create_all_figs)
+from repositories import (FigRepository, GameRepository, PlayerRepository,
+                          create_all_figs)
 from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
@@ -42,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 create_all_figs(card_repo)
+
 
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
@@ -480,24 +481,13 @@ async def advance_game_turn(
     return {"status": "success"}
 
 
-# @app.websocket("/api/lobby/{game_id}/turns")
-# async def turn_change_notifier(websocket: WebSocket, game_id: int):
-#     manager = Managers.get_manager(ManagerTypes.TURNS)
-#     await manager.connect(websocket, game_id)
-#     try:
-#         while True:
-#             await websocket.receive_bytes()
-#     except WebSocketDisconnect:
-#         manager.disconnect(websocket, game_id)
-
-
 @app.post("/api/partida/en_curso/movimiento", response_model=SetCardsResponse)
 async def repartir_cartas_movimiento(
     req: GameIn2,
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
-    
+
     identifier_player = UUID(req.player)
     in_game_player = player_repo.get_by_identifier(identifier_player)
     in_game = game_repo.get(req.game_id)
@@ -510,10 +500,58 @@ async def repartir_cartas_movimiento(
     if not in_game_player in in_game.players:
         print("no hay player en game")
         raise HTTPException(status_code=404, detail="Player dont found in game!")
-    
+
     mov_hand = in_game.player_info[in_game_player.id].hand_mov
     count = TOTAL_HAND_MOV - len(mov_hand)
-     
+
     all_cards = [random.randint(1, 49) for _ in range(count)]
-    
+
     return SetCardsResponse(all_cards=all_cards)
+
+
+@app.websocket("/api/lobby/{game_id}/turns")
+async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: int):
+    manager = Managers.get_manager(ManagerTypes.TURNS)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            await websocket.receive_bytes()
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
+@app.websocket("/ws/lobby/{game_id}")
+async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta, enviando la lista
+    actualizada de jugadores actuales.
+
+    Se espera: {user_identifier: 'valor'}
+    """
+    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            user_id = data.get("user_identifier")
+            if user_id is None:
+                await websocket.send_json({"error": "User id is missing"})
+                continue
+
+            player = player_repo.get_by_identifier(UUID(user_id))
+            if player is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+
+            game = game_repo.get(game_id)
+            if game is None:
+                await websocket.send_json({"error": "Game not found"})
+                continue
+
+            players_raw = game.players
+            players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
+
+            await manager.broadcast({"players": players}, game_id)
+
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
