@@ -482,6 +482,7 @@ async def advance_game_turn(
             "current_turn": game.current_player_turn,
             "game_id": game.id,
             "player_id": current_player.id,
+            "player_name": current_player.name,
         },
         game_id,
     )
@@ -516,8 +517,16 @@ async def repartir_cartas_movimiento(
     return SetCardsResponse(all_cards=all_cards)
 
 
-@app.websocket("/api/lobby/{game_id}/turns")
+@app.websocket("/ws/lobby/{game_id}/turns")
 async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    {
+        "current_turn": int,
+        "game_id": int,
+        "player_id": int,
+        "player_name": str
+    }
+    """
     manager = Managers.get_manager(ManagerTypes.TURNS)
     await manager.connect(websocket, game_id, player_id)
     try:
