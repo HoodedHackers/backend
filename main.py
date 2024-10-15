@@ -498,7 +498,7 @@ async def advance_game_turn(
 
 
 @app.websocket("/api/lobby/{game_id}/turns")
-async def turn_change_notifier(websocket: WebSocket, game_id: int,player_id: int):
+async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: int):
     manager = Managers.get_manager(ManagerTypes.TURNS)
     await manager.connect(websocket, game_id, player_id)
     try:
@@ -543,3 +543,43 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
+
+
+@app.put("/api/lobby/{game_id}/select")
+async def select_card(
+    game_id: int,
+    player_id: int,
+    card_id: int,
+    game_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    card_repo: FigRepository = Depends(get_card_repo),
+):
+    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    player = player_repo.get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Player is not in game")
+    if player != game.current_player():
+        raise HTTPException(status_code=401, detail="It's not your turn")
+
+    card = card_repo.get(card_id)
+    if card is None:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    await manager.broadcast(
+        {
+            "player_name": player.name,
+            "player_id": player.id,
+            "card_id": card.id,
+            "card_name": card.name,
+        },
+        game_id,
+    )
+
+    return {"status": "success"}
