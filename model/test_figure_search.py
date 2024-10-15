@@ -1,7 +1,7 @@
 import unittest
 
-from .figure_search import Figure, rotate, CandidateShape
 from .board import Color
+from .figure_search import CandidateShape, Figure, rotate
 
 
 class TestFigureRotations(unittest.TestCase):
@@ -23,11 +23,22 @@ class TestFigureRotations(unittest.TestCase):
         res = rotate(self.L_down)
         self.assertIn(res, [self.L_up, self.L_down, self.L_right, self.L_left])
 
+
 class TestCandidateShapeEdges(unittest.TestCase):
     def setUp(self):
-        self.tile = CandidateShape(figure=Figure([(0, 0)]), offset=(1, 1), color=Color.RED)
-        self.square = CandidateShape(figure=Figure([(0, 0), (0, 1), (1, 0), (1, 1)]), offset=(0, 0), color=Color.RED)
-        self.L_shape = CandidateShape(figure=Figure([(0, 0), (1, 0), (2, 0), (2, 1)]), offset=(0, 0), color=Color.RED)
+        self.tile = CandidateShape(
+            figure=Figure([(0, 0)]), offset=(1, 1), color=Color.RED
+        )
+        self.square = CandidateShape(
+            figure=Figure([(0, 0), (0, 1), (1, 0), (1, 1)]),
+            offset=(0, 0),
+            color=Color.RED,
+        )
+        self.L_shape = CandidateShape(
+            figure=Figure([(0, 0), (1, 0), (2, 0), (2, 1)]),
+            offset=(0, 0),
+            color=Color.RED,
+        )
 
     def test_edges_1x1(self):
         expected_edges = [(1, 0), (0, 1), (1, 2), (2, 1)]
