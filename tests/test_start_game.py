@@ -97,3 +97,19 @@ class TestGameStart(unittest.TestCase):
             print(response.json())
             assert response.status_code == 200
             assert response.json() == {"status": "success!"}
+
+    def test_start_game_message(self):
+        player = self.players[1]
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), self.client.websocket_connect(
+            f"/ws/lobby/{self.game_2.id}/status?player_id={player.id}"
+        ) as ws:
+            response = self.client.put(
+                f"/api/lobby/{self.game_2.id}/start",
+                json={"identifier": str(self.host.identifier)},
+            )
+            self.assertEqual(response.status_code, 200)
+            msg = ws.receive_json()
+            self.assertIn("status", msg)
+            self.assertEqual(msg["status"], "started")
