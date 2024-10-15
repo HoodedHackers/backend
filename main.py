@@ -1,4 +1,5 @@
 import asyncio
+import random
 from os import getenv
 from typing import Dict, List
 from uuid import UUID, uuid4
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import Game, Player
+from model import TOTAL_HAND_MOV, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
@@ -291,21 +292,11 @@ async def start_game(
 
 class GameIn2(BaseModel):
     game_id: int
-    players: List[str]
-
-
-class CardsFigOut(BaseModel):
-    card_id: int
-    card_name: str
-
-
-class PlayerOut2(BaseModel):
     player: str
-    cards_out: List[CardsFigOut]
 
 
 class SetCardsResponse(BaseModel):
-    all_cards: List[PlayerOut2]
+    all_cards: List[int]
 
 
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
@@ -315,25 +306,18 @@ async def repartir_cartas_figura(
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
-    all_cards = []
-    for player in req.players:
-        identifier_player = UUID(player)
-        in_game_player = player_repo.get_by_identifier(identifier_player)
-        in_game = game_repo.get(req.game_id)
-        if in_game_player is None:
-            raise HTTPException(status_code=404, detail="Player dont found!")
-        if in_game is None:
-            raise HTTPException(status_code=404, detail="Game dont found!")
-        if not in_game_player in in_game.players:
-            continue
-        cards = card_repo.get_many(3)
-        new_cards = []
-        for card in cards:
-            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
-            new_cards.append(new_card)
-        new_dic = PlayerOut2(player=player, cards_out=new_cards)
-        all_cards.append(new_dic)
-    return SetCardsResponse(all_cards=all_cards)
+    cards = [card.id for card in card_repo.get_many(3)]
+    identifier_player = UUID(req.player)
+    in_game_player = player_repo.get_by_identifier(identifier_player)
+    in_game = game_repo.get(req.game_id)
+    if in_game_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if in_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not in_game_player in in_game.players:
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+    return SetCardsResponse(all_cards=cards)
 
 
 class IdentityIn(BaseModel):
@@ -495,6 +479,34 @@ async def advance_game_turn(
         game_id,
     )
     return {"status": "success"}
+
+
+@app.post("/api/partida/en_curso/movimiento", response_model=SetCardsResponse)
+async def repartir_cartas_movimiento(
+    req: GameIn2,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+
+    identifier_player = UUID(req.player)
+    in_game_player = player_repo.get_by_identifier(identifier_player)
+    in_game = game_repo.get(req.game_id)
+    if in_game_player is None:
+        print("no hay player")
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if in_game is None:
+        print("no hay game")
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not in_game_player in in_game.players:
+        print("no hay player en game")
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+    mov_hand = in_game.player_info[in_game_player.id].hand_mov
+    count = TOTAL_HAND_MOV - len(mov_hand)
+
+    all_cards = [random.randint(1, 49) for _ in range(count)]
+
+    return SetCardsResponse(all_cards=all_cards)
 
 
 @app.websocket("/api/lobby/{game_id}/turns")
