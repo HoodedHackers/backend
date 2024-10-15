@@ -30,17 +30,21 @@ game_player_association = Table(
 class PlayerInfo:
     player_id: int
     turn_position: int
+    hand_mov: List[int]
 
     def to_dict(self):
         return {
             "player_id": self.player_id,
             "turn_position": self.turn_position,
+            "hand_mov": self.hand_mov,
         }
 
     @staticmethod
     def from_dict(data: dict):
         return PlayerInfo(
-            player_id=data["player_id"], turn_position=data["turn_position"]
+            player_id=data["player_id"],
+            turn_position=data["turn_position"],
+            hand_mov=data["hand_mov"],
         )
 
 
@@ -90,7 +94,9 @@ class Game(Base):
             self.player_info = {}
             for index, player in enumerate(self.players):
                 self.player_info[player.id] = PlayerInfo(
-                    player_id=player.id, turn_position=index
+                    player_id=player.id,
+                    turn_position=index,
+                    hand_mov=[],
                 )
 
     def __eq__(self, other):
@@ -139,7 +145,9 @@ class Game(Base):
             raise GameStarted
         self.players.append(player)
         self.player_info[player.id] = PlayerInfo(
-            player_id=player.id, turn_position=len(self.players) - 1
+            player_id=player.id,
+            turn_position=len(self.players) - 1,
+            hand_mov=[],
         )
 
     def count_players(self) -> int:
