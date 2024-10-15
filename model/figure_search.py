@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
+from model.board import Color
+
 
 @dataclass(eq=False)
 class Figure:
@@ -26,6 +28,12 @@ class Figure:
         yield self
         for i in range(1, 4):
             yield rotate(self, times=i)
+
+    def width(self) -> int:
+        return max(x for (x, y) in self.positions) + 1
+
+    def height(self) -> int:
+        return max(x for (x, y) in self.positions) + 1
 
 
 def rotate_90(p: Tuple[int, int]) -> Tuple[int, int]:
@@ -55,6 +63,31 @@ def rotate(f: Figure, times=1) -> Figure:
     offset_y = max(-min(p[1] for p in raw_pos), 0)
     normal_pos = [add(p, (offset_x, offset_y)) for p in raw_pos]
     return Figure(normal_pos)
+
+
+@dataclass
+class CandidateShape:
+    figure: Figure
+    offset: Tuple[int, int]
+    color: Color
+
+
+def find_candidate_figures(board: List[Color], figures: List[Figure]):
+    offsets = [(x, y) for x in range(6) for y in range(6)]
+    candidate_shapes = []
+    for fig in figures:
+        for offset in offsets:
+            (x, y) = offset
+            if x + fig.width() >= 6 or y + fig.height() >= 6:
+                continue
+            offset_positions = map(lambda pos: add(offset, pos), fig.positions)
+            indices = map(lambda pos: pos[0] + pos[1] * 6, offset_positions)
+            colors = set(board[index] for index in indices)
+            if len(colors) == 1:
+                candidate_shapes.append(
+                    CandidateShape(figure=fig, offset=offset, color=colors.pop())
+                )
+    return candidate_shapes
 
 
 figures = [Figure(positions=[(0, 0), (0, 1), (0, 2), (1, 2)])]
