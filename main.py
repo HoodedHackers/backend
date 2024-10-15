@@ -286,6 +286,13 @@ async def start_game(
     selec_game.started = True
     selec_game.shuffle_players()
     games_repo.save(selec_game)
+    await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
+        {
+            "game_id": id_game,
+            "status": "started",
+        },
+        id_game,
+    )
     return {"status": "success!"}
 
 
@@ -498,7 +505,7 @@ async def advance_game_turn(
 
 
 @app.websocket("/api/lobby/{game_id}/turns")
-async def turn_change_notifier(websocket: WebSocket, game_id: int,player_id: int):
+async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: int):
     manager = Managers.get_manager(ManagerTypes.TURNS)
     await manager.connect(websocket, game_id, player_id)
     try:
@@ -541,5 +548,24 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
             await manager.broadcast({"players": players}, game_id)
 
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
+@app.websocket("/ws/lobby/{game_id}/status")
+async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de notificar el estado de la partida a los jugadores conectados.
+    Retorna mensajes de la siguiente forma:
+        {
+            "game_id": int,
+            "status": "started"|"finished"|"canceled"
+        }
+    """
+    manager = Managers.get_manager(ManagerTypes.GAME_STATUS)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
