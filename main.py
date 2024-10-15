@@ -318,8 +318,6 @@ async def repartir_cartas_figura(
 
     return SetCardsResponse(all_cards=cards)
 
-    return SetCardsResponse(all_cards=all_cards)
-
 
 class IdentityIn(BaseModel):
     identifier: UUID
@@ -504,11 +502,14 @@ async def repartir_cartas_movimiento(
     in_game_player = player_repo.get_by_identifier(identifier_player)
     in_game = game_repo.get(req.game_id)
     if in_game_player is None:
+        print("no hay player")
         raise HTTPException(status_code=404, detail="Player dont found!")
     if in_game is None:
+        print("no hay game")
         raise HTTPException(status_code=404, detail="Game dont found!")
-    # if not in_game_player in in_game.players:
-    #     raise HTTPException(status_code=404, detail="Player dont found!")
+    if not in_game_player in in_game.players:
+        print("no hay player en game")
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
     
     mov_hand = in_game.player_info[in_game_player.id].hand_mov
     count = TOTAL_HAND_MOV - len(mov_hand)
