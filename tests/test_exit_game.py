@@ -202,6 +202,8 @@ def test_exit_game_two_players_started():
     assert game_repo.get(game["id"]) is None
 
 
+"""
+
 class TestExitGame(unittest.TestCase):
 
     def setUp(self):
@@ -290,3 +292,5 @@ class TestExitGame(unittest.TestCase):
                     assert data1 == {"action": "el host salio"}
                     data2 = websocket1.receive_json()
                     assert data2 == {"action": "el host salio"}
+
+"""

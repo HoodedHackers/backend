@@ -1,24 +1,25 @@
-"""
 import unittest
 from unittest.mock import patch
+from uuid import UUID
 
-import pytest
+import asserts
 from fastapi.testclient import TestClient
 
 from database import Database
-from main import app
+from main import app, game_repo, player_repo
 from model import Game, Player
 from repositories import GameRepository, PlayerRepository
 
+client = TestClient(app)
 
-class TestNotifyLobby(unittest.TestCase):
+
+class TestSelectCard(unittest.TestCase):
 
     def setUp(self):
         self.client = TestClient(app)
         self.dbs = Database().session()
         self.games_repo = GameRepository(self.dbs)
         self.player_repo = PlayerRepository(self.dbs)
-
         self.host = Player(name="Ely")
         self.player_repo.save(self.host)
 
@@ -30,7 +31,7 @@ class TestNotifyLobby(unittest.TestCase):
         for p in self.players:
             self.player_repo.save(p)
 
-        self.game_1 = Game(
+        self.game = Game(
             id=1,
             name="Game of Falls",
             current_player_turn=0,
@@ -42,7 +43,7 @@ class TestNotifyLobby(unittest.TestCase):
             host_id=self.host.id,
         )
 
-        self.games_repo.save(self.game_1)
+        self.games_repo.save(self.game)
 
     def tearDown(self):
         self.dbs.query(Game).delete()
@@ -50,25 +51,21 @@ class TestNotifyLobby(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-    def test_connect_from_lobby(self):
+    def test_deal_mov(self):
 
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-            
 
-            self.game_1.add_player(self.players[0])
-            self.game_1.add_player(self.players[1])
-            self.game_1.started = True
+            self.game.add_player(self.players[0])
 
-
-            with self.client.websocket_connect(f"/ws/lobby/1?player_id={self.game_1.players[0].id}") as websocket0:
-
-                # uno se va
-                self.client.patch("/api/lobby/1", json={"player_id": self.game_1.players[0].id})
-
-                # deveriamos escuchar un mensaje de que ganamos
-                data=websocket0.receive_json()
-                assert data == {"action": "Hay un ganador"}
-
-"""
+            id_game = self.game.id
+            str_player = str(self.players[0].identifier)
+            response = client.post(
+                "/api/partida/en_curso/movimiento",
+                json={
+                    "game_id": id_game,
+                    "player": str_player,
+                },
+            )
+            asserts.assert_equal(response.status_code, 200)

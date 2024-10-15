@@ -1,4 +1,5 @@
 import asyncio
+import random
 from os import getenv
 from typing import Dict, List
 from uuid import UUID, uuid4
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import Game, Player
+from model import TOTAL_HAND_MOV, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
@@ -285,26 +286,23 @@ async def start_game(
     selec_game.started = True
     selec_game.shuffle_players()
     games_repo.save(selec_game)
+    await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
+        {
+            "game_id": id_game,
+            "status": "started",
+        },
+        id_game,
+    )
     return {"status": "success!"}
 
 
 class GameIn2(BaseModel):
     game_id: int
-    players: List[str]
-
-
-class CardsFigOut(BaseModel):
-    card_id: int
-    card_name: str
-
-
-class PlayerOut2(BaseModel):
     player: str
-    cards_out: List[CardsFigOut]
 
 
 class SetCardsResponse(BaseModel):
-    all_cards: List[PlayerOut2]
+    all_cards: List[int]
 
 
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
@@ -314,25 +312,18 @@ async def repartir_cartas_figura(
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
 ):
-    all_cards = []
-    for player in req.players:
-        identifier_player = UUID(player)
-        in_game_player = player_repo.get_by_identifier(identifier_player)
-        in_game = game_repo.get(req.game_id)
-        if in_game_player is None:
-            raise HTTPException(status_code=404, detail="Player dont found!")
-        if in_game is None:
-            raise HTTPException(status_code=404, detail="Game dont found!")
-        if not in_game_player in in_game.players:
-            continue
-        cards = card_repo.get_many(3)
-        new_cards = []
-        for card in cards:
-            new_card = CardsFigOut(card_id=card.id, card_name=card.name)
-            new_cards.append(new_card)
-        new_dic = PlayerOut2(player=player, cards_out=new_cards)
-        all_cards.append(new_dic)
-    return SetCardsResponse(all_cards=all_cards)
+    cards = [card.id for card in card_repo.get_many(3)]
+    identifier_player = UUID(req.player)
+    in_game_player = player_repo.get_by_identifier(identifier_player)
+    in_game = game_repo.get(req.game_id)
+    if in_game_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if in_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not in_game_player in in_game.players:
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+    return SetCardsResponse(all_cards=cards)
 
 
 class IdentityIn(BaseModel):
@@ -423,17 +414,51 @@ async def advance_game_turn(
             "current_turn": game.current_player_turn,
             "game_id": game.id,
             "player_id": current_player.id,
+            "player_name": current_player.name,
         },
         game_id,
     )
     return {"status": "success"}
 
 
-# Preguntar por esta parte
+@app.post("/api/partida/en_curso/movimiento", response_model=SetCardsResponse)
+async def repartir_cartas_movimiento(
+    req: GameIn2,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+
+    identifier_player = UUID(req.player)
+    in_game_player = player_repo.get_by_identifier(identifier_player)
+    in_game = game_repo.get(req.game_id)
+    if in_game_player is None:
+        print("no hay player")
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if in_game is None:
+        print("no hay game")
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not in_game_player in in_game.players:
+        print("no hay player en game")
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+    mov_hand = in_game.player_info[in_game_player.id].hand_mov
+    count = TOTAL_HAND_MOV - len(mov_hand)
+
+    all_cards = [random.randint(1, 49) for _ in range(count)]
+
+    return SetCardsResponse(all_cards=all_cards)
 
 
-@app.websocket("/api/lobby/{game_id}/turns")
+@app.websocket("/ws/lobby/{game_id}/turns")
 async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    {
+        "current_turn": int,
+        "game_id": int,
+        "player_id": int,
+        "player_name": str
+    }
+    """
     manager = Managers.get_manager(ManagerTypes.TURNS)
     await manager.connect(websocket, game_id, player_id)
     try:
@@ -476,5 +501,24 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
             await manager.broadcast({"players": players}, game_id)
 
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
+@app.websocket("/ws/lobby/{game_id}/status")
+async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de notificar el estado de la partida a los jugadores conectados.
+    Retorna mensajes de la siguiente forma:
+        {
+            "game_id": int,
+            "status": "started"|"finished"|"canceled"
+        }
+    """
+    manager = Managers.get_manager(ManagerTypes.GAME_STATUS)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
