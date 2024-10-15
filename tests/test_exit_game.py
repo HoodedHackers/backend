@@ -1,3 +1,5 @@
+import asyncio
+import unittest
 from os import getenv
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import UUID, uuid4
@@ -14,7 +16,6 @@ from model import Game, Player
 from repositories import GameRepository, PlayerRepository
 from repositories.player import PlayerRepository
 from services import Managers, ManagerTypes
-import asyncio
 
 client = TestClient(app)
 
@@ -60,7 +61,6 @@ def game_and_players():
     return game, player1, player2, player3
 
 
-
 @app.websocket("/ws/{lobby_id}/{player_id}")
 async def websocket_endpoint(websocket: WebSocket, lobby_id: int, player_id: int):
     manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
@@ -73,66 +73,6 @@ async def websocket_endpoint(websocket: WebSocket, lobby_id: int, player_id: int
         print(f"Connection error: {e}")
     finally:
         manager.disconnect(lobby_id, player_id)
-
-
-
-"""
-@pytest.mark.asyncio
-async def test_multiple_clients():
-    client = TestClient(test_app)
-    with client.websocket_connect("/ws/1/1") as websocket1, client.websocket_connect(
-        "/ws/1/2"
-    ) as websocket2:
-        websocket1.send_text("Hello from client 1")
-        data1 = websocket1.receive_json()
-        data2 = websocket2.receive_json()
-        assert data1 == {"message": "Hello from client 1"}
-        assert data2 == {"message": "Hello from client 1"}
-"""
-
-
-
-@pytest.mark.asyncio
-async def test_broadcast_message_on_exit():
-    # Crear jugadores y juego
-    player1 = set_player_name("Player 1")
-    player2 = set_player_name("Player 2")
-    game = create_game(
-        identifier=player1["identifier"], name="Test Game", min_players=2, max_players=3
-    )
-    endpoint_unirse_a_partida(game["id"], player2["identifier"])
-
-    # Establecer la conexión WebSocket para escuchar mensajes
-    try:
-        print("nooooooooooooooooooooooooooooooooooooooooo")
-        with client.websocket_connect(f"/ws/api/lobby/exit_game/{game['id']}/{player1['id']}") as websocket1, client.websocket_connect(f"/ws/api/lobby/exit_game/{game['id']}/{player2['id']}") as websocket2:
-            
-            # Ejecutar la salida de un jugador
-            response = client.patch(
-                f"/api/lobby/{game['id']}", json={"id_play": player2["identifier"]}
-            )
-
-            # Verificar que la respuesta del endpoint sea exitosa
-            assert response.status_code == 200
-            result = response.json()
-            assert result["status"] == "success"
-            await asyncio.sleep(0.1)
-            # Verificar el mensaje de broadcast recibido por el jugador 1
-            try:
-                received_message1 = await websocket1.receive_json()
-                assert received_message1 == {"action": "salio un jugador"}
-            except WebSocketDisconnect:
-                pytest.fail("WebSocket se desconectó inesperadamente para el jugador 1")
-
-            # Verificar que el websocket del jugador 2 esté cerrado
-            with pytest.raises(WebSocketDisconnect):
-                await websocket2.receive_json()
-           
-
-    except WebSocketDisconnect as e:
-        pytest.fail(f"WebSocket se desconecto inesperadamnete: {e}")
-
-
 
 
 # caso en donde el jugador no host sale y aun no empezo la partida
@@ -261,24 +201,92 @@ def test_exit_game_two_players_started():
     assert result["status"] == "success"
     assert game_repo.get(game["id"]) is None
 
-"""
-@pytest.mark.asyncio
-async def test_broadcast_message():
-    client = TestClient(app)
-    try:
-        game, player1, player2, player3 = game_and_players()
-        # Establecer la conexión WebSocket para escuchar mensajes
-        with client.websocket_connect("/ws/2/1") as websocket1, client.websocket_connect("/ws/2/2") as websocket2:
-            # Supongamos que el lobby_id es 1 y el player_id es 1
-            # Realiza una acción que dispare el broadcast, como salir del juego
-            response = client.patch("/api/lobby/2", json={"id_play": player1["identifier"]})
 
-            # Aquí podrías esperar un mensaje específico que esperas recibir en el WebSocket
-            received_message = websocket2.receive_json()  # Espera el mensaje del broadcast
-            
-            # Comprueba que el mensaje sea el que esperabas
-            assert received_message == {"action": "salio un jugador"}  # Ajusta según tu lógica
-    except WebSocketDisconnect as e:
-        print(f"Error de conexión: {e}")
-        raise
-"""
+class TestExitGame(unittest.TestCase):
+
+    def setUp(self):
+        self.client = TestClient(app)
+        self.dbs = Database().session()
+        self.games_repo = GameRepository(self.dbs)
+        self.player_repo = PlayerRepository(self.dbs)
+        identifier1 = str(uuid4())
+        identifier2 = str(uuid4())
+        identifier3 = str(uuid4())
+        identifier4 = str(uuid4())
+
+        self.host = Player(name="Ely")
+        self.player_repo.save(self.host)
+
+        self.players = [
+            Player(name="Lou"),
+            Player(name="Lou^2"),
+            Player(name="Andy"),
+        ]
+        for p in self.players:
+            self.player_repo.save(p)
+
+        self.game = Game(
+            id=1,
+            name="Game of Falls",
+            current_player_turn=0,
+            max_players=4,
+            min_players=2,
+            started=False,
+            players=[],
+            host=self.host,
+            host_id=self.host.id,
+        )
+
+        self.games_repo.save(self.game)
+
+    def tearDown(self):
+        self.dbs.query(Game).delete()
+        self.dbs.query(Player).delete()
+        # self.dbs.query(FigCards).delete()
+        self.dbs.commit()
+        self.dbs.close()
+
+    def test_connect_from_lobby(self):
+
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):  # patch("main.card_repo", self.fig_cards_repo):
+
+            player_id0 = self.players[0].id
+            player_id1 = self.players[1].id
+            # card_id0 = self.fig_cards[0].id
+            #player_id0_ident = self.game.players[0].identifier
+
+            # Debe haber al menos dos jugadores en el juego
+            self.game.add_player(self.players[0])
+            self.game.add_player(self.players[1])
+           # self.game.started = True
+#ver que onda aca
+            player_id0_ident = self.players[0].identifier
+#            self.games_repo.save(self.game)
+            print("pase por el save")
+            # Conectamos ambos jugadores
+            with self.client.websocket_connect(
+                f"/ws/lobby/1?player_id={player_id0}"
+            ) as websocket0:
+                with self.client.websocket_connect(
+                    f"/ws/lobby/1?player_id={player_id1}"
+                ) as websocket1:
+                    print("pase por los websocket")
+
+                    # El jugador uno usa la URL @app.patch("/api/lobby/{lobby_id}")  id_play: str
+                    response = self.client.patch(
+                        f"/api/lobby/1", json = {"id_play":str(player_id0_ident)},
+                    )
+                    print("ya pase por el response")
+                    print(response)
+                    assert response.status_code == 200
+                    data = response.json()
+                    assert data == {"status": "success"}
+
+                    # Comprobamos que se haya efectuado el broadcast
+                    data1 = websocket0.receive_json()
+                    print(data1)
+                    assert data1 == {"action": "el host salio"}
+                    data2 = websocket1.receive_json()
+                    assert data2 == {"action": "el host salio"}
