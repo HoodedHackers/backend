@@ -557,17 +557,12 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
         manager.disconnect(game_id, player_id)
 
 
-@app.put("/api/lobby/{game_id}/select")
+@app.websocket("/ws/lobby/{game_id}/select")
 async def select_card(
+    websocket: WebSocket,
     game_id: int,
     player_id: int,
-    card_id: int,
-    game_repo: GameRepository = Depends(get_games_repo),
-    player_repo: PlayerRepository = Depends(get_player_repo),
-    card_repo: FigRepository = Depends(get_card_repo),
 ):
-    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-
     game = game_repo.get(game_id)
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -575,23 +570,22 @@ async def select_card(
     player = player_repo.get(player_id)
     if player is None:
         raise HTTPException(status_code=404, detail="Player not found")
-    if player not in game.players:
-        raise HTTPException(status_code=404, detail="Player is not in game")
-    if player != game.current_player():
-        raise HTTPException(status_code=401, detail="It's not your turn")
 
-    card = card_repo.get(card_id)
-    if card is None:
-        raise HTTPException(status_code=404, detail="Card not found")
+    manager = Managers.get_manager(ManagerTypes.CARDS)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            card_id = data.get("card_id")
 
-    await manager.broadcast(
-        {
-            "player_name": player.name,
-            "player_id": player.id,
-            "card_id": card.id,
-            "card_name": card.name,
-        },
-        game_id,
-    )
+            hand = game.player_info[player_id].hand_mov
+            print("PLAYER_INFO: ", game.player_info[player_id])
+            if card_id not in hand:
+                await websocket.send_json({"error": "Card not in hand"})
+                continue
 
-    return {"status": "success"}
+            await manager.broadcast(
+                {"player_id": player_id, "card_id": card_id}, game_id
+            )
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
