@@ -326,6 +326,9 @@ async def repartir_cartas_figura(
     return SetCardsResponse(all_cards=cards)
 
 
+
+
+
 class IdentityIn(BaseModel):
     id_play: str
 
@@ -355,20 +358,14 @@ async def exit_game(
 
         repo.delete(lobby_query)
         return {"status": "success"}
-    if len(lobby_query.players) == 2 and lobby_query.started is True: 
+    if len(lobby_query.players) == 2 and lobby_query.started: 
         await leave_manager.broadcast({"action": "Hay un ganador"}, player_exit.id)
-        # preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
-        # y luego esperar un cachito y borrar la partida
         repo.delete(lobby_query)
         return {"status": "success"}
 
-    # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
-    # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
-    # aca utilizo un broadcast avisando a otros jugadores
     await leave_manager.broadcast({"action": "salio un jugador"}, player_exit.id)
     leave_manager.disconnect(lobby_id, player_exit.id)
     lobby_query.delete_player(player_exit)
-    # utilizo el de entradas y salidas para enviar la lista de jugadores
     repo.save(lobby_query)
 
     return {"status": "success"}
