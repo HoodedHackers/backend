@@ -9,6 +9,7 @@ class ManagerTypes(Enum):
     JOIN_LEAVE = 1
     TURNS = 2
     GAME_STATUS = 3
+    WINNER = 5
 
 
 @dataclass
@@ -51,6 +52,7 @@ class Managers:
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
         ManagerTypes.TURNS: ConnectionManager(),
         ManagerTypes.GAME_STATUS: ConnectionManager(),
+        ManagerTypes.WINNER: ConnectionManager()
     }
 
     @classmethod

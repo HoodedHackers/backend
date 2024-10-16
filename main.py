@@ -590,3 +590,51 @@ async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int
             data = await websocket.receive_json()
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
+
+
+@app.websocket("/ws/game/{game_id}/notify-winner")
+async def game_notify_winner(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de notificar al ganador de la partida.
+    Se espera un mensaje de la forma, al finalizar cada turno:
+        {"action": "turnover", "player_identifier": identifier}
+
+    Retorna mensajes de la siguiente forma:
+        {"action": "winner", "player_identifier": identifier}
+    """
+
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+        return
+    
+    player = player_repo.get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+        return
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Player not in game")
+        return
+
+    manager = Managers.get_manager(ManagerTypes.WINNER)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            if data.get("action") == "turnover":
+                player_ident = data.get("player_identifier")
+                player = player_repo.get_by_identifier(UUID(player_ident))
+                if player is None:
+                    await websocket.send_json({"error": "Player not found"})
+                    continue
+
+                if game.player_info[player.id].hand_mov == []:
+                    await manager.broadcast(
+                        {"action": "winner", "player_identifier": player_ident},
+                        game_id,
+                    )
+                    
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+        
+            
