@@ -202,5 +202,9 @@ class Game(Base):
 
     def add_cards_mov(self, new_cards, id):
         self.player_info[id].hand_mov = new_cards
-        # if hand is not TOTAL_NUM_HAND:
-        #     raise OverHand
+        turn = self.player_info[id].turn_position
+        self.player_info[id] = PlayerInfo(
+            player_id=id,
+            turn_position=turn,
+            hand_mov=new_cards,
+        )
