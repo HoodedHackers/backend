@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import TOTAL_HAND_MOV, Game, Player
+from model import TOTAL_HAND_MOV, all_id, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
@@ -303,7 +303,7 @@ class GameIn2(BaseModel):
 
 
 class SetCardsResponse(BaseModel):
-    player_id: int 
+    player_id: int
     all_cards: List[int]
 
 
@@ -510,7 +510,8 @@ async def repartir_cartas_movimiento(
     mov_hand = in_game.player_info[in_game_player.id].hand_mov
     count = TOTAL_HAND_MOV - len(mov_hand)
 
-    all_cards = [random.randint(1, 49) for _ in range(count)]
+
+    all_cards = [random.choice(all_id) for _ in range(count)]
     mov_hand.extend(all_cards)
     in_game.add_cards_mov(mov_hand, in_game_player.id)
     games_repo.save(in_game)
@@ -568,7 +569,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
                 continue
-            
+
             game.add_player(player)
             game_repo.save(game)
 
