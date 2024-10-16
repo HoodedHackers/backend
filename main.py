@@ -287,6 +287,13 @@ async def start_game(
     selec_game.started = True
     selec_game.shuffle_players()
     games_repo.save(selec_game)
+    await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
+        {
+            "game_id": id_game,
+            "status": "started",
+        },
+        id_game,
+    )
     return {"status": "success!"}
 
 
@@ -475,6 +482,7 @@ async def advance_game_turn(
             "current_turn": game.current_player_turn,
             "game_id": game.id,
             "player_id": current_player.id,
+            "player_name": current_player.name,
         },
         game_id,
     )
@@ -506,8 +514,16 @@ async def repartir_cartas_movimiento(
     return SetCardsResponse(all_cards=all_cards)
 
 
-@app.websocket("/api/lobby/{game_id}/turns")
+@app.websocket("/ws/lobby/{game_id}/turns")
 async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    {
+        "current_turn": int,
+        "game_id": int,
+        "player_id": int,
+        "player_name": str
+    }
+    """
     manager = Managers.get_manager(ManagerTypes.TURNS)
     await manager.connect(websocket, game_id, player_id)
     try:
@@ -561,6 +577,24 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
         players_raw = game.players
         players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
         await manager.broadcast({"players": players}, game_id)
+
+@app.websocket("/ws/lobby/{game_id}/status")
+async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de notificar el estado de la partida a los jugadores conectados.
+    Retorna mensajes de la siguiente forma:
+        {
+            "game_id": int,
+            "status": "started"|"finished"|"canceled"
+        }
+    """
+    manager = Managers.get_manager(ManagerTypes.GAME_STATUS)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
 
 
 @app.websocket("/ws/lobby/{game_id}/select")
