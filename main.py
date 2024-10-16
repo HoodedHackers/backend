@@ -607,7 +607,7 @@ async def select_card(
     """
     Este ws se encarga de recibir la selección de cartas de un jugador y notificar a los demás jugadores de la partida.
 
-    Se espera: {card_id: 'valor'}
+    Se espera: {card_id: 'valor', player_identifier: 'valor'}
 
     Se retorna: {player_id: 'valor', card_id: 'valor'}
     """
