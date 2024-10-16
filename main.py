@@ -329,46 +329,56 @@ async def repartir_cartas_figura(
 
 
 
-class IdentityIn(BaseModel):
-    id_play: str
+
+class ExitRequest(BaseModel):  # le llega esto al endpoint
+    identifier: UUID
 
 
-@app.patch("/api/lobby/{lobby_id}")
+def check_victory(game: Game):
+    return game.started and len(game.players) == 1
+
+
+async def nuke_game(game: Game, games_repo: GameRepository):
+    pids = [player.id for player in game.players]
+    games_repo.delete(game)
+    await Managers.disconnect_all(game.id)
+
+
+@app.post("/api/lobby/{game_id}/exit")
 async def exit_game(
-    lobby_id: int,
-    ident: IdentityIn,
-    repo: GameRepository = Depends(get_games_repo),
-    repo_player: PlayerRepository = Depends(get_player_repo),
+    game_id: int,
+    exit_request: ExitRequest,
+    games_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
 ):
-    lobby_query = repo.get(lobby_id)
-    leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-
-    if lobby_query is None:
-        raise HTTPException(status_code=404, detail="Lobby not found")
-    player_exit = repo_player.get_by_identifier(UUID(ident.id_play))
-    if player_exit is None:
-        raise HTTPException(status_code=404, detail="Player not found")
-    if player_exit not in lobby_query.players:
-        raise HTTPException(status_code=404, detail="Player not in lobby")
-
-    # si el host se quiere ir y el juego no empezo, se borra el lobby
-    if player_exit == lobby_query.host and lobby_query.started is False:
-        await leave_manager.broadcast({"action": "el host salio"}, player_exit.id)
-        leave_manager.remove_lobby(lobby_id)
-
-        repo.delete(lobby_query)
+    game = games_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Partida no encontrada")
+    player = player_repo.get_by_identifier(exit_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Jugador no encontrade")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    if player == game.host and not game.started:
+        await nuke_game(game, games_repo)
         return {"status": "success"}
-    if len(lobby_query.players) == 2 and lobby_query.started: 
-        await leave_manager.broadcast({"action": "Hay un ganador"}, player_exit.id)
-        repo.delete(lobby_query)
-        return {"status": "success"}
-
-    await leave_manager.broadcast({"action": "salio un jugador"}, player_exit.id)
-    leave_manager.disconnect(lobby_id, player_exit.id)
-    lobby_query.delete_player(player_exit)
-    repo.save(lobby_query)
-
+    game.delete_player(player)
+    games_repo.save(game)
+    join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    await join_leave_manager.broadcast(
+        {
+            "player_id": player.id,
+            "action": "leave",
+            "player_name": player.name,
+            "players": [player.id for player in game.players],
+        },
+        game.id,
+    )
+    if check_victory(game):
+        print("Alguien gano")
+        pass
     return {"status": "success"}
+
 
 
 class AdvanceTurnRequest(BaseModel):
@@ -466,7 +476,15 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
     Se espera: {user_identifier: 'valor'}
     """
-    print("Conectando")
+
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    player = player_repo.get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+
     manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     await manager.connect(websocket, game_id, player_id)
     try:
@@ -481,11 +499,9 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
                 continue
-
-            game = game_repo.get(game_id)
-            if game is None:
-                await websocket.send_json({"error": "Game not found"})
-                continue
+            
+            game.add_player(player)
+            game_repo.save(game)
 
             players_raw = game.players
             players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
@@ -494,6 +510,9 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
+        players_raw = game.players
+        players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
+        await manager.broadcast({"players": players}, game_id)
 
 
 @app.websocket("/ws/lobby/{game_id}/status")
@@ -511,5 +530,43 @@ async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int
     try:
         while True:
             data = await websocket.receive_json()
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
+@app.websocket("/ws/lobby/{game_id}/board")
+async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de notificar el estado del tablero a los jugadores conectados.
+    Retorna mensajes de la siguiente forma:
+        {
+            "game_id": int,
+            "board": [int]
+        }
+    Tambien se puede recibir pedidos del estado del tablero usando el siguiente mensaje:
+        {
+            "request": "status"
+        }
+    """
+    manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            request = data.get("request")
+            if request is None or request != "status":
+                await websocket.send_json({"error": "invalid request"})
+                continue
+            game = game_repo.get(game_id)
+            if game is None:
+                await websocket.send_json({"error": "invalid game id"})
+                continue
+            board = [tile.value for tile in game.board]
+            await websocket.send_json(
+                {
+                    "game_id": game_id,
+                    "board": board,
+                }
+            )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
