@@ -34,7 +34,7 @@ def main():
     g1.set_defaults()
     g2 = Game(name="Partida 2", max_players=3, min_players=2, started=False)
     g2.set_defaults()
-    g3 = Game(name="Partida 3", max_players=4, min_players=3, started=True)
+    g3 = Game(name="Partida 3", max_players=4, min_players=3, started=False)
     g3.set_defaults()
     g4 = Game(name="Partida 4", max_players=2, min_players=2, started=False)
     g4.set_defaults()
