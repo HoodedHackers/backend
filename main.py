@@ -384,69 +384,54 @@ def unlock_game_not_started(
         )
 
 
-class PlayerOutRandom(BaseModel):
-    id: int
-    name: str
-
-
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
 
 
-class GamePlayerResponse(BaseModel):  # Lo que envia
-    game_id: int
-    players: List[PlayerOutRandom]
-    out: ExitRequest
-    activo: bool
+def check_victory(game: Game):
+    return game.started and len(game.players) == 1
 
 
-# api/lobby/{game_id}
-@app.patch("/api/lobby/salir/{game_id}", response_model=GamePlayerResponse)
-async def exitGame(
+async def nuke_game(game: Game, games_repo: GameRepository):
+    pids = [player.id for player in game.players]
+    games_repo.delete(game)
+    await Managers.disconnect_all(game.id)
+
+
+@app.post("/api/lobby/{game_id}/exit")
+async def exit_game(
     game_id: int,
     exit_request: ExitRequest,
     games_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
 ):
     game = games_repo.get(game_id)
-
-    if not game:
+    if game is None:
         raise HTTPException(status_code=404, detail="Partida no encontrada")
-    # ve si el jugador esta en la partida, por las dudas ah
-    elif game.started == False:
-        raise HTTPException(status_code=400, detail="El juego no empezo")
-    elif len(game.players) <= 1 or len(game.players) <= game.min_players:
-        raise HTTPException(
-            status_code=400, detail="numero de jugadores menor al esperado"
-        )
-
-    player_exit = next(
-        player
-        for player in game.players
-        if player.identifier == exit_request.identifier
-    )
-
-    game.delete_player(player_exit)
+    player = player_repo.get_by_identifier(exit_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Jugador no encontrade")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    if player == game.host and not game.started:
+        await nuke_game(game, games_repo)
+        return {"status": "success"}
+    game.delete_player(player)
     games_repo.save(game)
     join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     await join_leave_manager.broadcast(
         {
-            "player_id": player_exit.id,
-            "action": "join",
-            "player_name": player_exit.name,
+            "player_id": player.id,
+            "action": "leave",
+            "player_name": player.name,
+            "players": [player.id for player in game.players],
         },
         game.id,
     )
-
-    return GamePlayerResponse(
-        game_id=game.id,
-        players=[
-            PlayerOutRandom(name=player.name, id=player.id) for player in game.players
-        ],
-        out=ExitRequest(
-            identifier=exit_request.identifier,
-        ),
-        activo=game.started,
-    )
+    if check_victory(game):
+        print("Alguien gano")
+        pass
+    return {"status": "success"}
 
 
 class AdvanceTurnRequest(BaseModel):
@@ -567,7 +552,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
                 continue
-            
+
             game.add_player(player)
             game_repo.save(game)
 
