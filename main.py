@@ -515,7 +515,7 @@ async def repartir_cartas_movimiento(
     in_game.add_cards_mov(mov_hand, in_game_player.id)
     games_repo.save(in_game)
 
-    return SetCardsResponse(player_id=in_game_player.id, all_cards=all_cards)
+    return SetCardsResponse(player_id=in_game_player.id, all_cards=mov_hand)
 
 
 @app.websocket("/ws/lobby/{game_id}/turns")
