@@ -202,7 +202,6 @@ def test_exit_game_two_players_started():
     assert game_repo.get(game["id"]) is None
 
 
-"""
 
 class TestExitGame(unittest.TestCase):
 
@@ -211,11 +210,7 @@ class TestExitGame(unittest.TestCase):
         self.dbs = Database().session()
         self.games_repo = GameRepository(self.dbs)
         self.player_repo = PlayerRepository(self.dbs)
-        identifier1 = str(uuid4())
-        identifier2 = str(uuid4())
-        identifier3 = str(uuid4())
-        identifier4 = str(uuid4())
-
+    
         self.host = Player(name="Ely")
         self.player_repo.save(self.host)
 
@@ -244,27 +239,22 @@ class TestExitGame(unittest.TestCase):
     def tearDown(self):
         self.dbs.query(Game).delete()
         self.dbs.query(Player).delete()
-        # self.dbs.query(FigCards).delete()
         self.dbs.commit()
         self.dbs.close()
 
     def test_connect_from_lobby(self):
-
+        print("principio\n")
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ):  # patch("main.card_repo", self.fig_cards_repo):
+        ):  
 
             player_id0 = self.players[0].id
             player_id1 = self.players[1].id
-            # card_id0 = self.fig_cards[0].id
-            #player_id0_ident = self.game.players[0].identifier
 
             # Debe haber al menos dos jugadores en el juego
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
-           # self.game.started = True
-#ver que onda aca
-            player_id0_ident = self.players[0].identifier
+           # player_id0_ident = self.players[0].identifier
 #            self.games_repo.save(self.game)
             print("pase por el save")
             # Conectamos ambos jugadores
@@ -278,7 +268,7 @@ class TestExitGame(unittest.TestCase):
 
                     # El jugador uno usa la URL @app.patch("/api/lobby/{lobby_id}")  id_play: str
                     response = self.client.patch(
-                        f"/api/lobby/1", json = {"id_play":str(player_id0_ident)},
+                        f"/api/lobby/{self.game.id}", json = {"id_play":str(self.game.players[0].identifier)},
                     )
                     print("ya pase por el response")
                     print(response)
@@ -293,4 +283,3 @@ class TestExitGame(unittest.TestCase):
                     data2 = websocket1.receive_json()
                     assert data2 == {"action": "el host salio"}
 
-"""

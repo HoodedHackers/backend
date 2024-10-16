@@ -345,38 +345,31 @@ async def exit_game(
     player_exit = repo_player.get_by_identifier(UUID(ident.id_play))
     if player_exit is None:
         raise HTTPException(status_code=404, detail="Player not found")
-    elif player_exit not in lobby_query.players:
+    if player_exit not in lobby_query.players:
         raise HTTPException(status_code=404, detail="Player not in lobby")
 
     # si el host se quiere ir y el juego no empezo, se borra el lobby
-    elif player_exit == lobby_query.host and lobby_query.started is False:
-        print("El host se fue")
+    if player_exit == lobby_query.host and lobby_query.started is False:
         await leave_manager.broadcast({"action": "el host salio"}, player_exit.id)
-        await asyncio.sleep(0.1)
         leave_manager.remove_lobby(lobby_id)
 
         repo.delete(lobby_query)
         return {"status": "success"}
-    elif (
-        len(lobby_query.players) == 2 and lobby_query.started is True
-    ):  # falta test para este caso
-        print("Hay un ganador")
+    if len(lobby_query.players) == 2 and lobby_query.started is True: 
         await leave_manager.broadcast({"action": "Hay un ganador"}, player_exit.id)
         # preguntar sobre esta parte porque primero deberia enviar un mensaje de victoria
         # y luego esperar un cachito y borrar la partida
-        await asyncio.sleep(0.2)
         repo.delete(lobby_query)
         return {"status": "success"}
 
     # en cualquier otro caso, es decir, si el juego ya empezo o si un jugador comun se quiere
     # ir o el host se quiere y empezo el juego entonces se borra al jugador del lobby o partida :D
     # aca utilizo un broadcast avisando a otros jugadores
-    print("salio un jugador")
     await leave_manager.broadcast({"action": "salio un jugador"}, player_exit.id)
     leave_manager.disconnect(lobby_id, player_exit.id)
     lobby_query.delete_player(player_exit)
     # utilizo el de entradas y salidas para enviar la lista de jugadores
-    # repo.save(lobby_query)
+    repo.save(lobby_query)
 
     return {"status": "success"}
 
@@ -476,6 +469,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
     Se espera: {user_identifier: 'valor'}
     """
+    print("Conectando")
     manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     await manager.connect(websocket, game_id, player_id)
     try:

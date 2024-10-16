@@ -1,4 +1,3 @@
-"""
 import unittest
 from unittest.mock import patch
 
@@ -55,20 +54,47 @@ class TestNotifyLobby(unittest.TestCase):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-            
 
+            identifier0 = self.players[0].identifier
+            indetifier1 = self.players[1].identifier
+            id0 = self.players[0].id
+            id1 = self.players[1].id
+
+            # Se une el Lou
             self.game_1.add_player(self.players[0])
-            self.game_1.add_player(self.players[1])
-            self.game_1.started = True
+            with self.client.websocket_connect(
+                f"/ws/lobby/1?player_id={id0}"
+            ) as websocket0:
 
+                websocket0.send_json({"user_identifier": str(identifier0)})
 
-            with self.client.websocket_connect(f"/ws/lobby/1?player_id={self.game_1.players[0].id}") as websocket0:
+                # Chequeamos que estemos solos
+                response = websocket0.receive_json()
+                assert response == {
+                    "players": [
+                        {"player_id": id0, "player_name": self.game_1.players[0].name}
+                    ]
+                }
 
-                # uno se va
-                self.client.patch("/api/lobby/1", json={"player_id": self.game_1.players[0].id})
+                # Se une el Lou^2
+                self.game_1.add_player(self.players[1])
+                with self.client.websocket_connect(
+                    f"/ws/lobby/1?player_id={id1}"
+                ) as websocket1:
 
-                # deveriamos escuchar un mensaje de que ganamos
-                data=websocket0.receive_json()
-                assert data == {"action": "Hay un ganador"}
+                    websocket1.send_json({"user_identifier": str(indetifier1)})
 
-"""
+                    # Chequeamos que estemos los dos
+                    response = websocket1.receive_json()
+                    assert response == {
+                        "players": [
+                            {
+                                "player_id": id0,
+                                "player_name": self.game_1.players[0].name,
+                            },
+                            {
+                                "player_id": id1,
+                                "player_name": self.game_1.players[1].name,
+                            },
+                        ],
+                    }
