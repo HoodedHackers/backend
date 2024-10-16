@@ -17,6 +17,7 @@ from .board import Board, Color
 from .exceptions import *
 from .player import Player
 
+TOTAL_NUM_HAND = 3
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
@@ -198,3 +199,8 @@ class Game(Base):
             raise PreconditionsNotMet
         self.board = Board.random_board()
         self.started = True
+
+    def add_cards_mov(self, new_cards, id):
+        self.player_info[id].hand_mov = new_cards
+        # if hand is not TOTAL_NUM_HAND:
+        #     raise OverHand

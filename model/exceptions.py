@@ -12,3 +12,7 @@ class GameFull(BaseException):
 
 class PlayerNotInGame(BaseException):
     pass
+
+
+class OverHand(BaseException):
+    pass
