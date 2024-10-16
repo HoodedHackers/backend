@@ -314,6 +314,7 @@ class GameIn2(BaseModel):
 
 
 class SetCardsResponse(BaseModel):
+    player_id: int
     all_cards: List[int]
 
 
@@ -345,7 +346,7 @@ async def repartir_cartas_figura(
         fig_total.remove(id)
         cards.append(id)
 
-    return SetCardsResponse(all_cards=cards)
+    return SetCardsResponse(player_id= in_game_player.id, all_cards=cards)
 
 
 class IdentityIn(BaseModel):
@@ -535,7 +536,7 @@ async def repartir_cartas_movimiento(
     in_game.add_cards_mov(mov_hand, in_game_player.id)
     games_repo.save(in_game)
 
-    return SetCardsResponse(all_cards=all_cards)
+    return SetCardsResponse(player_id=in_game_player.id, all_cards=all_cards)
 
 
 @app.websocket("/ws/lobby/{game_id}/turns")
