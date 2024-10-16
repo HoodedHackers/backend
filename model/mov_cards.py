@@ -27,8 +27,6 @@ all_dist = {
     ],
 }
 
-all_id = list(range(1, BUNDLE_MOV * len(all_dist)))
-
 class IdMov(TypeDecorator):
     impl = VARCHAR
 
