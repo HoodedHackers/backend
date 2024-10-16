@@ -607,7 +607,7 @@ async def game_notify_winner(websocket: WebSocket, game_id: int, player_id: int)
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
         return
-    
+
     player = player_repo.get(player_id)
     if player is None:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -628,13 +628,11 @@ async def game_notify_winner(websocket: WebSocket, game_id: int, player_id: int)
                     await websocket.send_json({"error": "Player not found"})
                     continue
 
-                if game.player_info[player.id].hand_mov == []:
+                if game.player_info[player.id].hand_fig == []:
                     await manager.broadcast(
                         {"action": "winner", "player_identifier": player_ident},
                         game_id,
                     )
-                    
+
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
-        
-            

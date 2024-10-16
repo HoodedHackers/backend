@@ -52,7 +52,7 @@ class Managers:
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
         ManagerTypes.TURNS: ConnectionManager(),
         ManagerTypes.GAME_STATUS: ConnectionManager(),
-        ManagerTypes.WINNER: ConnectionManager()
+        ManagerTypes.WINNER: ConnectionManager(),
     }
 
     @classmethod

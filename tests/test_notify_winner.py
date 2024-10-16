@@ -52,7 +52,7 @@ class TestNotifyWinner(unittest.TestCase):
     def test_connect_from_lobby(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ): 
+        ):
 
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
@@ -66,23 +66,34 @@ class TestNotifyWinner(unittest.TestCase):
                     player_id=player.id,
                     turn_position=idx,
                     hand_mov=[idx + 1, idx + 2, idx + 3],
+                    hand_fig=[idx],
                 )
                 self.game.player_info[player.id] = player_info
 
             # conectamos ambos jugadores
             with self.client.websocket_connect(
-                f"/ws/lobby/101010/select?player_id={player0.id}"
+                f"/ws/game/{self.game.id}/notify-winner?player_id={player0.id}"
             ) as websocket0:
                 with self.client.websocket_connect(
-                    f"/ws/lobby/101010/select?player_id={player1.id}"
+                    f"/ws/game/{self.game.id}/notify-winner?player_id={player1.id}"
                 ) as websocket1:
 
-                    # El jugador 0 selecciona una de sus cartas
-                    card0 = self.game.player_info[player0.id].hand_mov[0]
-                    websocket0.send_json({"card_id": card0})
+                    # El jugador juega su última carta de figura
+                    self.game.player_info[player0.id].hand_fig = []
+
+                    # Termina su turno
+                    websocket0.send_json(
+                        {"action": "turnover", "player_identifier": str(player0.identifier)}
+                    )
 
                     # Comprobamos que se haya efectuado el broadcast
                     data1 = websocket0.receive_json()
-                    assert data1 == {"player_id": player0.id, "card_id": card0}
+                    assert data1 == {
+                        "action": "winner",
+                        "player_identifier": str(player0.identifier),
+                    }
                     data2 = websocket1.receive_json()
-                    assert data2 == {"player_id": player0.id, "card_id": card0}
+                    assert data2 == {
+                        "action": "winner",
+                        "player_identifier": str(player0.identifier),
+                    }
