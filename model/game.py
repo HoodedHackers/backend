@@ -16,6 +16,7 @@ from database import Base
 from .board import Board, Color
 from .exceptions import *
 from .player import Player
+from .mov_cards import IdMov
 
 TOTAL_NUM_HAND = 3
 game_player_association = Table(
@@ -88,6 +89,7 @@ class Game(Base):
     player_info: Mapped[Dict[int, PlayerInfo]] = mapped_column(
         PlayerInfoMapper, default=lambda: {}
     )
+    all_movs: Mapped[List[int]] = mapped_column(IdMov, default=IdMov.total)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -126,6 +128,8 @@ class Game(Base):
             self.host_id = 1
         if self.board is None:
             self.board = Board.random_board()
+        if self.all_movs is None: 
+            self.all_movs = IdMov.total()
 
     def __repr__(self):
         return (
@@ -208,3 +212,7 @@ class Game(Base):
             turn_position=turn,
             hand_mov=new_cards,
         )
+    def elim_mov(self, discard):
+        principal = self.all_movs 
+        res= [x for x in principal if x not in discard]
+        self.all_movs = res

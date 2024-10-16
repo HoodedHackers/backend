@@ -1,6 +1,6 @@
 import math
 from typing import List
-
+from sqlalchemy.types import VARCHAR, TypeDecorator
 from pydantic import BaseModel
 
 from model.board import SIZE_BOARD
@@ -28,6 +28,25 @@ all_dist = {
 }
 
 all_id = list(range(1, BUNDLE_MOV * len(all_dist)))
+
+class IdMov(TypeDecorator):
+    impl = VARCHAR
+
+    def process_bind_param(self, value: List[int] | None, dialect):
+        if value is None:
+            return None
+        return " ".join(f"{c}" for c in value)
+
+    def process_result_value(self, value, dialect) -> List[int]:
+        if value is None:
+            return []
+        list = value.split(" ")
+        return [(int(c)) for c in list]
+
+    @staticmethod
+    def total() -> List[int]:
+        return [i for i in range(1, 49)]
+
 
 class MoveCards(BaseModel):
     id: int
