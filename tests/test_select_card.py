@@ -49,10 +49,10 @@ class TestSelectCard(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-    def test_connect_from_lobby(self):
+    def test_select(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ): 
+        ):
 
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
@@ -79,7 +79,11 @@ class TestSelectCard(unittest.TestCase):
 
                     # El jugador 0 selecciona una de sus cartas
                     card0 = self.game.player_info[player0.id].hand_mov[0]
-                    websocket0.send_json({"card_id": card0})
+                    print("CARD0", card0)
+                    print("PLAYER0", str(player0.identifier))
+                    websocket0.send_json(
+                        {"card_id": card0, "player_identifier": str(player0.identifier)}
+                    )
 
                     # Comprobamos que se haya efectuado el broadcast
                     data1 = websocket0.receive_json()

@@ -578,6 +578,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
         players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
         await manager.broadcast({"players": players}, game_id)
 
+
 @app.websocket("/ws/lobby/{game_id}/status")
 async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int):
     """
@@ -605,7 +606,10 @@ async def select_card(
 ):
     """
     Este ws se encarga de recibir la selección de cartas de un jugador y notificar a los demás jugadores de la partida.
+
     Se espera: {card_id: 'valor'}
+
+    Se retorna: {player_id: 'valor', card_id: 'valor'}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -620,15 +624,24 @@ async def select_card(
     try:
         while True:
             data = await websocket.receive_json()
-            card_id = data.get("card_id")
+            current_card = data.get("card_id")
 
-            hand = game.player_info[player_id].hand_mov
-            if card_id not in hand:
+            current_player_ident = data.get("player_identifier")
+            current_player = player_repo.get_by_identifier(UUID(current_player_ident))
+            if current_player is None:
+                await websocket.send_json({"error": "Player id is missing"})
+                continue
+            if current_player not in game.players:
+                await websocket.send_json({"error": "Player not in game"})
+                continue
+
+            hand = game.player_info[current_player.id].hand_mov
+            if current_card not in hand:
                 await websocket.send_json({"error": "Card not in hand"})
                 continue
 
             await manager.broadcast(
-                {"player_id": player_id, "card_id": card_id}, game_id
+                {"player_id": current_player.id, "card_id": current_card}, game_id
             )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
