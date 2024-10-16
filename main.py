@@ -528,6 +528,14 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
     Se espera: {user_identifier: 'valor'}
     """
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    player = player_repo.get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+
     manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     await manager.connect(websocket, game_id, player_id)
     try:
@@ -543,10 +551,8 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
                 await websocket.send_json({"error": "Player not found"})
                 continue
 
-            game = game_repo.get(game_id)
-            if game is None:
-                await websocket.send_json({"error": "Game not found"})
-                continue
+            game.add_player(player)
+            game_repo.save(game)
 
             players_raw = game.players
             players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
@@ -555,7 +561,9 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
-
+        players_raw = game.players
+        players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
+        await manager.broadcast({"players": players}, game_id)
 
 @app.websocket("/ws/lobby/{game_id}/select")
 async def select_card(
