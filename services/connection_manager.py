@@ -10,7 +10,6 @@ class ManagerTypes(Enum):
     TURNS = 2
     GAME_STATUS = 3
 
-
 @dataclass
 class PlayerWs:
     id_player: int
@@ -49,8 +48,7 @@ class ConnectionManager:
 class Managers:
     managers = {
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
-        ManagerTypes.TURNS: ConnectionManager(),
-        ManagerTypes.GAME_STATUS: ConnectionManager(),
+        ManagerTypes.TURNS: ConnectionManager()
     }
 
     @classmethod
