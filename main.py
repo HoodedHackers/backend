@@ -303,6 +303,7 @@ class GameIn2(BaseModel):
 
 
 class SetCardsResponse(BaseModel):
+    player_id: int
     all_cards: List[int]
 
 
@@ -324,7 +325,7 @@ async def repartir_cartas_figura(
     if not in_game_player in in_game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
-    return SetCardsResponse(all_cards=cards)
+    return SetCardsResponse(player_id=in_game_player.id, all_cards=cards)
 
 
 class IdentityIn(BaseModel):
@@ -493,28 +494,31 @@ async def advance_game_turn(
 async def repartir_cartas_movimiento(
     req: GameIn2,
     player_repo: PlayerRepository = Depends(get_player_repo),
-    game_repo: GameRepository = Depends(get_games_repo),
+    games_repo: GameRepository = Depends(get_games_repo),
 ):
 
     identifier_player = UUID(req.player)
     in_game_player = player_repo.get_by_identifier(identifier_player)
-    in_game = game_repo.get(req.game_id)
+    in_game = games_repo.get(req.game_id)
     if in_game_player is None:
-        print("no hay player")
         raise HTTPException(status_code=404, detail="Player dont found!")
     if in_game is None:
-        print("no hay game")
         raise HTTPException(status_code=404, detail="Game dont found!")
-    if not in_game_player in in_game.players:
-        print("no hay player en game")
+    if in_game_player not in in_game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
     mov_hand = in_game.player_info[in_game_player.id].hand_mov
     count = TOTAL_HAND_MOV - len(mov_hand)
 
-    all_cards = [random.randint(1, 49) for _ in range(count)]
+    movs_in_game = in_game.all_movs
+    all_cards = [random.choice(movs_in_game) for _ in range(count)]
+    mov_hand.extend(all_cards)
+    
+    in_game.add_hand_mov(mov_hand, all_cards, in_game_player.id)
 
-    return SetCardsResponse(all_cards=all_cards)
+    games_repo.save(in_game)
+
+    return SetCardsResponse(player_id=in_game_player.id, all_cards=mov_hand)
 
 
 @app.websocket("/ws/lobby/{game_id}/turns")
@@ -567,7 +571,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
                 continue
-            
+
             game.add_player(player)
             game_repo.save(game)
 
