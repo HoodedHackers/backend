@@ -465,7 +465,32 @@ async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: in
     await manager.connect(websocket, game_id, player_id)
     try:
         while True:
-            await websocket.receive_bytes()
+            req = await websocket.receive_json()
+            if req.get("request") == "status":
+                game = game_repo.get(game_id)
+                if game is None:
+                    await websocket.send_json(
+                        {
+                            "error": "invalid game",
+                        }
+                    )
+                    continue
+                current_player = game.current_player()
+                if current_player is None:
+                    await websocket.send_json(
+                        {
+                            "error": "game has no players",
+                        }
+                    )
+                    continue
+                await websocket.send_json(
+                    {
+                        "current_turn": game.current_player_turn,
+                        "game_id": game.id,
+                        "player_id": current_player.id,
+                        "player_name": current_player.name,
+                    }
+                )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
