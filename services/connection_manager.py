@@ -11,6 +11,7 @@ class ManagerTypes(Enum):
     GAME_STATUS = 3
     BOARD_STATUS = 4
 
+
 @dataclass
 class PlayerWs:
     id_player: int

@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import TOTAL_HAND_FIG, TOTAL_HAND_MOV, TOTAL_FIG_CARDS, Game, Player
+from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import (FigRepository, GameRepository, PlayerRepository,
                           create_all_figs)
@@ -334,19 +334,19 @@ async def repartir_cartas_figura(
         raise HTTPException(status_code=404, detail="Game dont found!")
     if not in_game_player in in_game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
-    
+
     count = TOTAL_HAND_FIG - len(in_game.player_info[in_game_player.id].hand_fig)
     fig_total = in_game.player_info[in_game_player.id].fig
 
-    if len(fig_total) == 0: 
-        fig_total = list(range(1, TOTAL_FIG_CARDS+1))
+    if len(fig_total) == 0:
+        fig_total = list(range(1, TOTAL_FIG_CARDS + 1))
 
     for _ in range(count):
         id = random.choice(fig_total)
         fig_total.remove(id)
         cards.append(id)
 
-    return SetCardsResponse(player_id= in_game_player.id, all_cards=cards)
+    return SetCardsResponse(player_id=in_game_player.id, all_cards=cards)
 
 
 class IdentityIn(BaseModel):
@@ -519,11 +519,13 @@ async def repartir_cartas_movimiento(
 
     games_repo.save(in_game)
 
-#<<<<<<< HEAD
- #   return SetCardsResponse(player_id=in_game_player.id, all_cards=all_cards)
-#=======
+    # <<<<<<< HEAD
+    #   return SetCardsResponse(player_id=in_game_player.id, all_cards=all_cards)
+    # =======
     return SetCardsResponse(player_id=in_game_player.id, all_cards=mov_hand)
-#>>>>>>> origin/develop
+
+
+# >>>>>>> origin/develop
 
 
 @app.websocket("/ws/lobby/{game_id}/turns")
