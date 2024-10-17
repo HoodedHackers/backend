@@ -1,3 +1,4 @@
+from collections import Counter, defaultdict
 import unittest
 
 from sqlalchemy import Integer, create_engine, text
@@ -50,3 +51,11 @@ class TestCommaSeparatedListType(unittest.TestCase):
         result = self.session.query(Dummy).filter_by(id=1).first()
         assert result is not None
         self.assertEqual(mem_board, result.board)
+
+class TestBoard(unittest.TestCase):
+    def test_random_board_count(self):
+        board = Board.random_board()
+        self.assertEqual(len(board), 36)
+        count = Counter(board)
+        for _, count in count.items():
+            self.assertEqual(count, 9)
