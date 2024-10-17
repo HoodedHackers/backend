@@ -8,7 +8,7 @@ from model.board import SIZE_BOARD
 BOARD_MAX_SIDE = math.sqrt(SIZE_BOARD) - 1
 BOARD_MIN_SIDE = 0
 BUNDLE_MOV = 7
-
+TOTAL_MOV = 49
 TOTAL_HAND_MOV = 3
 
 all_dist = {
@@ -43,7 +43,7 @@ class IdMov(TypeDecorator):
 
     @staticmethod
     def total() -> List[int]:
-        return [i for i in range(1, 49)]
+        return [i for i in range(1, TOTAL_MOV+1)]
 
 
 class MoveCards(BaseModel):

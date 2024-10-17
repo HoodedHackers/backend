@@ -204,15 +204,13 @@ class Game(Base):
         self.board = Board.random_board()
         self.started = True
 
-    def add_cards_mov(self, new_cards, id):
-        self.player_info[id].hand_mov = new_cards
+    def add_hand_mov(self, new_cards, discard, id):
         turn = self.player_info[id].turn_position
         self.player_info[id] = PlayerInfo(
             player_id=id,
             turn_position=turn,
             hand_mov=new_cards,
         )
-    def elim_mov(self, discard):
         principal = self.all_movs 
         res= [x for x in principal if x not in discard]
         self.all_movs = res
