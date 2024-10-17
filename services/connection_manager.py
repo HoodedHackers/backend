@@ -48,7 +48,8 @@ class ConnectionManager:
 class Managers:
     managers = {
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
-        ManagerTypes.TURNS: ConnectionManager()
+        ManagerTypes.TURNS: ConnectionManager(),
+        ManagerTypes.GAME_STATUS: ConnectionManager(),
     }
 
     @classmethod
