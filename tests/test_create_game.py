@@ -1,5 +1,5 @@
 from os import getenv
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 from uuid import uuid4
 
 import asserts
@@ -117,3 +117,18 @@ def test_crear_partida_error_brutal(mock_game_repo):
         },
     )
     assert response.status_code == 422
+
+
+def test_creaar_partida_jugador_no_encontrado():
+    non_existent_player = uuid4()
+    response = client.post(
+        "/api/lobby",
+        json={
+            "identifier": str(non_existent_player),
+            "name": "partida1",
+            "max_players": 4,
+            "min_players": 2,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Jugador no encontrado"}

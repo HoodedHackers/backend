@@ -79,7 +79,8 @@ class Game(Base):
     min_players: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
     started: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     players: Mapped[List[Player]] = relationship(
-        "Player", secondary=game_player_association
+        "Player",
+        secondary=game_player_association,
     )
     host_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("players.id"), nullable=False
