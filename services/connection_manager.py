@@ -9,6 +9,7 @@ class ManagerTypes(Enum):
     JOIN_LEAVE = 1
     TURNS = 2
     GAME_STATUS = 3
+    BOARD_STATUS = 4
 
 @dataclass
 class PlayerWs:
@@ -38,6 +39,14 @@ class ConnectionManager:
         if len(self.lobbies[lobby_id]) == 0:
             del self.lobbies[lobby_id]
 
+    async def disconnect_all(self, lobby_id: int):
+        if lobby_id not in self.lobbies:
+            return
+        conns = self.lobbies[lobby_id]
+        for con in conns:
+            await con.websockets.close()
+        del self.lobbies[lobby_id]
+
     async def broadcast(self, message: Any, lobby_id: int):
         if lobby_id not in self.lobbies:
             return
@@ -50,6 +59,7 @@ class Managers:
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
         ManagerTypes.TURNS: ConnectionManager(),
         ManagerTypes.GAME_STATUS: ConnectionManager(),
+        ManagerTypes.BOARD_STATUS: ConnectionManager(),
     }
 
     @classmethod
@@ -58,3 +68,8 @@ class Managers:
         if manager is None:
             raise Exception("Bad manager type")
         return manager
+
+    @classmethod
+    async def disconnect_all(cls, game_id: int):
+        for manager in Managers.managers.values():
+            await manager.disconnect_all(game_id)
