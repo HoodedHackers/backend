@@ -5,8 +5,9 @@ from asserts import assert_equal, assert_raises
 
 from .exceptions import PreconditionsNotMet
 from .game import Game, GameFull
-from .player import Player
 from .mov_cards import TOTAL_MOV
+from .player import Player
+
 
 def test_add_player():
     g = Game(id=0, name="test game")
@@ -99,6 +100,7 @@ def test_removing_player_changes_turn_order():
     g.delete_player(players[0])
     assert max(player.turn_position for player in g.player_info.values()) == 2
 
+
 def test_hand_mov():
     players = [Player(name=f"player {n}", id=n) for n in range(4)]
     list = [1, 2, 3]
@@ -110,6 +112,3 @@ def test_hand_mov():
     hand = g.player_info[0].hand_mov
     assert len(g.all_movs) == TOTAL_MOV - 3
     assert len(hand) == 3
-
-
-

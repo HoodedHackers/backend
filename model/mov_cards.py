@@ -1,7 +1,8 @@
 import math
 from typing import List
-from sqlalchemy.types import VARCHAR, TypeDecorator
+
 from pydantic import BaseModel
+from sqlalchemy.types import VARCHAR, TypeDecorator
 
 from model.board import SIZE_BOARD
 
@@ -27,6 +28,7 @@ all_dist = {
     ],
 }
 
+
 class IdMov(TypeDecorator):
     impl = VARCHAR
 
@@ -43,7 +45,7 @@ class IdMov(TypeDecorator):
 
     @staticmethod
     def total() -> List[int]:
-        return [i for i in range(1, TOTAL_MOV+1)]
+        return [i for i in range(1, TOTAL_MOV + 1)]
 
 
 class MoveCards(BaseModel):

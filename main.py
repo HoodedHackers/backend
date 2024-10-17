@@ -493,7 +493,7 @@ async def repartir_cartas_movimiento(
     movs_in_game = in_game.all_movs
     all_cards = [random.choice(movs_in_game) for _ in range(count)]
     mov_hand.extend(all_cards)
-    
+
     in_game.add_hand_mov(mov_hand, all_cards, in_game_player.id)
 
     games_repo.save(in_game)
