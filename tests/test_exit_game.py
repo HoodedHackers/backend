@@ -19,7 +19,6 @@ from services import Managers, ManagerTypes
 client = TestClient(app)
 
 
-
 class TestGameExits(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
@@ -28,7 +27,6 @@ class TestGameExits(unittest.TestCase):
         self.player_repo = PlayerRepository(self.dbs)
         self.host = Player(name="Ely")
         self.player_repo.save(self.host)
-
 
         self.players = [
             Player(name="Lou"),
@@ -57,32 +55,33 @@ class TestGameExits(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-
     def test_exit_invalid_game(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-            rsp = self.client.post(f"/api/lobby/777/exit", json={
-                "identifier": str(self.game.host.identifier)
-            })
+            rsp = self.client.post(
+                f"/api/lobby/777/exit",
+                json={"identifier": str(self.game.host.identifier)},
+            )
             self.assertEqual(rsp.status_code, 404)
 
     def test_exit_invalid_player(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-            rsp = self.client.post(f"/api/lobby/{self.game.id}/exit", json={
-                "identifier": str(uuid4())
-            })
+            rsp = self.client.post(
+                f"/api/lobby/{self.game.id}/exit", json={"identifier": str(uuid4())}
+            )
             self.assertEqual(rsp.status_code, 404)
 
     def test_exit_player_not_in_game(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-            rsp = self.client.post(f"/api/lobby/{self.game.id}/exit", json={
-                "identifier": str(self.host.identifier)
-            })
+            rsp = self.client.post(
+                f"/api/lobby/{self.game.id}/exit",
+                json={"identifier": str(self.host.identifier)},
+            )
             self.assertEqual(rsp.status_code, 404)
 
     def test_exit_player_in_game(self):
@@ -92,9 +91,10 @@ class TestGameExits(unittest.TestCase):
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
             self.games_repo.save(self.game)
-            rsp = self.client.post(f"/api/lobby/{self.game.id}/exit", json={
-                "identifier": str(self.players[0].identifier)
-            })
+            rsp = self.client.post(
+                f"/api/lobby/{self.game.id}/exit",
+                json={"identifier": str(self.players[0].identifier)},
+            )
             self.assertEqual(rsp.status_code, 200)
             game = self.games_repo.get(self.game.id)
             assert game is not None
@@ -107,9 +107,10 @@ class TestGameExits(unittest.TestCase):
             self.game.add_player(self.players[0])
             self.game.add_player(self.host)
             self.games_repo.save(self.game)
-            rsp = self.client.post(f"/api/lobby/{self.game.id}/exit", json={
-                "identifier": str(self.host.identifier)
-            })
+            rsp = self.client.post(
+                f"/api/lobby/{self.game.id}/exit",
+                json={"identifier": str(self.host.identifier)},
+            )
             self.assertEqual(rsp.status_code, 200)
             game = self.games_repo.get(self.game.id)
             assert game is None
@@ -117,29 +118,35 @@ class TestGameExits(unittest.TestCase):
     def test_exit_player_in_game_ws(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ), self.client.websocket_connect(f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}") as ws:
+        ), self.client.websocket_connect(
+            f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
+        ) as ws:
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
             self.games_repo.save(self.game)
-            rsp = self.client.post(f"/api/lobby/{self.game.id}/exit", json={
-                "identifier": str(self.players[0].identifier)
-            })
+            rsp = self.client.post(
+                f"/api/lobby/{self.game.id}/exit",
+                json={"identifier": str(self.players[0].identifier)},
+            )
             self.assertEqual(rsp.status_code, 200)
             message = ws.receive_json()
             self.assertIn("players", message)
             self.assertEqual(message.get("players"), [self.players[1].id])
-    
+
     def test_exit_winner_in_game_ws(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ), self.client.websocket_connect(f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}") as ws:
+        ), self.client.websocket_connect(
+            f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
+        ) as ws:
             self.game.add_player(self.players[0])
             self.game.add_player(self.host)
             self.game.started = True
             self.games_repo.save(self.game)
-            rsp = self.client.post(f"/api/lobby/{self.game.id}/exit", json={
-                "identifier": str(self.players[0].identifier)
-            })
+            rsp = self.client.post(
+                f"/api/lobby/{self.game.id}/exit",
+                json={"identifier": str(self.players[0].identifier)},
+            )
 
             self.assertEqual(rsp.status_code, 200)
             message = ws.receive_json()

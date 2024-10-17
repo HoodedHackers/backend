@@ -326,9 +326,6 @@ async def repartir_cartas_figura(
     return SetCardsResponse(all_cards=cards)
 
 
-
-
-
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
 
@@ -336,8 +333,9 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
 
+
 async def nuke_game(game: Game, games_repo: GameRepository):
-  #  pids = [player.id for player in game.players]
+    #  pids = [player.id for player in game.players]
     games_repo.delete(game)
     await Managers.disconnect_all(game.id)
 
@@ -368,7 +366,7 @@ async def exit_game(
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
-    
+
     await join_leave_manager.broadcast(
         {
             "player_id": player.id,
@@ -379,7 +377,6 @@ async def exit_game(
         game.id,
     )
     return {"status": "success"}
-
 
 
 class AdvanceTurnRequest(BaseModel):
