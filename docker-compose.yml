@@ -1,0 +1,11 @@
+services:
+  switcher-backend:
+    image: switcher-backend:dev
+    volumes:
+      - ./db:/db
+    environment:
+      - DB_PATH=/db/local.db
+  switcher-frontend:
+    image: switcher-front:dev
+    ports:
+      - "8001:80"

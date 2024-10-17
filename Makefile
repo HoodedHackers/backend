@@ -6,6 +6,7 @@ ISORT = $(VENV_DIR)/bin/isort
 PYTEST = $(VENV_DIR)/bin/pytest
 COVERAGE = $(VENV_DIR)/bin/coverage
 DB_PATH = "sqlite:///./local.db"
+DOCKER_IMAGE = "switcher-backend:dev"
 
 all: help
 
@@ -26,6 +27,12 @@ createdb: venv
 
 start: venv
 	DB_URI=$(DB_PATH) $(PYTHON) -m uvicorn main:app --reload
+
+docker-build:
+	docker build -t $(DOCKER_IMAGE) .
+
+docker-start:
+	docker run -p 80:8000 $(DOCKER_IMAGE)
 
 format: venv
 	$(BLACK) .
@@ -55,3 +62,5 @@ help:
 	@echo "  make cleardb   - Elimina la base de datos"
 	@echo "  make createdb  - Crea la base de datos de integración"
 	@echo "  make venv      - Crea el entorno virtual"
+	@echo "  make docker-build - Construye la imagen Docker"
+	@echo "  make docker-start - Inicia el contenedor Docker"
