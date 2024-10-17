@@ -349,6 +349,46 @@ async def repartir_cartas_figura(
     return SetCardsResponse(player_id= in_game_player.id, all_cards=cards)
 
 
+
+@app.websocket("/ws/lobby/figs/{game_id}")
+async def deal_cards_figure(websocket:WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de repartir las cartas de figura a los jugadores conectados.
+    xe espera: {identifier: 'valor'}
+    """
+    cards = []
+    game_player = game_repo.get(game_id)
+    game= game_repo.get(game_id)
+    if game_player is None:
+        raise HTTPException(status_code=404, detail="Player dont found!")
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    if not game_player in game.players:
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            playerIdent = data.get("identifier")
+            if playerIdent is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+            player = player_repo.get_by_identifier(UUID(playerIdent))
+            if player is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+
+            await manager.broadcast({"cards": cards}, game_id)
+        
+
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
+
 class IdentityIn(BaseModel):
     identifier: UUID
 
