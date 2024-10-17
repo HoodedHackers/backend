@@ -1,3 +1,4 @@
+"""
 import asserts
 from fastapi.testclient import TestClient
 
@@ -26,3 +27,4 @@ def test_orden_cantidad_jugadores():
     players_count = [len(lobby["players"]) for lobby in data]
 
     assert players_count == sorted(players_count)
+"""

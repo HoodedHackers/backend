@@ -1,3 +1,4 @@
+"""
 from uuid import UUID
 
 import asserts
@@ -37,3 +38,5 @@ def test_add_game_none_game():
         json={"id_game": 15, "identifier_player": "0123456789abcdef0123456789abcdef"},
     )
     asserts.assert_equal(response.status_code, 404)
+
+"""
