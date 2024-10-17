@@ -493,7 +493,7 @@ async def repartir_cartas_movimiento(
     movs_in_game = in_game.all_movs
     all_cards = [random.choice(movs_in_game) for _ in range(count)]
     mov_hand.extend(all_cards)
-    
+
     in_game.add_hand_mov(mov_hand, all_cards, in_game_player.id)
 
     games_repo.save(in_game)
@@ -515,7 +515,32 @@ async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: in
     await manager.connect(websocket, game_id, player_id)
     try:
         while True:
-            await websocket.receive_bytes()
+            req = await websocket.receive_json()
+            if req.get("request") == "status":
+                game = game_repo.get(game_id)
+                if game is None:
+                    await websocket.send_json(
+                        {
+                            "error": "invalid game",
+                        }
+                    )
+                    continue
+                current_player = game.current_player()
+                if current_player is None:
+                    await websocket.send_json(
+                        {
+                            "error": "game has no players",
+                        }
+                    )
+                    continue
+                await websocket.send_json(
+                    {
+                        "current_turn": game.current_player_turn,
+                        "game_id": game.id,
+                        "player_id": current_player.id,
+                        "player_name": current_player.name,
+                    }
+                )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
