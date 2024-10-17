@@ -15,8 +15,10 @@ from database import Base
 
 from .board import Board, Color
 from .exceptions import *
+from .mov_cards import IdMov
 from .player import Player
 
+TOTAL_NUM_HAND = 3
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
@@ -88,6 +90,7 @@ class Game(Base):
     player_info: Mapped[Dict[int, PlayerInfo]] = mapped_column(
         PlayerInfoMapper, default=lambda: {}
     )
+    all_movs: Mapped[List[int]] = mapped_column(IdMov, default=IdMov.total)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -126,6 +129,8 @@ class Game(Base):
             self.host_id = 1
         if self.board is None:
             self.board = Board.random_board()
+        if self.all_movs is None:
+            self.all_movs = IdMov.total()
 
     def __repr__(self):
         return (
@@ -199,3 +204,14 @@ class Game(Base):
             raise PreconditionsNotMet
         self.board = Board.random_board()
         self.started = True
+
+    def add_hand_mov(self, new_cards, discard, id):
+        turn = self.player_info[id].turn_position
+        self.player_info[id] = PlayerInfo(
+            player_id=id,
+            turn_position=turn,
+            hand_mov=new_cards,
+        )
+        principal = self.all_movs
+        res = [x for x in principal if x not in discard]
+        self.all_movs = res
