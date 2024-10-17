@@ -392,12 +392,6 @@ def check_victory(game: Game):
     return game.started and len(game.players) == 1
 
 
-async def nuke_game(game: Game, games_repo: GameRepository):
-    pids = [player.id for player in game.players]
-    games_repo.delete(game)
-    await Managers.disconnect_all(game.id)
-
-
 @app.post("/api/lobby/{game_id}/exit")
 async def exit_game(
     game_id: int,
@@ -414,7 +408,8 @@ async def exit_game(
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
     if player == game.host and not game.started:
-        await nuke_game(game, games_repo)
+        games_repo.delete(game)
+        await Managers.disconnect_all(game.id)
         return {"status": "success"}
     game.delete_player(player)
     games_repo.save(game)
