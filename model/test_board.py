@@ -1,5 +1,5 @@
-from collections import Counter, defaultdict
 import unittest
+from collections import Counter, defaultdict
 
 from sqlalchemy import Integer, create_engine, text
 from sqlalchemy.orm import DeclarativeBase, mapped_column, sessionmaker
@@ -51,6 +51,7 @@ class TestCommaSeparatedListType(unittest.TestCase):
         result = self.session.query(Dummy).filter_by(id=1).first()
         assert result is not None
         self.assertEqual(mem_board, result.board)
+
 
 class TestBoard(unittest.TestCase):
     def test_random_board_count(self):
