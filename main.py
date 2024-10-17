@@ -329,7 +329,6 @@ async def repartir_cartas_figura(
 
 
 
-
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
 
@@ -337,9 +336,8 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
 
-
 async def nuke_game(game: Game, games_repo: GameRepository):
-    pids = [player.id for player in game.players]
+  #  pids = [player.id for player in game.players]
     games_repo.delete(game)
     await Managers.disconnect_all(game.id)
 
@@ -365,6 +363,12 @@ async def exit_game(
     game.delete_player(player)
     games_repo.save(game)
     join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    if check_victory(game):
+        await join_leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
+        await Managers.disconnect_all(game.id)
+        games_repo.delete(game)
+        return {"status": "success"}
+    
     await join_leave_manager.broadcast(
         {
             "player_id": player.id,
@@ -374,9 +378,6 @@ async def exit_game(
         },
         game.id,
     )
-    if check_victory(game):
-        print("Alguien gano")
-        pass
     return {"status": "success"}
 
 
@@ -499,7 +500,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
                 continue
-            
+
             game.add_player(player)
             game_repo.save(game)
 
