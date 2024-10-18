@@ -12,12 +12,12 @@ from sqlalchemy.types import VARCHAR, Boolean, Integer, String
 from typing_extensions import Optional
 
 from database import Base
+from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG
 
 from .board import Board, Color
 from .exceptions import *
 from .mov_cards import IdMov
 from .player import Player
-from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG
 
 TOTAL_NUM_HAND = 3
 game_player_association = Table(
@@ -32,9 +32,9 @@ game_player_association = Table(
 class PlayerInfo:
     player_id: int
     turn_position: int
-    hand_fig: List[int] #lista con las cartas en su mano
+    hand_fig: List[int]  # lista con las cartas en su mano
     hand_mov: List[int]
-    fig: List[int] #lista con todas las cartas que tiene el jugador
+    fig: List[int]  # lista con todas las cartas que tiene el jugador
 
     def to_dict(self):
         return {
@@ -227,24 +227,27 @@ class Game(Base):
         res = [x for x in principal if x not in discard]
         self.all_movs = res
 
-    def get_player_hand_figures(self, player_id:int) -> List[int]: 
+    def get_player_hand_figures(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_fig
-    
-    def get_player_figures(self, player_id:int) -> List[int]: 
+
+    def get_player_figures(self, player_id: int) -> List[int]:
         return self.player_info[player_id].fig
-    
 
-    def add_random_card(self, player_id:int): 
-        cards_hand_fig = self.player_info[player_id].hand_fig
-        needs_cards = len(cards_hand_fig)
-        count = TOTAL_HAND_FIG - needs_cards
-        for _ in range(count):
-            id = random.choice(self.player_info[player_id].fig)
-            self.player_info[player_id].fig.remove(id)
-            self.player_info[player_id].hand_fig.append(id)
+    # falta verificar si el hand_fig es vacio o si fig es vacio ( si es ambos en ese caso gana)
+    def add_random_card(self, player_id: int):
+        if len(self.player_info[player_id].fig) != 0:
+            cards_hand_fig = self.player_info[player_id].hand_fig
+            needs_cards = len(cards_hand_fig)
+            count = TOTAL_HAND_FIG - needs_cards
+            for _ in range(count):
+                id = random.choice(self.player_info[player_id].fig)
+                self.player_info[player_id].fig.remove(id)
+                self.player_info[player_id].hand_fig.append(id)
 
-        return self.player_info[player_id].hand_fig
-    
+            return self.player_info[player_id].hand_fig
+        else:  # ver bien esta parte
+            return self.player_info[player_id].hand_fig
+
         """
         cards_to_add = 0
         #si tengo cero cartas deseo agregar 3 cartas
@@ -267,7 +270,4 @@ class Game(Base):
                 #cards_fig.append(card)
         """
 
-
-                
-
-    #def distribute_card(self, player_id: int, )
+    # def distribute_card(self, player_id: int, )

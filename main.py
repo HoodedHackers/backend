@@ -14,7 +14,7 @@ import services.counter
 from database import Database
 from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
-from repositories import (GameRepository, PlayerRepository)
+from repositories import GameRepository, PlayerRepository
 from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
@@ -309,7 +309,7 @@ class SetCardsResponse(BaseModel):
     player_id: int
     all_cards: List[int]
 
-
+"""
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
 async def repartir_cartas_figura(
     req: GameIn2,
@@ -328,9 +328,9 @@ async def repartir_cartas_figura(
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
     count = TOTAL_HAND_FIG - len(in_game.player_info[in_game_player.id].hand_fig)
-    
-    fig_total = in_game.player_info[in_game_player.id].fig #pato
-    #que hace esta parte de codigo?
+
+    fig_total = in_game.player_info[in_game_player.id].fig  # pato
+    # que hace esta parte de codigo?
 
     for _ in range(count):
         id = random.choice(fig_total)
@@ -338,7 +338,7 @@ async def repartir_cartas_figura(
         cards.append(id)
 
     return SetCardsResponse(player_id=in_game_player.id, all_cards=cards)
-
+"""
 
 @app.websocket("/ws/lobby/{game_id}/figs")
 async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
@@ -346,7 +346,6 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     Este WS se encarga de repartir las cartas de figura a los jugadores conectados.
     en espera: {identifier: 'valor'}
     """
-    #cards = []
     game = game_repo.get(game_id)
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -355,40 +354,21 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
         raise HTTPException(status_code=404, detail="Player not found")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player is not in game")
-    
-    pato = game.get_player_figures(player.id)
-    count = TOTAL_HAND_FIG - len(pato)
-    #count = TOTAL_HAND_FIG - len(game.player_info[player.id].hand_fig) 
-    fig_total = game.player_info[player.id].fig # hacer un metodo de esto, le da las cartas
-    #logica de repartir cartas al jugador va en model
+
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await manager.connect(websocket, game_id, player_id)
     try:
         while True:
-            #cards = []
             data = await websocket.receive_json()
-
             request = data.get("receive")
             if request is None or request != "cards":
                 await websocket.send_json({"error": "invalid request"})
                 continue
-
-            if len(fig_total) == 0:
-                fig_total = list(range(1, TOTAL_FIG_CARDS + 1))
-            for _ in range(count): #hacer un metodo de repatir cartas en donde
-                #si tengo un mazo sde cartas y saco una carta se vea la resta de esa carta 
-                #y le agrego una nueva carta a mi mano 
-                #luego fuera del model envio esa mano al jugador
-                # y muestro a los demas jugadores mis cartass con un broadcast con el id del jugador 
-                #y la lista de cartas
-                id = random.choice(fig_total)
-                fig_total.remove(id) #hacer un metodo de esto
-                cards.append(id) #hacer un metodo de esto
+            cards = game.add_random_card(player.id)
             await websocket.send_json({"player_id": player.id, "cards": cards})
-            
+
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
-
 
 
 class IdentityIn(BaseModel):

@@ -1,4 +1,4 @@
-from typing import List 
+from typing import List
 
 from pydantic import BaseModel
 
@@ -7,8 +7,9 @@ AVERAGE_COORD = 5
 BLUE_COORD = 4
 TOTAL_HAND_FIG = 3
 
+
 class FigCards(BaseModel):
-    id: int 
+    id: int
     coord: List[tuple[int, int]]
     color: str
 
