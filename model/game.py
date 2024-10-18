@@ -1,7 +1,7 @@
 import json
 import random
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from sqlalchemy import Column
 from sqlalchemy.ext.mutable import MutableDict
@@ -16,7 +16,7 @@ from database import Base
 from .board import Board, Color
 from .exceptions import *
 from .player import Player
-from .mov_cards import IdMov
+from .mov_cards import IdMov, MoveCards
 
 TOTAL_NUM_HAND = 3
 game_player_association = Table(
@@ -214,3 +214,21 @@ class Game(Base):
         principal = self.all_movs 
         res= [x for x in principal if x not in discard]
         self.all_movs = res
+
+    def switch_tile(self, cordx: int, cordy: int, fig_mov: int):
+        mov_card = MoveCards(fig_mov)
+
+        dist_candidate : Tuple[int, int] = (cordx, cordy)
+        if dist_candidate not in mov_card.dist:
+            return False
+        
+        index = cordx + cordy * 6
+
+        current_color = self.board[index]
+        self.board[index] = Color()
+
+
+
+
+
+

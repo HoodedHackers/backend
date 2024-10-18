@@ -622,3 +622,28 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
             )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
+
+class SwitchTileRequest(BaseModel):
+    corx_tile: int
+    cory_tile: int
+    fig_mov: int
+    player_id: int
+
+@app.post("/api/game/{game_id}/switch")
+async def switch_tile(game_id: int, switch_request: SwitchTileRequest):
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    player = player_repo.get(switch_request.player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    if player != game.current_player():
+        raise HTTPException(status_code=401, detail="It's not your turn")
+    
+    if switch_request.fig_mov not in game.player_info[player.id].hand_mov:
+        raise HTTPException(status_code=400, detail="Tile not in hand")
+    
+    game.switch_tile(switch_request.fig_mov, switch_request.corx_tile, switch_request.cory_tile)
+    game_repo.save(game)
+    return {"status": "success"}
