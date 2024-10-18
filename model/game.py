@@ -227,17 +227,25 @@ class Game(Base):
         res = [x for x in principal if x not in discard]
         self.all_movs = res
 
-    def get_player_hand_figures(self, player_id:int) -> List[int]: #TESTEAR ESTO
+    def get_player_hand_figures(self, player_id:int) -> List[int]: 
         return self.player_info[player_id].hand_fig
     
-    def get_player_figures(self, player_id:int) -> List[int]: #TESTEAR ESTO
+    def get_player_figures(self, player_id:int) -> List[int]: 
         return self.player_info[player_id].fig
     
 
-    def add_random_card(self, player_id:int): #testear esto
-        cards_hand_fig = self.get_player_hand_figures(player_id)
+    def add_random_card(self, player_id:int): 
+        cards_hand_fig = self.player_info[player_id].hand_fig
         needs_cards = len(cards_hand_fig)
+        count = TOTAL_HAND_FIG - needs_cards
+        for _ in range(count):
+            id = random.choice(self.player_info[player_id].fig)
+            self.player_info[player_id].fig.remove(id)
+            self.player_info[player_id].hand_fig.append(id)
 
+        return self.player_info[player_id].hand_fig
+    
+        """
         cards_to_add = 0
         #si tengo cero cartas deseo agregar 3 cartas
         if needs_cards == 0:
@@ -257,7 +265,7 @@ class Game(Base):
                 cards_fig.append(new_card)
                 #aca debo agregar a la,lista de cartas las cartas necesarias
                 #cards_fig.append(card)
-
+        """
 
 
                 

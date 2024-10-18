@@ -114,7 +114,6 @@ def test_hand_mov():
     assert len(hand) == 3
 
 def test_get_player_figures():
-
     g = Game(name="test game")
     g.set_defaults()
     p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
@@ -127,3 +126,35 @@ def test_get_player_figures():
     assert len(figure) == 3
     assert figure == [1, 2, 3]
     assert g.get_player_figures(p1.id) == []
+
+def test_get_player_hand_figure():
+    g = Game(name="test game")
+    g.set_defaults()
+    p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
+    g.add_player(p0)
+    g.add_player(p1)
+    assert g.get_player_hand_figures(p0.id) == []
+    g.player_info[p0.id].hand_fig = [1, 2, 3]
+
+    figure = g.get_player_hand_figures(p0.id)
+    assert len(figure) == 3
+    assert figure == [1, 2, 3]
+    assert g.get_player_figures(p1.id) == []
+
+def test_add_random_card():
+    g = Game(name="test game")
+    g.set_defaults()
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+
+    assert g.get_player_figures(p0.id) == []
+
+    g.player_info[p0.id].fig = [1, 2, 3, 4, 5, 6]
+    g.player_info[p0.id].hand_fig = [1]
+
+    hand_fig = g.add_random_card(p0.id)
+   # print(hand_fig)
+    assert len(hand_fig) == 3
+    assert len(g.player_info[p0.id].fig) == 4
+    
+

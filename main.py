@@ -338,9 +338,7 @@ async def repartir_cartas_figura(
     count = TOTAL_HAND_FIG - len(in_game.player_info[in_game_player.id].hand_fig)
     
     fig_total = in_game.player_info[in_game_player.id].fig #pato
-
-    if len(fig_total) == 0:
-        fig_total = list(range(1, TOTAL_FIG_CARDS + 1))
+    #que hace esta parte de codigo?
 
     for _ in range(count):
         id = random.choice(fig_total)
@@ -375,7 +373,7 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     await manager.connect(websocket, game_id, player_id)
     try:
         while True:
-            cards = []
+            #cards = []
             data = await websocket.receive_json()
 
             request = data.get("receive")
