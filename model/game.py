@@ -17,6 +17,7 @@ from .board import Board, Color
 from .exceptions import *
 from .mov_cards import IdMov
 from .player import Player
+from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG
 
 TOTAL_NUM_HAND = 3
 game_player_association = Table(
@@ -31,9 +32,9 @@ game_player_association = Table(
 class PlayerInfo:
     player_id: int
     turn_position: int
-    hand_fig: List[int]
+    hand_fig: List[int] #lista con las cartas en su mano
     hand_mov: List[int]
-    fig: List[int]
+    fig: List[int] #lista con todas las cartas que tiene el jugador
 
     def to_dict(self):
         return {
@@ -225,3 +226,40 @@ class Game(Base):
         principal = self.all_movs
         res = [x for x in principal if x not in discard]
         self.all_movs = res
+
+    def get_player_hand_figures(self, player_id:int) -> List[int]: #TESTEAR ESTO
+        return self.player_info[player_id].hand_fig
+    
+    def get_player_figures(self, player_id:int) -> List[int]: #TESTEAR ESTO
+        return self.player_info[player_id].fig
+    
+
+    def add_random_card(self, player_id:int): #testear esto
+        cards_hand_fig = self.get_player_hand_figures(player_id)
+        needs_cards = len(cards_hand_fig)
+
+        cards_to_add = 0
+        #si tengo cero cartas deseo agregar 3 cartas
+        if needs_cards == 0:
+            cards_to_add = 3
+            #for card_add  in range(needs_cards):
+        #si tengo menos de tres cartas peero no son cero cartas deseo agregar las cartas que faltan
+        elif needs_cards < 3:
+            cards_to_add = 3 - needs_cards
+        
+        if cards_to_add > 0:
+            #tengo que agregar una carta de la lista fig
+
+            available_cards = list(range(1, TOTAL_FIG_CARDS + 1))  # Por ejemplo, todas las cartas disponibles
+            for _ in range(cards_to_add):
+                new_card = random.choice(available_cards)
+                available_cards.remove(new_card)  # Evitar duplicados
+                cards_fig.append(new_card)
+                #aca debo agregar a la,lista de cartas las cartas necesarias
+                #cards_fig.append(card)
+
+
+
+                
+
+    #def distribute_card(self, player_id: int, )

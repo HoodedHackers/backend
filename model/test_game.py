@@ -112,3 +112,18 @@ def test_hand_mov():
     hand = g.player_info[0].hand_mov
     assert len(g.all_movs) == TOTAL_MOV - 3
     assert len(hand) == 3
+
+def test_get_player_figures():
+
+    g = Game(name="test game")
+    g.set_defaults()
+    p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
+    g.add_player(p0)
+    g.add_player(p1)
+    assert g.get_player_figures(p0.id) == []
+    g.player_info[p0.id].fig = [1, 2, 3]
+
+    figure = g.get_player_figures(p0.id)
+    assert len(figure) == 3
+    assert figure == [1, 2, 3]
+    assert g.get_player_figures(p1.id) == []
