@@ -14,8 +14,7 @@ import services.counter
 from database import Database
 from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
-from repositories import (FigRepository, GameRepository, PlayerRepository,
-                          create_all_figs)
+from repositories import (GameRepository, PlayerRepository)
 from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
@@ -32,7 +31,6 @@ session = db.get_session()
 
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
-card_repo = FigRepository(session)
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,24 +39,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-create_all_figs(card_repo)
 
 
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
     request.state.player_repo = player_repo
-    request.state.card_repo = card_repo
     response = await call_next(request)
     return response
 
 
 def get_games_repo(request: Request) -> GameRepository:
     return request.state.game_repo
-
-
-def get_card_repo(request: Request) -> FigRepository:
-    return request.state.card_repo
 
 
 def get_player_repo(request: Request) -> PlayerRepository:
