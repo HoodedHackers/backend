@@ -1,11 +1,32 @@
 from typing import List
 
 from pydantic import BaseModel
+from sqlalchemy.types import VARCHAR, TypeDecorator
 
 TOTAL_FIG_CARDS = 25
 AVERAGE_COORD = 5
 BLUE_COORD = 4
 TOTAL_HAND_FIG = 3
+
+
+class IdFig(TypeDecorator):
+    impl = VARCHAR
+
+    def process_bind_param(self, value: List[tuple[int, int]] | None, dialect):
+        if value is None:
+            return None
+        return ",".join(f"({x}, {y})" for x, y in value)
+
+    def process_result_value(self, value, dialect) -> List[tuple[int, int]]:
+        if not value:
+            return []
+        tuples = value.split("),(")
+        coord = []
+        for item in tuples:
+            item = item.strip("() ")
+            x, y = map(int, item.split(","))
+            coord.append((x, y))
+        return coord
 
 
 class FigCards(BaseModel):

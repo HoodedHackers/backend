@@ -309,6 +309,7 @@ class SetCardsResponse(BaseModel):
     player_id: int
     all_cards: List[int]
 
+
 """
 @app.post("/api/partida/en_curso", response_model=SetCardsResponse)
 async def repartir_cartas_figura(
@@ -331,7 +332,9 @@ async def repartir_cartas_figura(
 
     fig_total = in_game.player_info[in_game_player.id].fig  # pato
     # que hace esta parte de codigo?
-
+  # Si no hay figuras disponibles, inicializar con todas las cartas posibles
+    if not available_figures:
+        available_figures = list(range(1, TOTAL_FIG_CARDS + 1))
     for _ in range(count):
         id = random.choice(fig_total)
         fig_total.remove(id)
@@ -339,6 +342,7 @@ async def repartir_cartas_figura(
 
     return SetCardsResponse(player_id=in_game_player.id, all_cards=cards)
 """
+
 
 @app.websocket("/ws/lobby/{game_id}/figs")
 async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):

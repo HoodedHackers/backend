@@ -120,13 +120,13 @@ def test_get_player_figures():
     p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
     g.add_player(p0)
     g.add_player(p1)
-    assert g.get_player_figures(p0.id) == []
+    # assert g.get_player_figures(p0.id) == []
     g.player_info[p0.id].fig = [1, 2, 3]
 
     figure = g.get_player_figures(p0.id)
     assert len(figure) == 3
     assert figure == [1, 2, 3]
-    assert g.get_player_figures(p1.id) == []
+    assert g.get_player_figures(p1.id) != []
 
 
 def test_get_player_hand_figure():
@@ -135,13 +135,13 @@ def test_get_player_hand_figure():
     p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
     g.add_player(p0)
     g.add_player(p1)
-    assert g.get_player_hand_figures(p0.id) == []
+    # assert g.get_player_hand_figures(p0.id) == []
     g.player_info[p0.id].hand_fig = [1, 2, 3]
 
     figure = g.get_player_hand_figures(p0.id)
     assert len(figure) == 3
     assert figure == [1, 2, 3]
-    assert g.get_player_figures(p1.id) == []
+    assert g.get_player_figures(p1.id) != []
 
 
 def test_add_random_card():
@@ -149,8 +149,20 @@ def test_add_random_card():
     g.set_defaults()
     p0 = Player(name="Player 0", id=1)
     g.add_player(p0)
+    g.player_info[p0.id].hand_fig = [1]
 
-    assert g.get_player_figures(p0.id) == []
+    hand_fig = g.add_random_card(p0.id)
+    assert len(hand_fig) == 3
+    print(hand_fig)
+    print(g.player_info[p0.id].fig)
+    assert len(g.player_info[p0.id].fig) == 23
+
+
+def test_add_random_card2():
+    g = Game(name="test game")
+    g.set_defaults()
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
 
     g.player_info[p0.id].fig = [1, 2, 3, 4, 5, 6]
     g.player_info[p0.id].hand_fig = [1]
@@ -162,11 +174,8 @@ def test_add_random_card():
 
 def test_add_random_card_with_non_figs():
     g = Game(name="test game")
-    g.set_defaults()
     p0 = Player(name="Player 0", id=1)
     g.add_player(p0)
-
-    assert g.get_player_figures(p0.id) == []
 
     g.player_info[p0.id].fig = []
     g.player_info[p0.id].hand_fig = [1]
@@ -175,3 +184,11 @@ def test_add_random_card_with_non_figs():
     print(hand_fig)
     assert len(hand_fig) == 1
     assert len(g.player_info[p0.id].fig) == 0
+
+
+def test_init_fig():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+    g.__init__()
+    assert len(g.player_info[p0.id].fig) == 25

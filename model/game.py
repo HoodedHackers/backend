@@ -162,7 +162,7 @@ class Game(Base):
             turn_position=len(self.players) - 1,
             hand_fig=[],
             hand_mov=[],
-            fig=[],
+            fig=list(range(1, TOTAL_FIG_CARDS + 1)),
         )
 
     def count_players(self) -> int:
