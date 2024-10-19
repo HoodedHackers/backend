@@ -102,7 +102,6 @@ async def create_game(
         started=False,
     )
     new_game.add_player(player)
-
     game_repo.save(new_game)
 
     players_out = [
@@ -343,69 +342,17 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
         manager.disconnect(game_id, player_id)
 
 
-class IdentityIn(BaseModel):
-    identifier: UUID
-
-
-class PlayersOfGame(BaseModel):
-    identifier: UUID
-    name: str
-
-
-class ResponseOut(BaseModel):
-    id: int
-    started: bool
-    players: List[PlayersOfGame]
-
-
-# TODO: Eliminar, la idea de esete endpoint es incorrecta.
-@app.patch("/api/lobby/{id}", response_model=ResponseOut)
-def unlock_game_not_started(
-    id: int, ident: IdentityIn, repo: GameRepository = Depends(get_games_repo)
-):
-    lobby_query = repo.get(id)
-    if lobby_query is None:
-        raise HTTPException(status_code=404, detail="Lobby not found")
-    elif lobby_query.started == True:
-        raise HTTPException(status_code=412, detail="Game already started")
-
-    if len(lobby_query.players) == lobby_query.max_players:
-        player_exit = (  # obtiene el jugador de la lista de jugadores que se quiere ir
-            next(
-                (
-                    player
-                    for player in lobby_query.players
-                    if player.identifier == ident.identifier
-                )
-            )
-        )
-        if player_exit == lobby_query.host:  # si el jugador que se quiere ir es el host
-            repo.delete(lobby_query)  # borro la partida
-            return ResponseOut(id=0, started=False, players=[])  # devuelvo vacio
-
-        lobby_query.delete_player(player_exit)  # borro al jugador de la lista
-        lobby_query.started = False  # seteo en falso
-        repo.save(lobby_query)  # guardo los cambios de la partida
-        list_players = [  # guarda la lista de jugadores
-            PlayersOfGame(identifier=UUID(str(player.identifier)), name=player.name)
-            for player in lobby_query.players
-        ]
-        return ResponseOut(
-            id=lobby_query.id, started=lobby_query.started, players=list_players
-        )
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="No hay suficientes jugadores para desbloquear la partida",
-        )
-
-
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
 
 
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
+
+
+async def nuke_game(game: Game, games_repo: GameRepository):
+    games_repo.delete(game)
+    await Managers.disconnect_all(game.id)
 
 
 @app.post("/api/lobby/{game_id}/exit")
@@ -430,6 +377,12 @@ async def exit_game(
     game.delete_player(player)
     games_repo.save(game)
     join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    if check_victory(game):
+        await join_leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
+        await Managers.disconnect_all(game.id)
+        games_repo.delete(game)
+        return {"status": "success"}
+
     await join_leave_manager.broadcast(
         {
             "player_id": player.id,
@@ -439,9 +392,6 @@ async def exit_game(
         },
         game.id,
     )
-    if check_victory(game):
-        print("Alguien gano")
-        pass
     return {"status": "success"}
 
 

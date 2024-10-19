@@ -41,3 +41,22 @@ async def test_multiple_clients():
         data2 = websocket2.receive_json()
         assert data1 == {"message": "Hello from client 1"}
         assert data2 == {"message": "Hello from client 1"}
+
+
+@pytest.mark.asyncio
+async def test_remove_lobby():
+    client = TestClient(test_app)
+    manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+    assert 1 not in manager.lobbies
+    with client.websocket_connect("/ws/1/1") as websocket1, client.websocket_connect(
+        "/ws/1/2"
+    ) as websocket2:
+        websocket1.send_text("Hello from client 1")
+        data1 = websocket1.receive_json()
+        data2 = websocket2.receive_json()
+        assert data1 == {"message": "Hello from client 1"}
+        assert data2 == {"message": "Hello from client 1"}
+    assert 1 not in manager.lobbies
+    manager.remove_lobby(1)
+    assert 1 not in manager.lobbies
+    assert len(manager.lobbies) == 0

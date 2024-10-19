@@ -4,14 +4,17 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from uuid import UUID, uuid4
 
 import asserts
+import pytest
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
+from fastapi.websockets import WebSocket, WebSocketDisconnect
 
 from database import Database
 from main import app, game_repo, get_games_repo, player_repo
 from model import Game, Player
 from repositories import GameRepository, PlayerRepository
 from repositories.player import PlayerRepository
+from services import Managers, ManagerTypes
 
 client = TestClient(app)
 
@@ -129,3 +132,24 @@ class TestGameExits(unittest.TestCase):
             message = ws.receive_json()
             self.assertIn("players", message)
             self.assertEqual(message.get("players"), [self.players[1].id])
+
+    def test_exit_winner_in_game_ws(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), self.client.websocket_connect(
+            f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
+        ) as ws:
+            self.game.add_player(self.players[0])
+            self.game.add_player(self.host)
+            self.game.started = True
+            self.games_repo.save(self.game)
+            rsp = self.client.post(
+                f"/api/lobby/{self.game.id}/exit",
+                json={"identifier": str(self.players[0].identifier)},
+            )
+
+            self.assertEqual(rsp.status_code, 200)
+            message = ws.receive_json()
+            assert message is not None
+            print(message)
+            assert message["response"] == "Hay un ganador"
