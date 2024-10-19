@@ -186,6 +186,20 @@ def test_add_random_card_with_non_figs():
     assert len(g.player_info[p0.id].fig) == 0
 
 
+def test_add_random_card_with_non_figs2():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+
+    g.player_info[p0.id].fig = [5, 4, 6, 7, 8, 9]
+    g.player_info[p0.id].hand_fig = [1, 2, 3]
+
+    hand_fig = g.add_random_card(p0.id)
+    print(hand_fig)
+    assert len(hand_fig) == 3
+    assert len(g.player_info[p0.id].fig) == 6
+
+
 def test_init_fig():
     g = Game(name="test game")
     p0 = Player(name="Player 0", id=1)

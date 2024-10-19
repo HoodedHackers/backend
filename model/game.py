@@ -32,9 +32,9 @@ game_player_association = Table(
 class PlayerInfo:
     player_id: int
     turn_position: int
-    hand_fig: List[int]  # lista con las cartas en su mano
+    hand_fig: List[int]
     hand_mov: List[int]
-    fig: List[int]  # lista con todas las cartas que tiene el jugador
+    fig: List[int]
 
     def to_dict(self):
         return {
@@ -235,15 +235,20 @@ class Game(Base):
 
     # falta verificar si el hand_fig es vacio o si fig es vacio (si es ambos en ese caso gana)
     def add_random_card(self, player_id: int):
+        if len(self.player_info[player_id].hand_fig) == TOTAL_HAND_FIG:
+            return self.player_info[player_id].hand_fig
+
         if len(self.player_info[player_id].fig) != 0:
             cards_hand_fig = self.player_info[player_id].hand_fig
             needs_cards = len(cards_hand_fig)
             count = TOTAL_HAND_FIG - needs_cards
             for _ in range(count):
+                if not self.player_info[player_id].fig:
+                    break
                 id = random.choice(self.player_info[player_id].fig)
                 self.player_info[player_id].fig.remove(id)
                 self.player_info[player_id].hand_fig.append(id)
 
             return self.player_info[player_id].hand_fig
-        else:  # ver bien esta parte
+        else:
             return self.player_info[player_id].hand_fig
