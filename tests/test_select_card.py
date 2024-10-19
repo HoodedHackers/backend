@@ -68,8 +68,7 @@ class TestSelectCard(unittest.TestCase):
 
                     # agregamos cartas en la manos jugador 0
                     cards_mov = random.sample(range(0, 48), 3)
-                    for card in cards_mov:
-                        self.game.add_hand_mov(player0, card)
+                    self.game.add_hand_mov(cards_mov,cards_mov,player0.id)
 
                     # El jugador 0 selecciona una de sus cartas
                     card0 = self.game.player_info[player0.id].hand_mov[0]

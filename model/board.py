@@ -1,5 +1,6 @@
+import itertools
 from enum import Enum
-from random import randint
+from random import shuffle
 
 from sqlalchemy.types import VARCHAR, TypeDecorator
 from typing_extensions import List
@@ -29,4 +30,12 @@ class Board(TypeDecorator):
 
     @staticmethod
     def random_board(count=SIZE_BOARD) -> List[Color]:
-        return [Color(randint(1, 4)) for _ in range(count)]
+        assert count % 4 == 0, "Count should ALWAYS be divisible by 4"
+        subcount = count // 4
+        tiles = list(
+            itertools.chain.from_iterable(
+                [[Color(n) for _ in range(subcount)] for n in range(1, 5)],
+            )
+        )
+        shuffle(tiles)
+        return tiles
