@@ -370,6 +370,9 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
                 continue
             cards = game.add_random_card(player.id)
             await websocket.send_json({"player_id": player.id, "cards": cards})
+            await manager.broadcast(
+                {"cards": cards}, game_id
+            )
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)

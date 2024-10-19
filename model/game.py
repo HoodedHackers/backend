@@ -233,7 +233,7 @@ class Game(Base):
     def get_player_figures(self, player_id: int) -> List[int]:
         return self.player_info[player_id].fig
 
-    # falta verificar si el hand_fig es vacio o si fig es vacio ( si es ambos en ese caso gana)
+    # falta verificar si el hand_fig es vacio o si fig es vacio (si es ambos en ese caso gana)
     def add_random_card(self, player_id: int):
         if len(self.player_info[player_id].fig) != 0:
             cards_hand_fig = self.player_info[player_id].hand_fig
@@ -247,27 +247,3 @@ class Game(Base):
             return self.player_info[player_id].hand_fig
         else:  # ver bien esta parte
             return self.player_info[player_id].hand_fig
-
-        """
-        cards_to_add = 0
-        #si tengo cero cartas deseo agregar 3 cartas
-        if needs_cards == 0:
-            cards_to_add = 3
-            #for card_add  in range(needs_cards):
-        #si tengo menos de tres cartas peero no son cero cartas deseo agregar las cartas que faltan
-        elif needs_cards < 3:
-            cards_to_add = 3 - needs_cards
-        
-        if cards_to_add > 0:
-            #tengo que agregar una carta de la lista fig
-
-            available_cards = list(range(1, TOTAL_FIG_CARDS + 1))  # Por ejemplo, todas las cartas disponibles
-            for _ in range(cards_to_add):
-                new_card = random.choice(available_cards)
-                available_cards.remove(new_card)  # Evitar duplicados
-                cards_fig.append(new_card)
-                #aca debo agregar a la,lista de cartas las cartas necesarias
-                #cards_fig.append(card)
-        """
-
-    # def distribute_card(self, player_id: int, )
