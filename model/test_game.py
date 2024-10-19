@@ -216,3 +216,13 @@ def test_init_fig():
     g.add_player(p0)
     g.__init__()
     assert len(g.player_info[p0.id].fig) == 25
+
+
+def test_get_player_hand_movs():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+    g.player_info[p0.id].hand_mov = [1, 2, 3]
+    hand_mov = g.get_player_hand_movs(p0.id)
+    assert len(hand_mov) == 3
+    assert hand_mov == [1, 2, 3]

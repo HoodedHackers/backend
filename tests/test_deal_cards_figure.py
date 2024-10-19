@@ -1,18 +1,15 @@
 import unittest
 from os import getenv
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
-from uuid import UUID, uuid4
+from unittest.mock import patch
 
-import asserts
-from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
-from fastapi.websockets import WebSocketDisconnect
 
 from database import Database
 from main import app, game_repo, get_games_repo, player_repo
 from model import Game, Player
 from repositories import GameRepository, PlayerRepository
 from repositories.player import PlayerRepository
+from services import Managers, ManagerTypes
 
 client = TestClient(app)
 
@@ -188,3 +185,38 @@ class TestGameExits(unittest.TestCase):
                     assert len(self.game.player_info[id0].fig) == 0
                 finally:
                     websocket.close()
+
+    def test_broadcast(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player1 = self.players[0]
+            player2 = self.players[1]
+            id0 = player1.id
+            id1 = player2.id
+
+            self.game.add_player(player1)
+            self.game.add_player(player2)
+            self.game.player_info[id0].hand_fig = [1]
+
+            manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={id0}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={id1}"
+            ) as websocket2:
+                try:
+                    websocket1.send_json({"receive": "cards"})
+
+                    rsp1 = websocket1.receive_json()
+                    self.assertIn("player_id", rsp1)
+                    self.assertIn("cards", rsp1)
+                    self.assertEqual(rsp1["player_id"], id0)
+
+                    rsp2 = websocket2.receive_json()
+                    self.assertIn("cards", rsp2)
+                    self.assertEqual(rsp2["cards"], rsp1["cards"])
+                finally:
+                    websocket1.close()
+                    websocket2.close()

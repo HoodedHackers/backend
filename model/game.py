@@ -253,3 +253,6 @@ class Game(Base):
             return self.player_info[player_id].hand_fig
         else:
             return self.player_info[player_id].hand_fig
+
+    def get_player_hand_movs(self, player_id: int) -> List[int]:
+        return self.player_info[player_id].hand_mov

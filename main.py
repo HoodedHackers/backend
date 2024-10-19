@@ -335,8 +335,7 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
                 continue
 
             cards = game.add_random_card(player.id)
-            await websocket.send_json({"player_id": player.id, "cards": cards})
-            await manager.broadcast({"cards": cards}, game_id)
+            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
@@ -463,13 +462,7 @@ async def repartir_cartas_movimiento(
 
     games_repo.save(in_game)
 
-    # <<<<<<< HEAD
-    #   return SetCardsResponse(player_id=in_game_player.id, all_cards=all_cards)
-    # =======
     return SetCardsResponse(player_id=in_game_player.id, all_cards=mov_hand)
-
-
-# >>>>>>> origin/develop
 
 
 @app.websocket("/ws/lobby/{game_id}/turns")
