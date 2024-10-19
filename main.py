@@ -515,7 +515,9 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
     Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta, enviando la lista
     actualizada de jugadores actuales.
 
-    Se espera: {user_identifier: 'valor'}
+    Se espera: {user_identifier: 'str'}
+
+    Se retorna: {players: [{player_id: 'int', player_name: 'str'}]}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -570,6 +572,55 @@ async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int
     try:
         while True:
             data = await websocket.receive_json()
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
+@app.websocket("/ws/lobby/{game_id}/select")
+async def select_card(
+    websocket: WebSocket,
+    game_id: int,
+    player_id: int,
+):
+    """
+    Este ws se encarga de recibir la selección de cartas de un jugador y notificar a los demás jugadores de la partida.
+
+    Se espera: {card_id: 'valor', player_identifier: 'valor'}
+
+    Se retorna: {player_id: 'valor', card_id: 'valor'}
+    """
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    player = player_repo.get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    manager = Managers.get_manager(ManagerTypes.CARDS_MOV)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            current_card = data.get("card_id")
+
+            current_player_ident = data.get("player_identifier")
+            current_player = player_repo.get_by_identifier(UUID(current_player_ident))
+            if current_player is None:
+                await websocket.send_json({"error": "Player id is missing"})
+                continue
+            if current_player not in game.players:
+                await websocket.send_json({"error": "Player not in game"})
+                continue
+
+            hand = game.get_player_hand_movs(current_player.id)
+            if current_card not in hand:
+                await websocket.send_json({"error": "Card not in hand"})
+                continue
+
+            await manager.broadcast(
+                {"player_id": current_player.id, "card_id": current_card}, game_id
+            )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 

@@ -11,6 +11,7 @@ class ManagerTypes(Enum):
     GAME_STATUS = 3
     BOARD_STATUS = 4
     CARDS_FIGURE = 5
+    CARDS_MOV = 6
 
 
 @dataclass
@@ -64,6 +65,7 @@ class Managers:
     managers = {
         ManagerTypes.JOIN_LEAVE: ConnectionManager(),
         ManagerTypes.TURNS: ConnectionManager(),
+        ManagerTypes.CARDS_MOV: ConnectionManager(),
         ManagerTypes.GAME_STATUS: ConnectionManager(),
         ManagerTypes.BOARD_STATUS: ConnectionManager(),
         ManagerTypes.CARDS_FIGURE: ConnectionManager(),
