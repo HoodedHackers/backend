@@ -451,7 +451,7 @@ async def repartir_cartas_movimiento(
     if in_game_player not in in_game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
-    mov_hand = in_game.player_info[in_game_player.id].hand_mov
+    mov_hand = in_game.get_player_hand_movs(in_game_player.id)
     count = TOTAL_HAND_MOV - len(mov_hand)
 
     movs_in_game = in_game.all_movs
