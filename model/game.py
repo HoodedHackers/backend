@@ -198,3 +198,9 @@ class Game(Base):
             raise PreconditionsNotMet
         self.board = Board.random_board()
         self.started = True
+
+    def current_hand_mov(self, player):
+        return self.player_info[player.id].hand_mov
+
+    def add_hand_mov(self, player, mov):
+        self.player_info[player.id].hand_mov.append(mov)

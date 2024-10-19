@@ -539,7 +539,9 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
     Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta, enviando la lista
     actualizada de jugadores actuales.
 
-    Se espera: {user_identifier: 'valor'}
+    Se espera: {user_identifier: 'str'}
+
+    Se retorna: {players: [{player_id: 'int', player_name: 'str'}]}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -635,7 +637,7 @@ async def select_card(
                 await websocket.send_json({"error": "Player not in game"})
                 continue
 
-            hand = game.player_info[current_player.id].hand_mov
+            hand = game.current_hand_mov(current_player)
             if current_card not in hand:
                 await websocket.send_json({"error": "Card not in hand"})
                 continue

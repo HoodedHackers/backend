@@ -1,3 +1,4 @@
+import random
 import unittest
 from unittest.mock import patch
 
@@ -6,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from database import Database
 from main import app
-from model import Game, Player, PlayerInfo
+from model import Game, Player
 from repositories import GameRepository, PlayerRepository
 
 
@@ -30,7 +31,6 @@ class TestSelectCard(unittest.TestCase):
             self.player_repo.save(p)
 
         self.game = Game(
-            id=101010,
             name="Game of Falls",
             current_player_turn=0,
             max_players=4,
@@ -53,29 +53,23 @@ class TestSelectCard(unittest.TestCase):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-
-            self.game.add_player(self.players[0])
-            self.game.add_player(self.players[1])
-
-            player0 = self.players[0]
-            player1 = self.players[1]
-
-            # agregamos cartas en la manos de los jugadores en juego
-            for idx, player in enumerate(self.game.players, start=1):
-                player_info = PlayerInfo(
-                    player_id=player.id,
-                    turn_position=idx,
-                    hand_mov=[idx + 1, idx + 2, idx + 3],
-                )
-                self.game.player_info[player.id] = player_info
-
-            # conectamos ambos jugadores
             with self.client.websocket_connect(
-                f"/ws/lobby/101010/select?player_id={player0.id}"
+                f"/ws/lobby/{self.game.id}/select?player_id={self.players[0].id}"
             ) as websocket0:
                 with self.client.websocket_connect(
-                    f"/ws/lobby/101010/select?player_id={player1.id}"
+                    f"/ws/lobby/{self.game.id}/select?player_id={self.players[1].id}"
                 ) as websocket1:
+
+                    self.game.add_player(self.players[0])
+                    self.game.add_player(self.players[1])
+
+                    player0 = self.players[0]
+                    player1 = self.players[1]
+
+                    # agregamos cartas en la manos jugador 0
+                    cards_mov = random.sample(range(0, 48), 3)
+                    for card in cards_mov:
+                        self.game.add_hand_mov(player0, card)
 
                     # El jugador 0 selecciona una de sus cartas
                     card0 = self.game.player_info[player0.id].hand_mov[0]
