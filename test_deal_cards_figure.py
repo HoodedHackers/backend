@@ -77,7 +77,6 @@ class TestGameExits(unittest.TestCase):
                     self.assertIn("player_id", rsp)
                     self.assertIn("cards", rsp)
                     self.assertIsInstance(rsp["cards"], list)
-                    print(rsp["cards"])
                     assert len(rsp["cards"]) == 3
                 finally:
                     websocket.close()
@@ -185,7 +184,6 @@ class TestGameExits(unittest.TestCase):
                     self.assertIn("player_id", rsp)
                     self.assertIn("cards", rsp)
                     self.assertIsInstance(rsp["cards"], list)
-                    print(rsp["cards"])
                     assert len(rsp["cards"]) == 2
                     assert len(self.game.player_info[id0].fig) == 0
                 finally:
