@@ -12,10 +12,9 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import TOTAL_HAND_MOV, Game, Player
+from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, Player
 from model.exceptions import GameStarted, PreconditionsNotMet
-from repositories import (FigRepository, GameRepository, PlayerRepository,
-                          create_all_figs)
+from repositories import GameRepository, PlayerRepository
 from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
@@ -32,7 +31,6 @@ session = db.get_session()
 
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
-card_repo = FigRepository(session)
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,24 +39,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-create_all_figs(card_repo)
 
 
 @app.middleware("http")
 async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
     request.state.player_repo = player_repo
-    request.state.card_repo = card_repo
     response = await call_next(request)
     return response
 
 
 def get_games_repo(request: Request) -> GameRepository:
     return request.state.game_repo
-
-
-def get_card_repo(request: Request) -> FigRepository:
-    return request.state.card_repo
 
 
 def get_player_repo(request: Request) -> PlayerRepository:
@@ -306,25 +298,47 @@ class SetCardsResponse(BaseModel):
     all_cards: List[int]
 
 
-@app.post("/api/partida/en_curso", response_model=SetCardsResponse)
-async def repartir_cartas_figura(
-    req: GameIn2,
-    card_repo: FigRepository = Depends(get_card_repo),
-    player_repo: PlayerRepository = Depends(get_player_repo),
-    game_repo: GameRepository = Depends(get_games_repo),
-):
-    cards = [card.id for card in card_repo.get_many(3)]
-    identifier_player = UUID(req.player)
-    in_game_player = player_repo.get_by_identifier(identifier_player)
-    in_game = game_repo.get(req.game_id)
-    if in_game_player is None:
-        raise HTTPException(status_code=404, detail="Player dont found!")
-    if in_game is None:
-        raise HTTPException(status_code=404, detail="Game dont found!")
-    if not in_game_player in in_game.players:
-        raise HTTPException(status_code=404, detail="Player dont found in game!")
+@app.websocket("/ws/lobby/{game_id}/figs")
+async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de repartir las cartas de figura a los jugadores conectados
+    y de mostrar a los demas jugadores las cartas figura del jugador en turno.
+    en espera: {receive: 'cards'} en el mensaje y ademas de el player id en la url
+    """
+    game = game_repo.get(game_id)
+    if game is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Game not found"})
+        await websocket.close()
+        return
 
-    return SetCardsResponse(player_id=in_game_player.id, all_cards=cards)
+    player = player_repo.get(player_id)
+    if player is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not found"})
+        await websocket.close()
+        return
+    if player not in game.players:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not in game"})
+        await websocket.close()
+        return
+
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            request = data.get("receive")
+            if request is None:
+                await websocket.send_json({"error": "invalid request"})
+                continue
+
+            cards = game.add_random_card(player.id)
+            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
 
 
 class ExitRequest(BaseModel):  # le llega esto al endpoint
@@ -437,7 +451,7 @@ async def repartir_cartas_movimiento(
     if in_game_player not in in_game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
-    mov_hand = in_game.player_info[in_game_player.id].hand_mov
+    mov_hand = in_game.get_player_hand_movs(in_game_player.id)
     count = TOTAL_HAND_MOV - len(mov_hand)
 
     movs_in_game = in_game.all_movs
@@ -503,7 +517,6 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
     Se espera: {user_identifier: 'valor'}
     """
-
     game = game_repo.get(game_id)
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")

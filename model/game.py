@@ -12,6 +12,7 @@ from sqlalchemy.types import VARCHAR, Boolean, Integer, String
 from typing_extensions import Optional
 
 from database import Base
+from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG
 
 from .board import Board, Color
 from .exceptions import *
@@ -22,7 +23,6 @@ TOTAL_NUM_HAND = 3
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
-    Column("id", Integer, primary_key=True, autoincrement=True),
     Column("game_id", Integer, ForeignKey("games.id")),
     Column("player_id", Integer, ForeignKey("players.id")),
 )
@@ -32,13 +32,17 @@ game_player_association = Table(
 class PlayerInfo:
     player_id: int
     turn_position: int
+    hand_fig: List[int]
     hand_mov: List[int]
+    fig: List[int]
 
     def to_dict(self):
         return {
             "player_id": self.player_id,
             "turn_position": self.turn_position,
+            "hand_fig": self.hand_fig,
             "hand_mov": self.hand_mov,
+            "fig": self.fig,
         }
 
     @staticmethod
@@ -46,7 +50,9 @@ class PlayerInfo:
         return PlayerInfo(
             player_id=data["player_id"],
             turn_position=data["turn_position"],
+            hand_fig=data["hand_fig"],
             hand_mov=data["hand_mov"],
+            fig=data["fig"],
         )
 
 
@@ -100,7 +106,9 @@ class Game(Base):
                 self.player_info[player.id] = PlayerInfo(
                     player_id=player.id,
                     turn_position=index,
+                    hand_fig=[],
                     hand_mov=[],
+                    fig=[],
                 )
 
     def __eq__(self, other):
@@ -153,7 +161,9 @@ class Game(Base):
         self.player_info[player.id] = PlayerInfo(
             player_id=player.id,
             turn_position=len(self.players) - 1,
+            hand_fig=[],
             hand_mov=[],
+            fig=list(range(1, TOTAL_FIG_CARDS + 1)),
         )
 
     def count_players(self) -> int:
@@ -211,7 +221,38 @@ class Game(Base):
             player_id=id,
             turn_position=turn,
             hand_mov=new_cards,
+            hand_fig=self.player_info[id].hand_fig,
+            fig=self.player_info[id].fig,
         )
         principal = self.all_movs
         res = [x for x in principal if x not in discard]
         self.all_movs = res
+
+    def get_player_hand_figures(self, player_id: int) -> List[int]:
+        return self.player_info[player_id].hand_fig
+
+    def get_player_figures(self, player_id: int) -> List[int]:
+        return self.player_info[player_id].fig
+
+    # falta verificar si el hand_fig es vacio o si fig es vacio (si es ambos en ese caso gana)
+    def add_random_card(self, player_id: int):
+        if len(self.player_info[player_id].hand_fig) == TOTAL_HAND_FIG:
+            return self.player_info[player_id].hand_fig
+
+        if len(self.player_info[player_id].fig) != 0:
+            cards_hand_fig = self.player_info[player_id].hand_fig
+            needs_cards = len(cards_hand_fig)
+            count = TOTAL_HAND_FIG - needs_cards
+            for _ in range(count):
+                if not self.player_info[player_id].fig:
+                    break
+                id = random.choice(self.player_info[player_id].fig)
+                self.player_info[player_id].fig.remove(id)
+                self.player_info[player_id].hand_fig.append(id)
+
+            return self.player_info[player_id].hand_fig
+        else:
+            return self.player_info[player_id].hand_fig
+
+    def get_player_hand_movs(self, player_id: int) -> List[int]:
+        return self.player_info[player_id].hand_mov

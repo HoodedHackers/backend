@@ -10,6 +10,7 @@ class ManagerTypes(Enum):
     TURNS = 2
     GAME_STATUS = 3
     BOARD_STATUS = 4
+    CARDS_FIGURE = 5
 
 
 @dataclass
@@ -65,6 +66,7 @@ class Managers:
         ManagerTypes.TURNS: ConnectionManager(),
         ManagerTypes.GAME_STATUS: ConnectionManager(),
         ManagerTypes.BOARD_STATUS: ConnectionManager(),
+        ManagerTypes.CARDS_FIGURE: ConnectionManager(),
     }
 
     @classmethod
