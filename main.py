@@ -369,20 +369,23 @@ async def exit_game(
         raise HTTPException(status_code=404, detail="Jugador no encontrade")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     if player == game.host and not game.started:
         games_repo.delete(game)
         await Managers.disconnect_all(game.id)
+        await leave_manager.broadcast("el host ha abandonado la partida", game.id)
         return {"status": "success"}
+
     game.delete_player(player)
     games_repo.save(game)
-    join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+
     if check_victory(game):
-        await join_leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
+        await leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
 
-    await join_leave_manager.broadcast(
+    await leave_manager.broadcast(
         {
             "player_id": player.id,
             "action": "leave",
