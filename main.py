@@ -656,10 +656,15 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
                 await websocket.send_json({"error": "invalid game id"})
                 continue
             board = [tile.value for tile in game.board]
+            possible_figures = {
+                player.id: game.get_possible_figures(player.id)
+                for player in game.players
+            }
             await websocket.send_json(
                 {
                     "game_id": game_id,
                     "board": board,
+                    "possible_figures": possible_figures,
                 }
             )
     except WebSocketDisconnect:
