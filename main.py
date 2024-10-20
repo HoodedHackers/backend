@@ -325,7 +325,7 @@ async def endpoint_deal_card_figure(
 
 
 @app.websocket("/ws/lobby/figs/{game_id}")
-async def update_cards_figure(websocket: WebSocket, game_id: int):
+async def update_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     """
     Este ws se encarga de actualizar las cartas de la mano del jugador en turno,
     se espera recibir {identifier: 'str'}
@@ -337,9 +337,20 @@ async def update_cards_figure(websocket: WebSocket, game_id: int):
         await websocket.send_json({"error": "Game not found"})
         await websocket.close()
         return
-
+    player = player_repo.get(player_id)
+    if player is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not found"})
+        await websocket.close()
+        return
+    if player not in game.players:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not in game"})
+        await websocket.close()
+        return
+    
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await manager.connect(websocket, game_id, 0)
+    await manager.connect(websocket, game_id, player_id)
     try:
         while True:
             data = await websocket.receive_json()

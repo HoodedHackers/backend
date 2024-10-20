@@ -83,11 +83,11 @@ class TestGameExits(unittest.TestCase):
             self.assertEqual(response.json(), {"status": "success"})
 
             with client.websocket_connect(
-                f"/ws/lobby/figs/1"
+                f"/ws/lobby/figs/1?player_id={player3.id}"
             ) as websocket1, client.websocket_connect(
-                f"/ws/lobby/figs/1"
+                f"/ws/lobby/figs/1?player_id={player2.id}"
             ) as websocket2, client.websocket_connect(
-                "/ws/lobby/figs/1"
+                f"/ws/lobby/figs/1?player_id={player1.id}"
             ) as websocket3:
                 try:
                     websocket1.send_json({"identifier": str(player3.identifier)})
@@ -122,7 +122,7 @@ class TestGameExits(unittest.TestCase):
             "main.player_repo", self.player_repo
         ):
             response = self.client.post(
-                "/api/lobby/1/figs",
+                f"/api/lobby/1/figs",
                 json={"player_identifier": str(uuid4())},
             )
             self.assertEqual(response.status_code, 404)
@@ -136,7 +136,7 @@ class TestGameExits(unittest.TestCase):
             "main.player_repo", self.player_repo
         ):
             response = self.client.post(
-                "/api/lobby/1/figs",
+                f"/api/lobby/1/figs",
                 json={"player_identifier": str(new_player.identifier)},
             )
             self.assertEqual(response.status_code, 404)
@@ -155,9 +155,9 @@ class TestGameExits(unittest.TestCase):
             self.game.add_player(player2)
 
             with client.websocket_connect(
-                f"/ws/lobby/figs/1"
+                f"/ws/lobby/figs/1?player_id={player1.id}"
             ) as websocket1, client.websocket_connect(
-                f"/ws/lobby/figs/1"
+                f"/ws/lobby/figs/1?player_id={player2.id}"
             ) as websocket2:
                 try:
                     websocket1.send_json({"identifier": str(player1.identifier)})

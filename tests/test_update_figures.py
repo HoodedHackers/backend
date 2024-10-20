@@ -73,9 +73,9 @@ class TestGameExits(unittest.TestCase):
             self.games_repo.save(self.game)
 
             with client.websocket_connect(
-                f"/ws/lobby/figs/{self.game.id}"
+                f"/ws/lobby/figs/{self.game.id}?player_id={player1.id}"
             ) as websocket1, client.websocket_connect(
-                f"/ws/lobby/figs/{self.game.id}"
+                f"/ws/lobby/figs/{self.game.id}?player_id={player2.id}"
             ) as websocket2:
                 print("estoy en el test")
                 print(player2.identifier)
@@ -96,7 +96,7 @@ class TestGameExits(unittest.TestCase):
                 assert response2 == {"player_id": player2.id, "cards": [1]}
 
             with client.websocket_connect(
-                f"/ws/lobby/figs/{self.game.id}"
+                f"/ws/lobby/figs/{self.game.id}?player_id={player3.id}"
             ) as websocket:
                 websocket.send_json({"identifier": str(uuid4())})
                 response = websocket.receive_json()
