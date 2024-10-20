@@ -95,6 +95,84 @@ class TestGameRepo(unittest.TestCase):
         asserts.assert_not_in(games[1], available_games)
         asserts.assert_not_in(games[2], available_games)
 
+    def test_get_available_games_name(self):
+        repo, prepo = self.repo()
+        games = [
+            make_game(
+                prepo,
+                name="game1",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(2)],
+                max_players=4,
+            ),
+            make_game(
+                prepo,
+                name="game2",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(4)],
+                max_players=4,
+            ),
+            make_game(
+                prepo,
+                name="game3",
+                started=True,
+                players=[Player(name=f"{n}") for n in range(2)],
+                max_players=4,
+            ),
+            make_game(
+                prepo,
+                name="game4",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(1)],
+                max_players=2,
+            ),
+        ]
+        for game in games:
+            game.set_defaults()
+            repo.save(game)
+
+        available_games = repo.get_available(name="game4")
+        asserts.assert_in(games[3], available_games)
+
+    def test_get_available_games_max_players(self):
+        repo, prepo = self.repo()
+        games = [
+            make_game(
+                prepo,
+                name="game1",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(2)],
+                max_players=4,
+            ),
+            make_game(
+                prepo,
+                name="game2",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(4)],
+                max_players=4,
+            ),
+            make_game(
+                prepo,
+                name="game3",
+                started=True,
+                players=[Player(name=f"{n}") for n in range(2)],
+                max_players=4,
+            ),
+            make_game(
+                prepo,
+                name="game4",
+                started=False,
+                players=[Player(name=f"{n}") for n in range(1)],
+                max_players=2,
+            ),
+        ]
+        for game in games:
+            game.set_defaults()
+            repo.save(game)
+
+        available_games = repo.get_available(max_players=1)
+        asserts.assert_in(games[3], available_games)
+
     def test_turn_order(self):
         grepo, prepo = self.repo()
         players = [

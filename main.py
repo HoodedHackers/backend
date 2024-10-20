@@ -1,7 +1,7 @@
 import asyncio
 import random
 from os import getenv
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
@@ -132,8 +132,17 @@ class GameStateOutput(BaseModel):
 @app.get("/api/lobby")
 def get_games_available(
     repo: GameRepository = Depends(get_games_repo),
+    max_players: Optional[int] = None,
+    name: Optional[str] = None,
 ) -> List[GameStateOutput]:
-    lobbies_queries = repo.get_available(10)
+    params: Dict[str, Any] = {
+        "count": 10,
+    }
+    if max_players is not None:
+        params["max_players"] = max_players
+    if name is not None:
+        params["name"] = name
+    lobbies_queries = repo.get_available(**params)
     lobbies = []
     for lobby_query in lobbies_queries:
         lobby = GameStateOutput(
