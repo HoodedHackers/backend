@@ -72,7 +72,7 @@ class TestGameExits(unittest.TestCase):
                 f"/ws/lobby/1/figs?player_id={id0}"
             ) as websocket:
                 try:
-                    websocket.send_json({"receive": "cards"})
+                    websocket.send_json({"identifier": str(player1.identifier)})
                     rsp = websocket.receive_json()
 
                     self.assertIn("player_id", rsp)
@@ -179,7 +179,7 @@ class TestGameExits(unittest.TestCase):
                 f"/ws/lobby/1/figs?player_id={id0}"
             ) as websocket:
                 try:
-                    websocket.send_json({"receive": "cards"})
+                    websocket.send_json({"identifier": str(player1.identifier)})
                     rsp = websocket.receive_json()
 
                     self.assertIn("player_id", rsp)
@@ -196,31 +196,43 @@ class TestGameExits(unittest.TestCase):
         ):
             player1 = self.players[0]
             player2 = self.players[1]
+            player3 = self.players[2]
+            print(player1)
             id0 = player1.id
             id1 = player2.id
+            id2 = player3.id
 
             self.game.add_player(player1)
             self.game.add_player(player2)
+            self.game.add_player(player3)
             self.game.player_info[id0].hand_fig = [1]
 
-            manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
 
             with client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={id0}"
             ) as websocket1, client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={id1}"
-            ) as websocket2:
+            ) as websocket2, client.websocket_connect(f"/ws/lobby/1/figs?player_id={id2}"
+            ) as websocket3:
                 try:
-                    websocket1.send_json({"receive": "cards"})
+                    websocket1.send_json({"identifier": str(player2.identifier)})
 
                     rsp1 = websocket1.receive_json()
+                    print("soy respuesta 1")
+                    print(rsp1)
                     self.assertIn("player_id", rsp1)
                     self.assertIn("cards", rsp1)
-                    self.assertEqual(rsp1["player_id"], id0)
+                    self.assertEqual(rsp1["player_id"], id1)
 
                     rsp2 = websocket2.receive_json()
+                    print("soy respuesta 2")
+                    print(rsp2)
                     self.assertIn("cards", rsp2)
                     self.assertEqual(rsp2["cards"], rsp1["cards"])
+
+                    rsp3 = websocket3.receive_json()
+                    print("soy respuesta 3")
+                    print(rsp3)
                 finally:
                     websocket1.close()
                     websocket2.close()

@@ -329,16 +329,26 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     try:
         while True:
             data = await websocket.receive_json()
-            request = data.get("receive")
+            request = data.get("identifier")
             if request is None:
                 await websocket.send_json({"error": "invalid request"})
                 continue
-
+            identifier_player = player_repo.get_by_identifier(UUID(request))
+            if identifier_player is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+            # id_player = identifier_player.id
             cards = game.add_random_card(player.id)
-            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+            print(
+                f"Enviando broadcast para game_id: {game_id} con player_id: {identifier_player.id} y cartas: {cards}"
+            )
+            await manager.broadcast(
+                {"player_id": identifier_player.id, "cards": cards}, game_id
+            )
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
+
 
 
 class ExitRequest(BaseModel):  # le llega esto al endpoint
