@@ -722,3 +722,63 @@ async def discard_card_figure(websocket: WebSocket, game_id: int, player_id: int
             )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
+
+class InHandFigure(BaseModel):
+    player_identifier : UUID
+    card_id: int
+
+@app.post("/api/lobby/in-course{game_id}/discard_figs")
+
+async def discard_hand_fIgure(
+    game_id: int,
+    player_ident: InHandFigure,
+    game_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo)):
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Partida no encontrada")
+    player = player_repo.get_by_identifier(player_ident.player_identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Jugador no encontrade")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+    game_repo.save(game)
+    return {"status": "success"}
+
+
+
+@app.websocket("/ws/lobby/figs/{game_id}")
+async def update_cards_figure(websocket: WebSocket, game_id: int):
+    """
+    Este ws se encarga de actualizar las cartas de la mano del jugador en turno,
+    se espera recibir {identifier: 'str'}
+    retorna {player_id: 'int', cards: [int]}
+    """
+    game = game_repo.get(game_id)
+    if game is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Game not found"})
+        await websocket.close()
+        return
+
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.connect(websocket, game_id, 0)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            user_id = data.get("identifier")
+            if user_id is None:
+                await websocket.send_json({"error": "User id is missing"})
+                continue
+            print(f"User id: {user_id}")
+            player = player_repo.get_by_identifier(UUID(str(user_id)))
+            print("Player: ", player)
+            if player is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+
+            cards = game.get_player_hand_figures(player.id)
+            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, 0)
