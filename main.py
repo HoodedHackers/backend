@@ -732,6 +732,40 @@ async def play_card(
     return {"status": "success!"}
 
 
+@app.post("/api/game/{game_id}/undo")
+async def undo_move(
+    player_id: int,
+    game_id: int,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    games_repo: GameRepository = Depends(get_games_repo),
+    history_repo: HistoryRepository = Depends(get_history_repo),
+):
+    game = games_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    player = player_repo.get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Player not in game")
+    if player != game.current_player():
+        raise HTTPException(status_code=401, detail="It's not your turn")
+
+    last_play = history_repo.get_last(game_id)
+    if not last_play:
+        raise HTTPException(status_code=404, detail="No history found")
+    if last_play.player_id != player_id:
+        raise HTTPException(status_code=404, detail="Nothing to undo")
+
+    game.swap_tiles(last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y)
+    game.add_single_mov(last_play.fig_mov_id, player_id)
+    
+    history_repo.delete(last_play)
+
+    return {"status": "success!"}
+
+
 @app.get("/api/history/{game_id}")
 async def get_history(
     game_id: int, history_repo: HistoryRepository = Depends(get_history_repo)
