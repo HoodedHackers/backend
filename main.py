@@ -718,7 +718,7 @@ async def discard_card_figure(websocket: WebSocket, game_id: int, player_id: int
 
             hand_fig = game.discard_card_hand_figures(current_player.id, current_card)
             await manager.broadcast(
-                {"player_id": current_player.id, "hand_fig": current_card}, game_id
+                {"player_id": current_player.id, "hand_fig": hand_fig}, game_id
             )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
