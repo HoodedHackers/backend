@@ -679,7 +679,7 @@ class MovePlayer(BaseModel):
     card_fig_id: int
 
 
-@app.post("/api/game/{game_id}/play_card", response_model=SetCardsResponse)
+@app.post("/api/game/{game_id}/play_card")
 async def play_card(
     req: MovePlayer,
     game_id: int,
@@ -721,7 +721,7 @@ async def play_card(
     game.swap_tiles(req.origin_x, req.origin_y, req.destination_x, req.destination_y)
 
     history = History(
-        game=game_id,
+        game_id=game_id,
         board=game.board,
         player_id=player.id,
         fig_mov_id=req.card_fig_id,

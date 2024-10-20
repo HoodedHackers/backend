@@ -68,7 +68,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_y": 0,
                     "destination_x": 1,
                     "destination_y": 0,
-                    "card_fig_id": 1,
+                    "card_fig_id": 3,
                 },
             )
 

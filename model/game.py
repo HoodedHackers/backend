@@ -268,4 +268,4 @@ class Game(Base):
         self.board[dest_index] = origin_color
 
     def remove_card(self, player_id: int, card_fig_id: int):
-        self.player_info[player_id].hand_fig.remove(card_fig_id)
+        self.player_info[player_id].hand_mov.remove(card_fig_id)
