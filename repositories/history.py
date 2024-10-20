@@ -23,4 +23,9 @@ class HistoryRepository(Repository):
         return self.db.query(History).filter(History.game_id == game_id).all()
 
     def get_last(self, game_id: int) -> Optional[History]:
-        return self.db.query(History).filter(History.game_id == game_id).order_by(History.id.desc()).first()
+        return (
+            self.db.query(History)
+            .filter(History.game_id == game_id)
+            .order_by(History.id.desc())
+            .first()
+        )

@@ -230,7 +230,7 @@ class Game(Base):
 
     def add_single_mov(self, card_id, player_id):
         self.player_info[player_id].hand_mov.append(card_id)
-        
+
     def get_player_hand_figures(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_fig
 

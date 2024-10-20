@@ -19,7 +19,6 @@ class History(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     game_id: Mapped[int] = mapped_column(Integer, ForeignKey("games.id"))
-    board: Mapped[List[Color]] = mapped_column(Board, default=Board.random_board)
     player_id: Mapped[int] = mapped_column(Integer, ForeignKey("players.id"))
     fig_mov_id: Mapped[int] = mapped_column(Integer)
     origin_x: Mapped[int] = mapped_column(Integer)
@@ -29,14 +28,12 @@ class History(Base):
 
     def __repr__(self):
         return (
-            f"<History(id={self.id}, game_id={self.game_id}, board={self.board}, "
+            f"<History(id={self.id}, game_id={self.game_id},"
             f"player_id={self.player_id}, mov_id={self.fig_mov_id}, origin_x={self.origin_x}, "
             f"origin_y={self.origin_y}, dest_x={self.dest_x}, dest_y={self.dest_y})>"
         )
 
     def set_defaults(self):
-        if self.board is None:
-            self.board = Board.random_board()
         if self.player_id is None:
             self.player_id = -1
         if self.fig_mov_id is None:
@@ -56,7 +53,6 @@ class History(Base):
         return (
             self.id == other.id
             and self.game_id == other.game_id
-            and self.board == other.board
             and self.player_id == other.player_id
             and self.fig_mov_id == other.fig_mov_id
             and self.origin_x == other.origin_x
@@ -73,7 +69,6 @@ class History(Base):
         return {
             "id": self.id,
             "game": self.game_id,
-            "board": self.board,
             "player_id": self.player_id,
             "fig_mov_id": self.fig_mov_id,
             "origin_x": self.origin_x,

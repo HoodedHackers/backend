@@ -717,7 +717,6 @@ async def play_card(
 
     history = History(
         game_id=game_id,
-        board=game.board,
         player_id=player.id,
         fig_mov_id=req.card_fig_id,
         origin_x=req.origin_x,
@@ -758,9 +757,11 @@ async def undo_move(
     if last_play.player_id != player_id:
         raise HTTPException(status_code=404, detail="Nothing to undo")
 
-    game.swap_tiles(last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y)
+    game.swap_tiles(
+        last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
+    )
     game.add_single_mov(last_play.fig_mov_id, player_id)
-    
+
     history_repo.delete(last_play)
 
     return {"status": "success!"}

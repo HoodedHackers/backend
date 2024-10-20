@@ -11,7 +11,7 @@ from model import Game, History, Player
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 
 
-class TestPlayCard(unittest.TestCase):
+class TestPlayCardAndUndoMove(unittest.TestCase):
 
     def setUp(self):
         self.client = TestClient(app)
@@ -51,12 +51,12 @@ class TestPlayCard(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-    def test_play(self):
+    def test_undo(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ), patch("main.history_repo", self.history_repo):
-            self.game.add_player(self.players[0])
 
+            self.game.add_player(self.players[0])
             cards_mov = [1, 2, 3]
             self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
 
@@ -71,97 +71,52 @@ class TestPlayCard(unittest.TestCase):
                     "card_fig_id": 3,
                 },
             )
+
+            history = self.client.get(f"/api/history/{self.game.id}")
+            print("HISTORY BEFORE UNDO: ", history.json())
+
+            status = self.client.post(
+                f"/api/game/{self.game.id}/undo?player_id={self.players[0].id}"
+            )
+
+            print("STATUS: ", status.json())
+
             assert status.status_code == 200
 
             history = self.client.get(f"/api/history/{self.game.id}")
-            assert history.status_code == 200
-            assert history.json()[0]["origin_x"] == 0
-            assert history.json()[0]["dest_x"] == 1
-            assert history.json()[0]["fig_mov_id"] == 3
+            print("HISTORY AFTER UNDO: ", history.json())
 
-    def test_play_invalid_move(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ), patch("main.history_repo", self.history_repo):
-            self.game.add_player(self.players[0])
-
-            cards_mov = [1, 2, 3]
-            self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
-
-            status = self.client.post(
-                f"/api/game/{self.game.id}/play_card",
-                json={
-                    "player_id": self.players[0].id,
-                    "origin_x": 0,
-                    "origin_y": 0,
-                    "destination_x": 12,
-                    "destination_y": 12,
-                    "card_fig_id": 3,
-                },
-            )
-            assert status.status_code == 404
-            assert status.json() == {"detail": "Invalid move"}
-
-    def test_play_invalid_card(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ), patch("main.history_repo", self.history_repo):
-            self.game.add_player(self.players[0])
-
-            cards_mov = [1, 2, 3]
-            self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
-
-            status = self.client.post(
-                f"/api/game/{self.game.id}/play_card",
-                json={
-                    "player_id": self.players[0].id,
-                    "origin_x": 0,
-                    "origin_y": 0,
-                    "destination_x": 1,
-                    "destination_y": 0,
-                    "card_fig_id": 4,
-                },
-            )
-            assert status.status_code == 404
-            assert status.json() == {"detail": "Card not in hand"}
-            history = self.client.get(f"/api/history/{self.game.id}")
             assert history.status_code == 200
             assert history.json() == []
+            assert self.game.player_info[self.players[0].id].hand_mov == [1, 2, 3]
 
-    def test_play_invalid_player(self):
+    def test_nothing_undo(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ), patch("main.history_repo", self.history_repo):
+
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
-
             cards_mov = [1, 2, 3]
             self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
+            self.game.start()
 
-            status = self.client.post(
+            self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.players[2].id,
+                    "player_id": self.players[0].id,
                     "origin_x": 0,
                     "origin_y": 0,
                     "destination_x": 1,
                     "destination_y": 0,
                     "card_fig_id": 3,
                 },
+            )
+
+            self.game.advance_turn()
+
+            status = self.client.post(
+                f"/api/game/{self.game.id}/undo?player_id={self.players[1].id}"
             )
             assert status.status_code == 404
-            assert status.json() == {"detail": "Player not in game"}
-
-            status = self.client.post(
-                f"/api/game/{self.game.id}/play_card",
-                json={
-                    "player_id": self.game.players[1].id,
-                    "origin_x": 0,
-                    "origin_y": 0,
-                    "destination_x": 1,
-                    "destination_y": 0,
-                    "card_fig_id": 3,
-                },
-            )
-            assert status.status_code == 401
-            assert status.json() == {"detail": "It's not your turn"}
+            assert status.json() == {"detail": "Nothing to undo"}
