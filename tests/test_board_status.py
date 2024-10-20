@@ -1,5 +1,4 @@
 import unittest
-from os import name
 from unittest.mock import patch
 
 from fastapi import FastAPI
@@ -13,7 +12,7 @@ from repositories import GameRepository, PlayerRepository
 client = TestClient(app)
 
 
-class TestGameStart(unittest.TestCase):
+class TestBoardStatus(unittest.TestCase):
 
     def setUp(self):
         self.client = TestClient(app)
@@ -62,54 +61,37 @@ class TestGameStart(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-    def test_start_game_bad_game_id(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ):
-            response = self.client.put(
-                "/api/lobby/8975/start",
-                json={"identifier": "00000000-0000-0000-0000-000000000000"},
-            )
-            assert response.status_code == 404
-            assert response.json() == {"detail": "Game dont found"}
-
-    def test_start_game_without_enough_players(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ):
-            response = self.client.put(
-                f"/api/lobby/{self.game_1.id}/start",
-                json={"identifier": str(self.host.identifier)},
-            )
-            assert response.status_code == 400
-            assert response.json() == {
-                "detail": "Doesnt meet the minimum number of players"
-            }
-
-    def test_start_game_success(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ):
-            response = self.client.put(
-                f"/api/lobby/{self.game_2.id}/start",
-                json={"identifier": str(self.host.identifier)},
-            )
-            print(response.json())
-            assert response.status_code == 200
-            assert response.json() == {"status": "success!"}
-
-    def test_start_game_message(self):
-        player = self.players[1]
+    def test_board_status_invalid_game(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ), self.client.websocket_connect(
-            f"/ws/lobby/{self.game_2.id}/status?player_id={player.id}"
+            f"/ws/lobby/9999/board?player_id={self.players[0].id}"
         ) as ws:
-            response = self.client.put(
-                f"/api/lobby/{self.game_2.id}/start",
-                json={"identifier": str(self.host.identifier)},
-            )
-            self.assertEqual(response.status_code, 200)
+            ws.send_json({"request": "status"})
             msg = ws.receive_json()
-            self.assertIn("status", msg)
-            self.assertEqual(msg["status"], "started")
+            self.assertIn("error", msg)
+            self.assertEqual(msg["error"], "invalid game id")
+
+    def test_board_status_invalid_request(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), self.client.websocket_connect(
+            f"/ws/lobby/{self.game_1.id}/board?player_id={self.players[0].id}"
+        ) as ws:
+            ws.send_json({"request": "invalid"})
+            msg = ws.receive_json()
+            self.assertIn("error", msg)
+            self.assertEqual(msg["error"], "invalid request")
+
+    def test_board_status_valid_game(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), self.client.websocket_connect(
+            f"/ws/lobby/{self.game_1.id}/board?player_id={self.players[0].id}"
+        ) as ws:
+            ws.send_json({"request": "status"})
+            msg = ws.receive_json()
+            self.assertIn("game_id", msg)
+            self.assertIn("board", msg)
+            self.assertEqual(msg["game_id"], self.game_1.id)
+            self.assertEqual(msg["board"], [tile.value for tile in self.game_1.board])
