@@ -39,7 +39,7 @@ class GameRepository(Repository):
         if max_players is not None:
             q = q.having(func.count(Player.id) <= max_players)
         if name is not None:
-            q = q.where(Game.name.like(name))
+            q = q.where(Game.name.like(f"%{name}%"))
         if count is not None:
             q = q.limit(count)
         return q.all()

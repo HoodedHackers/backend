@@ -131,7 +131,7 @@ class TestGameRepo(unittest.TestCase):
             game.set_defaults()
             repo.save(game)
 
-        available_games = repo.get_available(name="game4")
+        available_games = repo.get_available(name="me4")
         asserts.assert_in(games[3], available_games)
 
     def test_get_available_games_max_players(self):
