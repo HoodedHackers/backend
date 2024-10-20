@@ -303,7 +303,7 @@ class InCardFigure(BaseModel):
     player_identifier: UUID
     hand_figure: List[int]
 
-@app.websocket("/api/lobby/{game_id}/figs")
+@app.post("/api/lobby/{game_id}/figs")
 async def endpoint_deal_card_figure(
     game_id: int,
     card_request: InCardFigure,
@@ -319,10 +319,47 @@ async def endpoint_deal_card_figure(
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
     cards = game.add_random_card(player.id)
+    game_repo.save(game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+    #await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
     
     return {"status": "success"}
+
+
+@app.websocket("/ws/lobby/figs/{game_id}")
+async def update_cards_figure(websocket: WebSocket, game_id: int):
+    """
+    Este ws se encarga de actualizar las cartas de la mano del jugador en turno,
+    se espera recibir {identifier: 'str'}
+    """
+    game = game_repo.get(game_id)
+    if game is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Game not found"})
+        await websocket.close()
+        return
+
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.connect(websocket, game_id, 0)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            user_id = data.get("identifier")
+            if user_id is None:
+                await websocket.send_json({"error": "User id is missing"})
+                continue
+
+            player = player_repo.get_by_identifier(UUID(user_id))
+            if player is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+
+            cards = game.get_player_figures(player.id)
+            await manager.broadcast(
+                {"player_id": player.id, "cards": cards}, game_id
+            )
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, 0)
 
 
 @app.websocket("/ws/lobby/{game_id}/figs")
