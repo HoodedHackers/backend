@@ -1,7 +1,7 @@
 import json
 import random
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from sqlalchemy import Column
 from sqlalchemy.ext.mutable import MutableDict
@@ -256,3 +256,16 @@ class Game(Base):
 
     def get_player_hand_movs(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_mov
+
+    def swap_tiles(self, origin_x: int, origin_y: int, dest_x: int, dest_y: int):
+        origin_index = origin_x + origin_y * 6
+        dest_index = dest_x + dest_y * 6
+
+        origin_color = self.board[origin_index]
+        dest_color = self.board[dest_index]
+
+        self.board[origin_index] = dest_color
+        self.board[dest_index] = origin_color
+
+    def remove_card(self, player_id: int, card_fig_id: int):
+        self.player_info[player_id].hand_fig.remove(card_fig_id)

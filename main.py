@@ -12,9 +12,10 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, Player
+from model import (TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game,
+                   History, MoveCards, Player)
 from model.exceptions import GameStarted, PreconditionsNotMet
-from repositories import GameRepository, PlayerRepository
+from repositories import GameRepository, HistoryRepository, PlayerRepository
 from services import Managers, ManagerTypes
 
 db_uri = getenv("DB_URI")
@@ -31,6 +32,7 @@ session = db.get_session()
 
 player_repo = PlayerRepository(session)
 game_repo = GameRepository(session)
+history_repo = HistoryRepository(session)
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,8 +47,13 @@ app.add_middleware(
 async def add_repos_to_request(request: Request, call_next):
     request.state.game_repo = game_repo
     request.state.player_repo = player_repo
+    request.state.history_repo = history_repo
     response = await call_next(request)
     return response
+
+
+def get_history_repo(request: Request) -> HistoryRepository:
+    return request.state.history_repo
 
 
 def get_games_repo(request: Request) -> GameRepository:
@@ -661,3 +668,70 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
             )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
+
+
+class MovePlayer(BaseModel):
+    player_id: int
+    origin_x: int
+    origin_y: int
+    destination_x: int
+    destination_y: int
+    card_fig_id: int
+
+
+@app.post("/api/game/{game_id}/play_card", response_model=SetCardsResponse)
+async def play_card(
+    req: MovePlayer,
+    game_id: int,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    games_repo: GameRepository = Depends(get_games_repo),
+    history_repo: HistoryRepository = Depends(get_history_repo),
+):
+    game = games_repo.get(game_id)
+    if game is None:
+        print("Game not found")
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    player = player_repo.get(req.player_id)
+    if player is None:
+        print("Player not found")
+        raise HTTPException(status_code=404, detail="Player not found")
+    if player not in game.players:
+        print("Player not in game")
+        raise HTTPException(status_code=404, detail="Player not in game")
+    if player != game.current_player():
+        print("Not your turn")
+        raise HTTPException(status_code=401, detail="It's not your turn")
+
+    if req.card_fig_id not in game.get_player_hand_movs(player.id):
+        print("Card not in hand")
+        raise HTTPException(status_code=404, detail="Card not in hand")
+
+    card = MoveCards(id=req.card_fig_id, dist=[])
+    card.create_card(req.card_fig_id)
+
+    tuple_origin = (req.origin_x, req.origin_y)
+    tuple_destination = (req.destination_x, req.destination_y)
+
+    tuples_valid = [(x + tuple_origin[0], y + tuple_origin[1]) for x, y in card.dist]
+    if tuple_destination not in tuples_valid:
+        print("Invalid move")
+        raise HTTPException(status_code=404, detail="Invalid move")
+
+    game.swap_tiles(req.origin_x, req.origin_y, req.destination_x, req.destination_y)
+
+    history = History(
+        game=game_id,
+        board=game.board,
+        player_id=player.id,
+        fig_mov_id=req.card_fig_id,
+        origin_x=req.origin_x,
+        origin_y=req.origin_y,
+        dest_x=req.destination_x,
+        dest_y=req.destination_y,
+    )
+    history_repo.save(history)
+
+    game.remove_card(player.id, req.card_fig_id)
+
+    return {"status": "success!"}
