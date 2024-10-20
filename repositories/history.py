@@ -18,3 +18,6 @@ class HistoryRepository(Repository):
 
     def get(self, id: int) -> Optional[History]:
         return self.db.get(History, id)
+
+    def get_all(self, game_id: int) -> List[History]:
+        return self.db.query(History).filter(History.game_id == game_id).all()

@@ -689,22 +689,17 @@ async def play_card(
 ):
     game = games_repo.get(game_id)
     if game is None:
-        print("Game not found")
         raise HTTPException(status_code=404, detail="Game not found")
 
     player = player_repo.get(req.player_id)
     if player is None:
-        print("Player not found")
         raise HTTPException(status_code=404, detail="Player not found")
     if player not in game.players:
-        print("Player not in game")
         raise HTTPException(status_code=404, detail="Player not in game")
     if player != game.current_player():
-        print("Not your turn")
         raise HTTPException(status_code=401, detail="It's not your turn")
 
     if req.card_fig_id not in game.get_player_hand_movs(player.id):
-        print("Card not in hand")
         raise HTTPException(status_code=404, detail="Card not in hand")
 
     card = MoveCards(id=req.card_fig_id, dist=[])
