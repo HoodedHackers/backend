@@ -730,3 +730,11 @@ async def play_card(
     game.remove_card(player.id, req.card_fig_id)
 
     return {"status": "success!"}
+
+
+@app.get("/api/history/{game_id}")
+async def get_history(
+    game_id: int, history_repo: HistoryRepository = Depends(get_history_repo)
+):
+    history = history_repo.get_all(game_id)
+    return history

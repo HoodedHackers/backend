@@ -44,18 +44,18 @@ class TestPlayCard(unittest.TestCase):
 
         self.games_repo.save(self.game)
 
-        history_base = History(
-            game_id=self.game.id,
-            board=self.game.board,
-            player_id=self.players[2].id,
-            fig_mov_id=3,
-            origin_x=0,
-            origin_y=0,
-            dest_x=1,
-            dest_y=0,
-        )
+        # history_base = History(
+        #     game_id=self.game.id,
+        #     board=self.game.board,
+        #     player_id=self.players[2].id,
+        #     fig_mov_id=3,
+        #     origin_x=0,
+        #     origin_y=0,
+        #     dest_x=1,
+        #     dest_y=0,
+        # )
 
-        self.history_repo.save(history_base)
+        # self.history_repo.save(history_base)
 
     def tearDown(self):
         self.dbs.query(Game).delete()
@@ -73,8 +73,6 @@ class TestPlayCard(unittest.TestCase):
             cards_mov = [1, 2, 3]
             self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
 
-            print("ORIGIN:", self.game.board, "\n")
-
             status = self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
@@ -88,8 +86,8 @@ class TestPlayCard(unittest.TestCase):
             )
             assert status.status_code == 200
 
-            history = self.history_repo.get_all(self.game.id)
-            print("\nHISTORY:", history)
-
-            print("\nAFTER:", self.game.board)
-            assert 3 == 4
+            history = self.client.get(f"/api/history/{self.game.id}")
+            assert history.status_code == 200
+            assert history.json()[0]["origin_x"] == 0
+            assert history.json()[0]["dest_x"] == 1            
+            assert history.json()[0]["fig_mov_id"] == 3
