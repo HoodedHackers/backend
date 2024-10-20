@@ -329,6 +329,7 @@ async def update_cards_figure(websocket: WebSocket, game_id: int):
     """
     Este ws se encarga de actualizar las cartas de la mano del jugador en turno,
     se espera recibir {identifier: 'str'}
+    retorna {player_id: 'int', cards: [int]}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -346,8 +347,9 @@ async def update_cards_figure(websocket: WebSocket, game_id: int):
             if user_id is None:
                 await websocket.send_json({"error": "User id is missing"})
                 continue
-
-            player = player_repo.get_by_identifier(UUID(user_id))
+            print(f"User id: {user_id}")
+            player = player_repo.get_by_identifier(UUID(str(user_id)))
+            print("Player: ", player)
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
                 continue
