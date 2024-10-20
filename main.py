@@ -372,8 +372,8 @@ async def exit_game(
     leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     if player == game.host and not game.started:
         games_repo.delete(game)
-        await Managers.disconnect_all(game.id)
         await leave_manager.broadcast("el host ha abandonado la partida", game.id)
+        await Managers.disconnect_all(game.id)
         return {"status": "success"}
 
     game.delete_player(player)
