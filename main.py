@@ -635,7 +635,18 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
     Retorna mensajes de la siguiente forma:
         {
             "game_id": int,
-            "board": [int]
+            "board": [int],
+            "possible_moves": [
+                {
+                    "player_id": int,
+                    "moves": [
+                        {
+                            "tiles": int,
+                            "fig_id": int
+                        }
+                    ]
+                }
+            ]
         }
     Tambien se puede recibir pedidos del estado del tablero usando el siguiente mensaje:
         {
@@ -656,10 +667,15 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
                 await websocket.send_json({"error": "invalid game id"})
                 continue
             board = [tile.value for tile in game.board]
-            possible_figures = {
-                player.id: game.get_possible_figures(player.id)
-                for player in game.players
-            }
+            possible_figures = [
+                {
+                    "player_id": player.id,
+                    "moves": [{
+                        "tiles": move.true_positions_canonical(),
+                        "fig_id": move.figure_id(),
+                    } for move in game.get_possible_figures(player.id)]
+                } for player in game.players
+            ]
             await websocket.send_json(
                 {
                     "game_id": game_id,

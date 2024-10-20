@@ -9,10 +9,10 @@ from .figure_search import (CandidateShape, Figure, calculate_offsets,
 
 class TestFigure(unittest.TestCase):
     def setUp(self):
-        self.L_up = Figure(positions=[(0, 0), (1, 0), (2, 0), (2, 1)])
-        self.L_down = Figure(positions=[(0, 0), (0, 1), (1, 1), (2, 1)])
-        self.L_right = Figure(positions=[(1, 0), (1, 1), (1, 2), (0, 2)])
-        self.L_left = Figure(positions=[(0, 0), (0, 1), (0, 2), (1, 0)])
+        self.L_up = Figure(id=0, positions=[(0, 0), (1, 0), (2, 0), (2, 1)])
+        self.L_down = Figure(id=0, positions=[(0, 0), (0, 1), (1, 1), (2, 1)])
+        self.L_right = Figure(id=0, positions=[(1, 0), (1, 1), (1, 2), (0, 2)])
+        self.L_left = Figure(id=0, positions=[(0, 0), (0, 1), (0, 2), (1, 0)])
 
     def test_rotate(self):
         res = rotate(self.L_up, times=1)
@@ -41,34 +41,34 @@ class TestFigure(unittest.TestCase):
 class TestCandidateShapeEdges(unittest.TestCase):
     def setUp(self):
         self.tile = CandidateShape(
-            figure=Figure([(0, 0)]), offset=(1, 1), color=Color.RED
+            figure=Figure(0, [(0, 0)]), offset=(1, 1), color=Color.RED
         )
         self.square = CandidateShape(
-            figure=Figure([(0, 0), (0, 1), (1, 0), (1, 1)]),
+            figure=Figure(0, [(0, 0), (0, 1), (1, 0), (1, 1)]),
             offset=(0, 0),
             color=Color.RED,
         )
         self.L_shape = CandidateShape(
-            figure=Figure([(0, 0), (1, 0), (2, 0), (2, 1)]),
+            figure=Figure(0, [(0, 0), (1, 0), (2, 0), (2, 1)]),
             offset=(0, 0),
             color=Color.RED,
         )
 
     def test_edges_sanity(self):
-        t = CandidateShape(figure=Figure([(0, 0)]), offset=(0, 0), color=Color.RED)
+        t = CandidateShape(figure=Figure(0, [(0, 0)]), offset=(0, 0), color=Color.RED)
         edges = t.edges(1)
         self.assertEqual(set(edges), set())
 
     def test_edges_line(self):
         t = CandidateShape(
-            figure=Figure([(0, 0), (0, 1)]), offset=(0, 0), color=Color.RED
+            figure=Figure(0, [(0, 0), (0, 1)]), offset=(0, 0), color=Color.RED
         )
         edges = t.edges(2)
         self.assertEqual(set(edges), set([(1, 0), (1, 1)]))
 
     def test_edges_line_offset(self):
         t = CandidateShape(
-            figure=Figure([(0, 0), (0, 1)]), offset=(1, 0), color=Color.RED
+            figure=Figure(0, [(0, 0), (0, 1)]), offset=(1, 0), color=Color.RED
         )
         edges = t.edges(2)
         self.assertEqual(set(edges), set([(0, 0), (0, 1)]))
@@ -93,7 +93,7 @@ class TestBoard(unittest.TestCase):
             "323111424414433343121211222143323143",
             None,  # type: ignore
         )
-        self.tetris = Figure([(0, 0), (0, 1), (0, 2), (1, 1)])
+        self.tetris = Figure(0, [(0, 0), (0, 1), (0, 2), (1, 1)])
         self.figures = list(self.tetris.rotations())
 
     def test_find_figures(self):

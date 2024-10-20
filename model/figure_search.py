@@ -6,6 +6,7 @@ from model.board import Color
 
 @dataclass(eq=False)
 class Figure:
+    id: int
     positions: List[Tuple[int, int]]
 
     def __eq__(self, other):
@@ -65,7 +66,7 @@ def rotate(f: Figure, times=1) -> Figure:
     offset_x = max(-min(p[0] for p in raw_pos), 0)
     offset_y = max(-min(p[1] for p in raw_pos), 0)
     normal_pos = [add(p, (offset_x, offset_y)) for p in raw_pos]
-    return Figure(normal_pos)
+    return Figure(f.id, normal_pos)
 
 
 @dataclass
@@ -74,9 +75,18 @@ class CandidateShape:
     offset: Tuple[int, int]
     color: Color
 
+    def true_positions(self) -> List[Tuple[int, int]]:
+        return list(add(self.offset, pos) for pos in self.figure.positions)
+
+    def true_positions_canonical(self) -> List[int]:
+        return list(map(lambda pos: coord_to_index(6, pos), self.true_positions()))
+
+    def figure_id(self) -> int:
+        return self.figure.id
+
     def edges(self, width=6) -> List[Tuple[int, int]]:
         positions = []
-        true_positions = list(add(self.offset, pos) for pos in self.figure.positions)
+        true_positions = self.true_positions()
         for pos in true_positions:
             for direction in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
                 x, y = j = add(direction, pos)
@@ -124,6 +134,3 @@ def find_figures(board: List[Color], figures: List[Figure]) -> List[CandidateSha
         if all(color != c.color for color in colors):
             final_shapes.append(c)
     return final_shapes
-
-
-figures = [Figure(positions=[(0, 0), (0, 1), (0, 2), (1, 2)])]
