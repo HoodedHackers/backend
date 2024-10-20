@@ -298,6 +298,33 @@ class SetCardsResponse(BaseModel):
     all_cards: List[int]
 
 
+
+class InCardFigure(BaseModel):
+    player_identifier: UUID
+    hand_figure: List[int]
+
+@app.websocket("/api/lobby/{game_id}/figs")
+async def endpoint_deal_card_figure(
+    game_id: int,
+    card_request: InCardFigure,
+    game_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+):
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Partida no encontrada")
+    player = player_repo.get_by_identifier(card_request.player_identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Jugador no encontrade")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    cards = game.add_random_card(player.id)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+    
+    return {"status": "success"}
+
+
 @app.websocket("/ws/lobby/{game_id}/figs")
 async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     """
@@ -329,14 +356,23 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     try:
         while True:
             data = await websocket.receive_json()
-            request = data.get("receive")
+            request = data.get("identifier")
             if request is None:
                 await websocket.send_json({"error": "invalid request"})
                 continue
-
+            identifier_player = player_repo.get_by_identifier(UUID(request))
+            if identifier_player is None:
+                await websocket.send_json({"error": "Player not found"})
+                continue
+            # id_player = identifier_player.id
             cards = game.add_random_card(player.id)
-            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
-
+            game_repo.save(game)
+            print(
+                f"Enviando broadcast para game_id: {game_id} con player_id: {identifier_player.id} y cartas: {cards}"
+            )
+            await manager.broadcast(
+                {"player_id": identifier_player.id, "cards": cards}, game_id
+            )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
