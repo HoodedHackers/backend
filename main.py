@@ -672,4 +672,53 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
         manager.disconnect(game_id, player_id)
 
 
-# async def discrd_card_figure()
+@app.websocket("/ws/lobby/in_course/{game_id}/discard_fig")
+async def discard_card_figure(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este ws se encarga de recibir la carta figura descartada por un jugador y notificar a los demás jugadores de la partida.
+
+    Se espera: {card_id: 'valor', player_identifier: 'valor'}
+
+    Se retorna: {player_id: 'valor', card_id: 'valor'}
+    """
+    game = game_repo.get(game_id)
+    if game is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Game not found"})
+        await websocket.close()
+        return
+
+    player = player_repo.get(player_id)
+    if player is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not found"})
+        await websocket.close()
+        return
+
+    manager = Managers.get_manager(ManagerTypes.DISCARD_HAND_FIG)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            current_card = data.get("card_id")
+
+            current_player_ident = data.get("player_identifier")
+            current_player = player_repo.get_by_identifier(UUID(current_player_ident))
+            if current_player is None:
+                await websocket.send_json({"error": "Player id is missing"})
+                continue
+            if current_player not in game.players:
+                await websocket.send_json({"error": "Player not in game"})
+                continue
+
+            hand = game.get_player_hand_figures(current_player.id)
+            if current_card not in hand:
+                await websocket.send_json({"error": "Card not in hand"})
+                continue
+
+            hand_fig = game.discard_card_hand_figures(current_player.id, current_card)
+            await manager.broadcast(
+                {"player_id": current_player.id, "hand_fig": current_card}, game_id
+            )
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
