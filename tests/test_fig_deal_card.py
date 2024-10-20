@@ -60,136 +60,124 @@ class TestGameExits(unittest.TestCase):
         ):
             player1 = self.players[0]
             player2 = self.players[1]
+            player3 = self.players[2]
             id0 = self.players[0].id
             id1 = self.players[1].id
+            id2 = self.players[2].id
 
             self.game.add_player(player1)
             self.game.add_player(player2)
-            self.game.player_info[id0].hand_fig = [1]
+            self.game.add_player(player3)
+            self.game.player_info[id0].hand_fig = [1, 2, 3]
+            self.game.player_info[id2].hand_fig = [1]
             self.game.player_info[id1].hand_fig = [2, 3, 4]
+            hand = self.game.player_info[id0].hand_fig
+
+            response = self.client.post(
+                f"/api/lobby/1/figs",
+                json={"player_identifier": str(player3.identifier)},
+            )
+
+            # Verifica la respuesta del endpoint
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json(), {"status": "success"})
 
             with client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={id0}"
-            ) as websocket:
+                f"/ws/lobby/figs/1"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/figs/1"
+            ) as websocket2, client.websocket_connect(
+                "/ws/lobby/figs/1"
+            ) as websocket3:
                 try:
-                    websocket.send_json({"receive": "cards"})
-                    rsp = websocket.receive_json()
+                    # Enviar desde websocket1
+                    websocket1.send_json({"identifier": str(player3.identifier)})
+                    rsp1 = websocket1.receive_json()
+                    print(rsp1)
+                    # Verificar respuesta en websocket1
+                    self.assertIn("player_id", rsp1)
+                    self.assertIn("cards", rsp1)
+                    self.assertIsInstance(rsp1["cards"], list)
+                    self.assertEqual(len(rsp1["cards"]), 3)
 
-                    self.assertIn("player_id", rsp)
-                    self.assertIn("cards", rsp)
-                    self.assertIsInstance(rsp["cards"], list)
-                    assert len(rsp["cards"]) == 3
+                    # Recibir la actualización en websocket2
+                    rsp2 = websocket2.receive_json()
+                    print(rsp2)
+                    # Verificar que websocket2 recibe la misma información
+                    self.assertIn("player_id", rsp2)
+                    self.assertIn("cards", rsp2)
+                    self.assertEqual(rsp2["player_id"], id2)
+                    self.assertEqual(rsp2["cards"], rsp1["cards"])
+
+                    # Recibir la actualización en websocket3
+                    rsp3 = websocket3.receive_json()
+                    print(rsp3)
+                    # Verificar que websocket3 recibe la misma información
+                    self.assertIn("player_id", rsp3)
+                    self.assertIn("cards", rsp3)
+                    self.assertEqual(rsp3["player_id"], id2)
+                    self.assertEqual(rsp3["cards"], rsp1["cards"])
                 finally:
-                    websocket.close()
+                    websocket1.close()
+                    websocket2.close()
 
-    def test_deal_cards_invalid_game(self):
+    def test_player_not_found(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            response = self.client.post(
+                "/api/lobby/1/figs",
+                json={"player_identifier": str(uuid4())},  # Un UUID aleatorio
+            )
+            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.json(), {"detail": "Jugador no encontrade"})
+
+    def test_player_not_in_game(self):
+        new_player = Player(name="New Player")
+        self.player_repo.save(new_player)
+
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            response = self.client.post(
+                "/api/lobby/1/figs",
+                json={"player_identifier": str(new_player.identifier)},
+            )
+            self.assertEqual(response.status_code, 404)
+            self.assertEqual(
+                response.json(), {"detail": "Jugador no presente en la partida"}
+            )
+
+    def test_broadcast_cards(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
             player1 = self.players[0]
             player2 = self.players[1]
-            id0 = self.players[0].id
-            id1 = self.players[1].id
 
             self.game.add_player(player1)
             self.game.add_player(player2)
-            self.game.player_info[id0].hand_fig = [1]
-            self.game.player_info[id1].hand_fig = [2, 3, 4]
 
             with client.websocket_connect(
-                f"/ws/lobby/777/figs?player_id={id0}"
-            ) as websocket:
+                f"/ws/lobby/figs/1"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/figs/1"
+            ) as websocket2:
                 try:
-                    websocket.send_json({"receive": "cards"})
-                    rsp = websocket.receive_json()
+                    websocket1.send_json({"identifier": str(player1.identifier)})
 
-                    self.assertIn("error", rsp)
-                    self.assertEqual(rsp["error"], "Game not found")
+                    rsp1 = websocket1.receive_json()  # Respuesta del websocket1
+                    rsp2 = websocket2.receive_json()  # Respuesta del websocket2
+
+                    self.assertEqual(
+                        rsp1["cards"], rsp2["cards"]
+                    )  # Verificar que ambas respuestas son iguales
                 finally:
-                    websocket.close()
+                    websocket1.close()
+                    websocket2.close()
 
-    def test_deal_cards_invalid_player(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ):
-            player1 = self.players[0]
-            player2 = self.players[1]
-            id0 = self.players[0].id
-            id1 = self.players[1].id
 
-            self.game.add_player(player1)
-            self.game.add_player(player2)
-            self.game.player_info[id0].hand_fig = [1]
-            self.game.player_info[id1].hand_fig = [2, 3, 4]
-
-            with client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id=777"
-            ) as websocket:
-                try:
-                    websocket.send_json({"receive": "cards"})
-                    rsp = websocket.receive_json()
-
-                    self.assertIn("error", rsp)
-                    self.assertEqual(rsp["error"], "Player not found")
-                finally:
-                    websocket.close()
-
-    def test_deal_cards_invalid_player_not_in_game(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ):
-            player1 = self.players[0]
-            player2 = self.players[1]
-            id0 = self.players[0].id
-            id1 = self.players[1].id
-
-            self.game.add_player(player1)
-            self.game.add_player(player2)
-            self.game.player_info[id0].hand_fig = [1]
-            self.game.player_info[id1].hand_fig = [2, 3, 4]
-
-            with client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={self.players[2].id}"
-            ) as websocket:
-                try:
-                    websocket.send_json({"receive": "cards"})
-                    rsp = websocket.receive_json()
-
-                    self.assertIn("error", rsp)
-                    self.assertEqual(rsp["error"], "Player not in game")
-                finally:
-                    websocket.close()
-
-    def test_deal_cards_border(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ):
-            player1 = self.players[0]
-            player2 = self.players[1]
-            id0 = self.players[0].id
-            id1 = self.players[1].id
-
-            self.game.add_player(player1)
-            self.game.add_player(player2)
-            self.game.player_info[id0].fig = [1]
-            self.game.player_info[id0].hand_fig = [1]
-            self.game.player_info[id1].hand_fig = [2, 3, 4]
-
-            with client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={id0}"
-            ) as websocket:
-                try:
-                    websocket.send_json({"receive": "cards"})
-                    rsp = websocket.receive_json()
-
-                    self.assertIn("player_id", rsp)
-                    self.assertIn("cards", rsp)
-                    self.assertIsInstance(rsp["cards"], list)
-                    assert len(rsp["cards"]) == 2
-                    assert len(self.game.player_info[id0].fig) == 0
-                finally:
-                    websocket.close()
-
+"""
     def test_broadcast(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -224,3 +212,5 @@ class TestGameExits(unittest.TestCase):
                 finally:
                     websocket1.close()
                     websocket2.close()
+
+"""

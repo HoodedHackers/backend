@@ -298,10 +298,10 @@ class SetCardsResponse(BaseModel):
     all_cards: List[int]
 
 
-
 class InCardFigure(BaseModel):
     player_identifier: UUID
-    hand_figure: List[int]
+    # hand_figure: List[int]
+
 
 @app.post("/api/lobby/{game_id}/figs")
 async def endpoint_deal_card_figure(
@@ -320,9 +320,7 @@ async def endpoint_deal_card_figure(
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
     cards = game.add_random_card(player.id)
     game_repo.save(game)
-    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    #await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
-    
+
     return {"status": "success"}
 
 
@@ -354,10 +352,8 @@ async def update_cards_figure(websocket: WebSocket, game_id: int):
                 await websocket.send_json({"error": "Player not found"})
                 continue
 
-            cards = game.get_player_figures(player.id)
-            await manager.broadcast(
-                {"player_id": player.id, "cards": cards}, game_id
-            )
+            cards = game.get_player_hand_figures(player.id)
+            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
     except WebSocketDisconnect:
         manager.disconnect(game_id, 0)
 

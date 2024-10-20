@@ -207,12 +207,12 @@ class TestGameExits(unittest.TestCase):
             self.game.add_player(player3)
             self.game.player_info[id0].hand_fig = [1]
 
-
             with client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={id0}"
             ) as websocket1, client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={id1}"
-            ) as websocket2, client.websocket_connect(f"/ws/lobby/1/figs?player_id={id2}"
+            ) as websocket2, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={id2}"
             ) as websocket3:
                 try:
                     websocket1.send_json({"identifier": str(player2.identifier)})
