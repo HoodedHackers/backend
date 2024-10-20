@@ -140,16 +140,16 @@ class TestGameExits(unittest.TestCase):
             f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
         ) as ws:
             self.game.add_player(self.players[0])
-            self.game.add_player(self.host)
+            self.game.add_player(self.players[1])
             self.game.started = True
             self.games_repo.save(self.game)
             rsp = self.client.post(
                 f"/api/lobby/{self.game.id}/exit",
-                json={"identifier": str(self.players[0].identifier)},
+                json={"identifier": str(self.players[1].identifier)},
             )
 
             self.assertEqual(rsp.status_code, 200)
             message = ws.receive_json()
             assert message is not None
             print(message)
-            assert message["response"] == "Hay un ganador"
+            assert message["response"] == self.players[0].id
