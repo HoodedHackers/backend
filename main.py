@@ -828,6 +828,19 @@ async def undo_move(
 ):
     """
     Este endpoint se encarga de deshacer el último movimiento realizado por un jugador
+
+    Se retorna al ws de tablero:
+        {
+            "game_id": int,
+            "board": [int],
+        }
+    Se retorna al ws de cartas:
+        {
+            "action": "recover_card",
+            "player_id": int,
+            "card_id": int,
+            "index": 0,
+        }
     """
     game = games_repo.get(game_id)
     if game is None:
@@ -854,13 +867,25 @@ async def undo_move(
 
     history_repo.delete(last_play)
 
-    manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
-    await manager.broadcast(
+    manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
+
+    await manager_board.broadcast(
         {
             "game_id": game_id,
             "board": [tile.value for tile in game.board],
         },
         game_id,
+    )
+
+    await manager_card_mov.broadcast(
+        {
+            "action": "recover_card",
+            "player_id": player.id,
+            "card_id": last_play.fig_mov_id,
+            "index": 0,
+        },
+        game.id,
     )
 
     return {"status": "success!"}

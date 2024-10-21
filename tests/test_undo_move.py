@@ -89,7 +89,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
             assert history.json() == []
             assert self.game.player_info[self.players[0].id].hand_mov == [1, 2, 3]
 
-    def test_ws_undo(self):
+    def test_ws_board_undo(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ), patch("main.history_repo", self.history_repo):
@@ -134,6 +134,56 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                     assert websocket2.receive_json() == {
                         "game_id": self.game.id,
                         "board": board_before,
+                    }
+
+    def test_ws_hand_undo(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), patch("main.history_repo", self.history_repo):
+
+            self.game.add_player(self.players[0])
+            self.game.add_player(self.players[1])
+
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[0].id}"
+            ) as websocket:
+                with self.client.websocket_connect(
+                    f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[1].id}"
+                ) as websocket2:
+
+                    self.game.add_player(self.players[0])
+
+                    cards_mov = [1, 2, 3]
+                    self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
+
+                    status = self.client.post(
+                        f"/api/game/{self.game.id}/play_card",
+                        json={
+                            "player_id": self.players[0].id,
+                            "origin_tile": 0,
+                            "dest_tile": 1,
+                            "card_mov_id": 3,
+                            "index_hand": 1,
+                        },
+                    )
+                    assert status.status_code == 200
+                    websocket.receive_json()
+                    websocket2.receive_json()
+                    status = self.client.post(
+                        f"/api/game/{self.game.id}/undo?player_id={self.players[0].id}"
+                    )
+                    assert status.status_code == 200
+                    assert websocket.receive_json() == {
+                        "action": "recover_card",
+                        "player_id": self.players[0].id,
+                        "card_id": 3,
+                        "index": 0,
+                    }
+                    assert websocket2.receive_json() == {
+                        "action": "recover_card",
+                        "player_id": self.players[0].id,
+                        "card_id": 3,
+                        "index": 0,
                     }
 
     def test_nothing_undo(self):
