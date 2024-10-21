@@ -329,6 +329,9 @@ async def endpoint_deal_card_figure(
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
     cards = game.add_random_card(player.id)
     game_repo.save(game)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+
 
     return {"status": "success"}
 
