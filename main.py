@@ -364,7 +364,6 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
 
-
 async def nuke_game(game: Game, games_repo: GameRepository):
     games_repo.delete(game)
     await Managers.disconnect_all(game.id)
@@ -408,6 +407,7 @@ async def exit_game(
             "action": "leave",
             "player_name": player.name,
             "players": [player.id for player in game.players],
+            "cards_fig": game.get_player_hand_figures(player.id),
         },
         game.id,
     )
@@ -792,7 +792,7 @@ async def play_card(
     )
     history_repo.save(history)
 
-    game.remove_card(player.id, req.card_mov_id)
+    game.remove_card_mov(player.id, req.card_mov_id)
 
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)

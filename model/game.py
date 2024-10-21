@@ -234,6 +234,8 @@ class Game(Base):
         self.player_info[player_id].hand_mov.append(card_id)
 
     def get_player_hand_figures(self, player_id: int) -> List[int]:
+        if player_id not in self.player_info:
+            return []
         return self.player_info[player_id].hand_fig
 
     def get_player_figures(self, player_id: int) -> List[int]:
@@ -272,7 +274,7 @@ class Game(Base):
         self.board[origin_index] = dest_color
         self.board[dest_index] = origin_color
 
-    def remove_card(self, player_id: int, card_fig_id: int):
+    def remove_card_mov(self, player_id: int, card_fig_id: int):
         self.player_info[player_id].hand_mov.remove(card_fig_id)
 
     def discard_card_hand_figures(self, player_id: int, card: int):
