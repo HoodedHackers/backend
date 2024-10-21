@@ -357,7 +357,7 @@ async def update_cards_figure(websocket: WebSocket, game_id: int, player_id: int
         await websocket.send_json({"error": "Player not in game"})
         await websocket.close()
         return
-    
+
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await manager.connect(websocket, game_id, player_id)
     try:
@@ -761,11 +761,15 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
             possible_figures = [
                 {
                     "player_id": player.id,
-                    "moves": [{
-                        "tiles": move.true_positions_canonical(),
-                        "fig_id": move.figure_id(),
-                    } for move in game.get_possible_figures(player.id)]
-                } for player in game.players
+                    "moves": [
+                        {
+                            "tiles": move.true_positions_canonical(),
+                            "fig_id": move.figure_id(),
+                        }
+                        for move in game.get_possible_figures(player.id)
+                    ],
+                }
+                for player in game.players
             ]
             await websocket.send_json(
                 {
