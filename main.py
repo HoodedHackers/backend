@@ -598,9 +598,9 @@ async def select_card(
     """
     Este ws se encarga de recibir la selección de cartas de un jugador y notificar a los demás jugadores de la partida.
 
-    Se espera: {card_id: 'valor', player_identifier: 'valor'}
+    Se espera: {player_id: 'int', card_id: 'int', index: 'int'}
 
-    Se retorna: {player_id: 'valor', card_id: 'valor'}
+    Se retorna: {player_id: 'int', card_id: 'int', index: 'int'}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -615,6 +615,8 @@ async def select_card(
     try:
         while True:
             data = await websocket.receive_json()
+            index = data.get("index")
+
             current_card = data.get("card_id")
 
             current_player_ident = data.get("player_identifier")
@@ -632,7 +634,7 @@ async def select_card(
                 continue
 
             await manager.broadcast(
-                {"player_id": current_player.id, "card_id": current_card}, game_id
+                {"player_id": current_player.id, "card_id": current_card, "index": index}, game_id
             )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
