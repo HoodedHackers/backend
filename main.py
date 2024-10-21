@@ -680,11 +680,15 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
             possible_figures = [
                 {
                     "player_id": player.id,
-                    "moves": [{
-                        "tiles": move.true_positions_canonical(),
-                        "fig_id": move.figure_id(),
-                    } for move in game.get_possible_figures(player.id)]
-                } for player in game.players
+                    "moves": [
+                        {
+                            "tiles": move.true_positions_canonical(),
+                            "fig_id": move.figure_id(),
+                        }
+                        for move in game.get_possible_figures(player.id)
+                    ],
+                }
+                for player in game.players
             ]
             await websocket.send_json(
                 {

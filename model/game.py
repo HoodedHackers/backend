@@ -265,8 +265,10 @@ class Game(Base):
 
     def get_player_in_game(self, position: int) -> Player:
         return self.players[position]
+
     def get_possible_figures(self, player_id: int) -> List[CandidateShape]:
         player_figures = [
-            Figure(fig_id, all_coord[fig_id]) for fig_id in self.player_info[player_id].hand_fig
+            Figure(fig_id, all_coord[fig_id])
+            for fig_id in self.player_info[player_id].hand_fig
         ]
         return find_figures(self.board, player_figures)
