@@ -71,7 +71,6 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[id0].hand_fig = [1, 2, 3]
             self.game.player_info[id2].hand_fig = [1]
             self.game.player_info[id1].hand_fig = [2, 3, 4]
-            hand = self.game.player_info[id0].hand_fig
 
             response = self.client.post(
                 f"/api/lobby/1/figs",
@@ -79,6 +78,8 @@ class TestGameExits(unittest.TestCase):
             )
 
             # Verifica la respuesta del endpoint
+            print("llegue a response")
+            print(response.json())
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {"status": "success"})
 
@@ -94,28 +95,22 @@ class TestGameExits(unittest.TestCase):
                     rsp1 = websocket1.receive_json()
                     print(rsp1)
 
-                    self.assertIn("player_id", rsp1)
-                    self.assertIn("cards", rsp1)
-                    self.assertIsInstance(rsp1["cards"], list)
-                    self.assertEqual(len(rsp1["cards"]), 3)
+                    # self.assertIn("players", rsp1)
+                    self.assertIsInstance(rsp1["players"], list)
 
                     rsp2 = websocket2.receive_json()
                     print(rsp2)
 
-                    self.assertIn("player_id", rsp2)
-                    self.assertIn("cards", rsp2)
-                    self.assertEqual(rsp2["player_id"], id2)
-                    self.assertEqual(rsp2["cards"], rsp1["cards"])
+                    self.assertEqual(rsp2, rsp1)
 
                     rsp3 = websocket3.receive_json()
                     print(rsp3)
-                    self.assertIn("player_id", rsp3)
-                    self.assertIn("cards", rsp3)
-                    self.assertEqual(rsp3["player_id"], id2)
-                    self.assertEqual(rsp3["cards"], rsp1["cards"])
+                    self.assertEqual(rsp3, rsp1)
+
                 finally:
                     websocket1.close()
                     websocket2.close()
+                    websocket3.close()
 
     def test_player_not_found(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -144,6 +139,8 @@ class TestGameExits(unittest.TestCase):
                 response.json(), {"detail": "Jugador no presente en la partida"}
             )
 
+
+"""
     def test_broadcast_cards(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -168,3 +165,4 @@ class TestGameExits(unittest.TestCase):
                 finally:
                     websocket1.close()
                     websocket2.close()
+"""

@@ -330,15 +330,14 @@ async def endpoint_deal_card_figure(
     cards = game.add_random_card(player.id)
     game_repo.save(game)
 
-    
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     players_cards = [
-        {"player_id": p.id, "cards": game.get_player_cards(p.id)}
+        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
         for p in game.players
     ]
-    await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+    print(f"se envia por broadcast: {players_cards}")
+    await manager.broadcast({"players": players_cards}, game_id)
 
-    
     return {"status": "success"}
 
 
@@ -384,9 +383,14 @@ async def update_cards_figure(websocket: WebSocket, game_id: int, player_id: int
                 continue
 
             cards = game.get_player_hand_figures(player.id)
-            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+            players_cards = [
+                {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+                for p in game.players
+            ]
+            await manager.broadcast({"players": players_cards}, game_id)
+            # await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
     except WebSocketDisconnect:
-        manager.disconnect(game_id, 0)
+        manager.disconnect(game_id, player_id)
 
 
 @app.websocket("/ws/lobby/{game_id}/figs")

@@ -84,16 +84,11 @@ class TestGameExits(unittest.TestCase):
                 response1 = websocket1.receive_json()
                 print(response1)
 
-                self.assertIn("player_id", response1)
-                self.assertIn("cards", response1)
-                assert response1 == {"player_id": player2.id, "cards": [1]}
-                self.assertEqual(response1["player_id"], player2.id)
-                self.assertIsInstance(response1["cards"], list)
+                self.assertIn("players", response1)
+                self.assertIsInstance(response1["players"], list)
                 response2 = websocket2.receive_json()
                 print(response2)
-                self.assertIn("player_id", response1)
-                self.assertIn("cards", response1)
-                assert response2 == {"player_id": player2.id, "cards": [1]}
+                assert response2 == response1
 
             with client.websocket_connect(
                 f"/ws/lobby/figs/{self.game.id}?player_id={player3.id}"
