@@ -73,8 +73,6 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[id1].hand_fig = [2, 3, 4]
             self.game.player_info[id2].hand_fig = [1]
             
-            hand = self.game.player_info[id0].hand_fig
-
             response = self.client.post(
                 f"/api/lobby/in-course/1/discard_figs",
                 json={"player_identifier": str(player3.identifier), "card_id": 1},
@@ -140,8 +138,6 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[id1].hand_fig = [2, 3, 4]
             self.game.player_info[id2].hand_fig = [1]
             
-            hand = self.game.player_info[id0].hand_fig
-
             response = self.client.post(
                 f"/api/lobby/in-course/1/discard_figs",
                 json={"player_identifier": str(player2.identifier), "card_id": 3},
