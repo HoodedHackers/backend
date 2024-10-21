@@ -104,8 +104,10 @@ class TestGameExits(unittest.TestCase):
                     self.assertEqual(rsp2, rsp1)
 
                     rsp3 = websocket3.receive_json()
+                    print("lo que me llego")
                     print(rsp3)
                     self.assertEqual(rsp3, rsp1)
+                    assert 1 == 2
 
                 finally:
                     websocket1.close()
