@@ -77,11 +77,27 @@ class TestSelectCard(unittest.TestCase):
                     print("CARD0", card0)
                     print("PLAYER0", str(player0.identifier))
                     websocket0.send_json(
-                        {"card_id": card0, "player_identifier": str(player0.identifier), "index": index}
+                        {
+                            "card_id": card0,
+                            "player_identifier": str(player0.identifier),
+                            "index": index,
+                        }
                     )
 
                     # Comprobamos que se haya efectuado el broadcast
                     data1 = websocket0.receive_json()
-                    assert data1 == {"player_id": player0.id, "card_id": card0, "index": index}
+                    assert data1 == {
+                        "action": "select",
+                        "player_id": player0.id,
+                        "card_id": card0,
+                        "index": index,
+                        "len": 3,
+                    }
                     data2 = websocket1.receive_json()
-                    assert data2 == {"player_id": player0.id, "card_id": card0, "index": index}
+                    assert data2 == {
+                        "action": "select",
+                        "player_id": player0.id,
+                        "card_id": card0,
+                        "index": index,
+                        "len": 3,
+                    }
