@@ -13,6 +13,8 @@ from typing_extensions import Optional
 
 from database import Base
 from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG
+from model.fig_cards import all_coord
+from model.figure_search import CandidateShape, Figure, find_figures
 
 from .board import Board, Color
 from .exceptions import *
@@ -260,3 +262,10 @@ class Game(Base):
     def discard_card_hand_figures(self, player_id: int, card: int):
         self.player_info[player_id].hand_fig.remove(card)
         return self.player_info[player_id].hand_fig
+
+
+    def get_possible_figures(self, player_id: int) -> List[CandidateShape]:
+        player_figures = [
+            Figure(fig_id, all_coord[fig_id]) for fig_id in self.player_info[player_id].hand_fig
+        ]
+        return find_figures(self.board, player_figures)
