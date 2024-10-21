@@ -710,10 +710,8 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
 
 class MovePlayer(BaseModel):
     player_id: int
-    origin_x: int
-    origin_y: int
-    destination_x: int
-    destination_y: int
+    origin_tile: int
+    dest_tile: int
     card_mov_id: int
 
 
@@ -746,24 +744,29 @@ async def play_card(
     card = MoveCards(id=req.card_mov_id, dist=[])
     card.create_card(req.card_mov_id)
 
-    tuple_origin = (req.origin_x, req.origin_y)
-    tuple_destination = (req.destination_x, req.destination_y)
+    origin_x = req.origin_tile % 6
+    origin_y = req.origin_tile // 6
+    destination_x = req.dest_tile % 6
+    destination_y = req.dest_tile // 6
+
+    tuple_origin = (origin_x, origin_y)
+    tuple_destination = (destination_x, destination_y)
 
     tuples_valid = [(x + tuple_origin[0], y + tuple_origin[1]) for x, y in card.dist]
     if tuple_destination not in tuples_valid:
         print("Invalid move")
         raise HTTPException(status_code=404, detail="Invalid move")
 
-    game.swap_tiles(req.origin_x, req.origin_y, req.destination_x, req.destination_y)
+    game.swap_tiles(origin_x, origin_y, destination_x, destination_y)
 
     history = History(
         game_id=game_id,
         player_id=player.id,
         fig_mov_id=req.card_mov_id,
-        origin_x=req.origin_x,
-        origin_y=req.origin_y,
-        dest_x=req.destination_x,
-        dest_y=req.destination_y,
+        origin_x=origin_x,
+        origin_y=origin_y,
+        dest_x=destination_x,
+        dest_y=destination_y,
     )
     history_repo.save(history)
 

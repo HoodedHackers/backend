@@ -64,10 +64,8 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                 f"/api/game/{self.game.id}/play_card",
                 json={
                     "player_id": self.players[0].id,
-                    "origin_x": 0,
-                    "origin_y": 0,
-                    "destination_x": 1,
-                    "destination_y": 0,
+                    "origin_tile": 0,
+                    "dest_tile": 1,
                     "card_mov_id": 3,
                 },
             )
@@ -116,10 +114,8 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                         f"/api/game/{self.game.id}/play_card",
                         json={
                             "player_id": self.players[0].id,
-                            "origin_x": 0,
-                            "origin_y": 0,
-                            "destination_x": 1,
-                            "destination_y": 0,
+                            "origin_tile": 0,
+                            "dest_tile": 1,
                             "card_mov_id": 3,
                         },
                     )
@@ -153,10 +149,8 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                 f"/api/game/{self.game.id}/play_card",
                 json={
                     "player_id": self.players[0].id,
-                    "origin_x": 0,
-                    "origin_y": 0,
-                    "destination_x": 1,
-                    "destination_y": 0,
+                    "origin_tile": 0,
+                    "dest_tile": 1,
                     "card_mov_id": 3,
                 },
             )
