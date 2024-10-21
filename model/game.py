@@ -37,6 +37,7 @@ class PlayerInfo:
     hand_fig: List[int]
     hand_mov: List[int]
     fig: List[int]
+    mov_parcial: List[int]
 
     def to_dict(self):
         return {
@@ -45,6 +46,7 @@ class PlayerInfo:
             "hand_fig": self.hand_fig,
             "hand_mov": self.hand_mov,
             "fig": self.fig,
+            "mov_parcial": self.mov_parcial
         }
 
     @staticmethod
@@ -55,6 +57,7 @@ class PlayerInfo:
             hand_fig=data["hand_fig"],
             hand_mov=data["hand_mov"],
             fig=data["fig"],
+            mov_parcial=data["mov_parcial"]
         )
 
 
@@ -111,6 +114,7 @@ class Game(Base):
                     hand_fig=[],
                     hand_mov=[],
                     fig=[],
+                    mov_parcial=[]
                 )
 
     def __eq__(self, other):
@@ -166,6 +170,7 @@ class Game(Base):
             hand_fig=[],
             hand_mov=[],
             fig=list(range(1, TOTAL_FIG_CARDS + 1)),
+            mov_parcial=[]
         )
 
     def count_players(self) -> int:
@@ -225,13 +230,11 @@ class Game(Base):
             hand_mov=new_cards,
             hand_fig=self.player_info[id].hand_fig,
             fig=self.player_info[id].fig,
+            mov_parcial=self.player_info[id].mov_parcial
         )
         principal = self.all_movs
         res = [x for x in principal if x not in discard]
         self.all_movs = res
-
-    def add_single_mov(self, card_id, player_id):
-        self.player_info[player_id].hand_mov.append(card_id)
 
     def get_player_hand_figures(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_fig
@@ -272,8 +275,11 @@ class Game(Base):
         self.board[origin_index] = dest_color
         self.board[dest_index] = origin_color
 
+    def add_single_mov(self, card_id, player_id):
+        self.player_info[player_id].mov_parcial.append(card_id)
+
     def remove_card(self, player_id: int, card_fig_id: int):
-        self.player_info[player_id].hand_mov.remove(card_fig_id)
+        self.player_info[player_id].mov_parcial.remove(card_fig_id)
 
     def discard_card_hand_figures(self, player_id: int, card: int):
         self.player_info[player_id].hand_fig.remove(card)
