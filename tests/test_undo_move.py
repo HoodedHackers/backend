@@ -63,7 +63,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
             status = self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.players[0].id,
+                    "identifier": str(self.players[0].identifier),
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
@@ -75,7 +75,8 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
             print("HISTORY BEFORE UNDO: ", history.json())
 
             status = self.client.post(
-                f"/api/game/{self.game.id}/undo?player_id={self.players[0].id}"
+                f"/api/game/{self.game.id}/undo",
+                json={"identifier": str(self.players[0].identifier)},
             )
 
             print("STATUS: ", status.json())
@@ -114,7 +115,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                     status = self.client.post(
                         f"/api/game/{self.game.id}/play_card",
                         json={
-                            "player_id": self.players[0].id,
+                            "identifier": str(self.players[0].identifier),
                             "origin_tile": 0,
                             "dest_tile": 1,
                             "card_mov_id": 3,
@@ -124,17 +125,18 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                     assert status.status_code == 200
 
                     status = self.client.post(
-                        f"/api/game/{self.game.id}/undo?player_id={self.players[0].id}"
+                        f"/api/game/{self.game.id}/undo",
+                        json={
+                            "identifier": str(self.players[0].identifier),
+                        },
                     )
                     assert status.status_code == 200
-                    assert websocket.receive_json() == {
-                        "game_id": self.game.id,
-                        "board": board_before,
-                    }
-                    assert websocket2.receive_json() == {
-                        "game_id": self.game.id,
-                        "board": board_before,
-                    }
+                    rsp = websocket.receive_json()
+                    assert rsp["game_id"] == self.game.id
+                    assert rsp["board"] == board_before
+                    rsp = websocket2.receive_json()
+                    assert rsp["game_id"] == self.game.id
+                    assert rsp["board"] == board_before
 
     def test_ws_hand_undo(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -159,7 +161,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                     status = self.client.post(
                         f"/api/game/{self.game.id}/play_card",
                         json={
-                            "player_id": self.players[0].id,
+                            "identifier": str(self.players[0].identifier),
                             "origin_tile": 0,
                             "dest_tile": 1,
                             "card_mov_id": 3,
@@ -170,7 +172,10 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                     websocket.receive_json()
                     websocket2.receive_json()
                     status = self.client.post(
-                        f"/api/game/{self.game.id}/undo?player_id={self.players[0].id}"
+                        f"/api/game/{self.game.id}/undo",
+                        json={
+                            "identifier": str(self.players[0].identifier),
+                        },
                     )
                     assert status.status_code == 200
                     assert websocket.receive_json() == {
@@ -200,7 +205,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
             self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.players[0].id,
+                    "identifier": str(self.players[0].identifier),
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
@@ -211,7 +216,10 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
             self.game.advance_turn()
 
             status = self.client.post(
-                f"/api/game/{self.game.id}/undo?player_id={self.players[1].id}"
+                f"/api/game/{self.game.id}/undo",
+                json={
+                    "identifier": str(self.players[1].identifier),
+                },
             )
             assert status.status_code == 404
             assert status.json() == {"detail": "Nothing to undo"}

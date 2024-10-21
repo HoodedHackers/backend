@@ -63,7 +63,7 @@ class TestPlayCard(unittest.TestCase):
             status = self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.players[0].id,
+                    "identifier": str(self.players[0].identifier),
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
@@ -101,7 +101,7 @@ class TestPlayCard(unittest.TestCase):
                     status = self.client.post(
                         f"/api/game/{self.game.id}/play_card",
                         json={
-                            "player_id": self.players[0].id,
+                            "identifier": str(self.players[0].identifier),
                             "origin_tile": 0,
                             "dest_tile": 1,
                             "card_mov_id": 3,
@@ -110,14 +110,14 @@ class TestPlayCard(unittest.TestCase):
                     )
                     assert status.status_code == 200
 
-                    assert websocket.receive_json() == {
-                        "game_id": self.game.id,
-                        "board": [tile.value for tile in self.game.board],
-                    }
-                    assert websocket2.receive_json() == {
-                        "game_id": self.game.id,
-                        "board": [tile.value for tile in self.game.board],
-                    }
+                    board = [tile.value for tile in self.game.board]
+                    rsp = websocket.receive_json()
+                    assert rsp["game_id"] == self.game.id
+                    assert rsp["board"] == board
+
+                    rsp = websocket2.receive_json()
+                    assert rsp["game_id"] == self.game.id
+                    assert rsp["board"] == board
 
     def test_ws_hand_play(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -142,7 +142,7 @@ class TestPlayCard(unittest.TestCase):
                     status = self.client.post(
                         f"/api/game/{self.game.id}/play_card",
                         json={
-                            "player_id": self.players[0].id,
+                            "identifier": str(self.players[0].identifier),
                             "origin_tile": 0,
                             "dest_tile": 1,
                             "card_mov_id": 3,
@@ -175,7 +175,7 @@ class TestPlayCard(unittest.TestCase):
             status = self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.players[0].id,
+                    "identifier": str(self.players[0].identifier),
                     "origin_tile": 0,
                     "dest_tile": 0,
                     "card_mov_id": 3,
@@ -197,7 +197,7 @@ class TestPlayCard(unittest.TestCase):
             status = self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.players[0].id,
+                    "identifier": str(self.players[0].identifier),
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 4,
@@ -223,7 +223,7 @@ class TestPlayCard(unittest.TestCase):
             status = self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.players[2].id,
+                    "identifier": str(self.players[2].identifier),
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
@@ -236,7 +236,7 @@ class TestPlayCard(unittest.TestCase):
             status = self.client.post(
                 f"/api/game/{self.game.id}/play_card",
                 json={
-                    "player_id": self.game.players[1].id,
+                    "identifier": str(self.players[1].identifier),
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
