@@ -785,6 +785,9 @@ async def discard_hand_figure(
         raise HTTPException(status_code=404, detail="Carta no encontrada en la mano del jugador")
     
     hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+
+    manager = Managers.get_manager(ManagerTypes.DISCARD_HAND_FIG)
+    await manager.broadcast({"player_id": player.id, "cards": hand_fig}, game_id)
     game_repo.save(game)
     return {"status": "success"}
 

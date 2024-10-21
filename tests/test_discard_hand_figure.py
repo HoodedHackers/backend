@@ -241,15 +241,32 @@ class TestGameExits(unittest.TestCase):
                     websocket2.close()
 
 
-"""""
     def test_enpoint_not_card_id(self):
+        
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
             player1 = self.players[0]
             player2 = self.players[1]
+            player3 = self.players[2]
+            id0 = self.players[0].id
+            id1 = self.players[1].id
+            id2 = self.players[2].id
 
             self.game.add_player(player1)
             self.game.add_player(player2)
+            self.game.add_player(player3)
+            self.game.player_info[id0].hand_fig = [1, 2, 3]
+            self.game.player_info[id1].hand_fig = [2, 3, 4]
+            self.game.player_info[id2].hand_fig = [1]
+            
+            hand = self.game.player_info[id0].hand_fig
 
-"""""    
+            response = self.client.post(
+                f"/api/lobby/in-course/1/discard_figs",
+                json={"player_identifier": str(player1.identifier), "card_id": 5},
+            )
+            self.assertEqual(response.status_code, 404)
+            self.assertEqual(
+                response.json(), {"detail": "Carta no encontrada en la mano del jugador"}
+            )
