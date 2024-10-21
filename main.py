@@ -607,7 +607,7 @@ async def select_card(
 
     Se espera: {card_id: 'int', player_identifier: 'str', index: 'int'}
 
-    Se retorna: {action: 'select', player_id: 'int', card_id: 'int', index: 'int'}
+    Se retorna: {action: 'select', player_id: 'int', card_id: 'int', index: 'int', len: 'int'}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -646,6 +646,7 @@ async def select_card(
                     "player_id": current_player.id,
                     "card_id": current_card,
                     "index": index,
+                    "len": len(hand),
                 },
                 game_id,
             )
@@ -688,7 +689,7 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
                     "player_id": int,
                     "moves": [
                         {
-                            "tiles": int,
+                            "tiles": [int],
                             "fig_id": int
                         }
                     ]
@@ -737,17 +738,14 @@ async def play_card(
     """
     Este endpoint se encarga de realizar un movimiento en el tablero de un jugador
 
-    Se retorna al ws de tablero:
-        {
-            "game_id": int,
-            "board": [int],
-        }
+    Se retorna al ws de tablero: (ver /ws/lobby/{game_id}/board)
     Se retorna al ws de cartas:
         {
             "action": "use_card",
             "player_id": int,
             "card_id": int,
             "index": int,
+            "len": int
         }
     """
     game = games_repo.get(game_id)
@@ -810,6 +808,7 @@ async def play_card(
             "player_id": player.id,
             "card_id": req.card_mov_id,
             "index": req.index_hand,
+            "len": len(game.get_player_hand_movs(player.id)),
         },
         game.id,
     )
@@ -839,6 +838,7 @@ async def undo_move(
             "player_id": int,
             "card_id": int,
             "index": 0,
+            "len": int
         }
     """
     player = player_repo.get_by_identifier(request.identifier)
@@ -879,6 +879,7 @@ async def undo_move(
             "player_id": player.id,
             "card_id": last_play.fig_mov_id,
             "index": 0,
+            "len": len(game.get_player_hand_movs(player.id)),
         },
         game.id,
     )

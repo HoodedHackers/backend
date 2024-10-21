@@ -155,12 +155,14 @@ class TestPlayCard(unittest.TestCase):
                         "player_id": self.players[0].id,
                         "card_id": 3,
                         "index": 1,
+                        "len": 2,
                     }
                     assert websocket2.receive_json() == {
                         "action": "use_card",
                         "player_id": self.players[0].id,
                         "card_id": 3,
                         "index": 1,
+                        "len": 2,
                     }
 
     def test_play_invalid_move(self):
