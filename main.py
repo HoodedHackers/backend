@@ -765,8 +765,8 @@ class InHandFigure(BaseModel):
     player_identifier : UUID
     card_id: int
 
-@app.post("/api/lobby/in-course{game_id}/discard_figs")
 
+@app.post("/api/lobby/in-course/{game_id}/discard_figs")
 async def discard_hand_figure(
     game_id: int,
     player_ident: InHandFigure,
@@ -780,6 +780,10 @@ async def discard_hand_figure(
         raise HTTPException(status_code=404, detail="Jugador no encontrade")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    hand_figures = game.get_player_hand_figures(player.id)
+    if player_ident.card_id not in hand_figures:
+        raise HTTPException(status_code=404, detail="Carta no encontrada en la mano del jugador")
+    
     hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
     game_repo.save(game)
     return {"status": "success"}
@@ -830,6 +834,9 @@ async def update_cards_figure(websocket: WebSocket, game_id: int, player_id: int
                 continue
 
             cards = game.get_player_hand_figures(player.id)
+            if cards is None:
+                await websocket.send_json({"error": "Player has no cards"})
+                continue
             await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
     except WebSocketDisconnect:
         manager.disconnect(game_id, 0)

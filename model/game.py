@@ -260,8 +260,13 @@ class Game(Base):
         return self.player_info[player_id].hand_mov
 
     def discard_card_hand_figures(self, player_id: int, card: int):
-        self.player_info[player_id].hand_fig.remove(card)
-        return self.player_info[player_id].hand_fig
+        if self.player_info[player_id].hand_fig.count(card) != [] and card in self.player_info[player_id].hand_fig:
+            self.player_info[player_id].hand_fig.remove(card)
+            hand_fig = self.player_info[player_id].hand_fig
+        else:
+            hand_fig = self.player_info[player_id].hand_fig
+        return hand_fig
+
 
     def get_player_in_game(self, position: int) -> Player:
         return self.players[position]
