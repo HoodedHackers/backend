@@ -67,6 +67,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
+                    "index_hand": 1,
                 },
             )
             assert status.status_code == 200
@@ -104,6 +105,7 @@ class TestPlayCard(unittest.TestCase):
                             "origin_tile": 0,
                             "dest_tile": 1,
                             "card_mov_id": 3,
+                            "index_hand": 1,
                         },
                     )
                     assert status.status_code == 200
@@ -133,6 +135,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_tile": 0,
                     "dest_tile": 0,
                     "card_mov_id": 3,
+                    "index_hand": 1,
                 },
             )
             assert status.status_code == 404
@@ -154,6 +157,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 4,
+                    "index_hand": 1,
                 },
             )
             assert status.status_code == 404
@@ -179,6 +183,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
+                    "index_hand": 1,
                 },
             )
             assert status.status_code == 404
@@ -191,6 +196,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_tile": 0,
                     "dest_tile": 1,
                     "card_mov_id": 3,
+                    "index_hand": 1,
                 },
             )
             assert status.status_code == 401

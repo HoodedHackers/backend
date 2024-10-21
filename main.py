@@ -605,9 +605,9 @@ async def select_card(
     """
     Este ws se encarga de recibir la selección de cartas de un jugador y notificar a los demás jugadores de la partida.
 
-    Se espera: {card_id: 'int', player_identifier: 'str'}
+    Se espera: {card_id: 'int', player_identifier: 'str', index: 'int'}
 
-    Se retorna: {player_id: 'int', card_id: 'int'}
+    Se retorna: {action: 'select', player_id: 'int', card_id: 'int', index: 'int'}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -622,6 +622,8 @@ async def select_card(
     try:
         while True:
             data = await websocket.receive_json()
+            index = data.get("index")
+
             current_card = data.get("card_id")
 
             current_player_ident = data.get("player_identifier")
@@ -639,7 +641,13 @@ async def select_card(
                 continue
 
             await manager.broadcast(
-                {"player_id": current_player.id, "card_id": current_card}, game_id
+                {
+                    "action": "select",
+                    "player_id": current_player.id,
+                    "card_id": current_card,
+                    "index": index,
+                },
+                game_id,
             )
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
@@ -713,6 +721,7 @@ class MovePlayer(BaseModel):
     origin_tile: int
     dest_tile: int
     card_mov_id: int
+    index_hand: int
 
 
 @app.post("/api/game/{game_id}/play_card")
@@ -725,6 +734,19 @@ async def play_card(
 ):
     """
     Este endpoint se encarga de realizar un movimiento en el tablero de un jugador
+
+    Se retorna al ws de tablero:
+        {
+            "game_id": int,
+            "board": [int],
+        }
+    Se retorna al ws de cartas:
+        {
+            "action": "use_card",
+            "player_id": int,
+            "card_id": int,
+            "index": int,
+        }
     """
     game = games_repo.get(game_id)
     if game is None:
@@ -772,13 +794,25 @@ async def play_card(
 
     game.remove_card(player.id, req.card_mov_id)
 
-    manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
-    await manager.broadcast(
+    manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
+
+    await manager_board.broadcast(
         {
             "game_id": game_id,
             "board": [tile.value for tile in game.board],
         },
         game_id,
+    )
+
+    await manager_card_mov.broadcast(
+        {
+            "action": "use_card",
+            "player_id": player.id,
+            "card_id": req.card_mov_id,
+            "index": req.index_hand,
+        },
+        game.id,
     )
 
     return {"status": "success!"}
