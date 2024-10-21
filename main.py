@@ -364,7 +364,6 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
 
-
 async def nuke_game(game: Game, games_repo: GameRepository):
     games_repo.delete(game)
     await Managers.disconnect_all(game.id)
