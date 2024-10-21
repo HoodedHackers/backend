@@ -226,3 +226,12 @@ def test_get_player_hand_movs():
     hand_mov = g.get_player_hand_movs(p0.id)
     assert len(hand_mov) == 3
     assert hand_mov == [1, 2, 3]
+
+
+def test_get_player_in_game():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    p1 = Player(name="Player 1", id=2)
+    g.add_player(p0)
+    g.add_player(p1)
+    assert g.get_player_in_game(0) == p0

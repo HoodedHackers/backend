@@ -263,6 +263,9 @@ class Game(Base):
         self.player_info[player_id].hand_fig.remove(card)
         return self.player_info[player_id].hand_fig
 
+    def get_player_in_game(self, position: int) -> Player:
+        return self.players[position]
+
     def get_possible_figures(self, player_id: int) -> List[CandidateShape]:
         player_figures = [
             Figure(fig_id, all_coord[fig_id])

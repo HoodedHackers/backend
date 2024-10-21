@@ -480,7 +480,8 @@ async def exit_game(
     games_repo.save(game)
 
     if check_victory(game):
-        await leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
+        winner = game.get_player_in_game(0)
+        await leave_manager.broadcast({"response": winner.id}, game.id)
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
