@@ -535,6 +535,14 @@ async def update_cards_figure(websocket: WebSocket, game_id: int, player_id: int
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
+=
+    players_cards = {"player_id": player.id, "cards": game.get_player_hand_figures(player.id)}
+    
+    #
+    await manager.broadcast({"players": players_cards}, game_id)
+
+    return {"status": "success"}
+## la funcion que borre no tenia razon de ser 
 
 @app.websocket("/ws/lobby/{game_id}/figs")
 async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
