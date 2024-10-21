@@ -592,9 +592,9 @@ async def select_card(
     """
     Este ws se encarga de recibir la selección de cartas de un jugador y notificar a los demás jugadores de la partida.
 
-    Se espera: {card_id: 'valor', player_identifier: 'valor'}
+    Se espera: {card_id: 'int', player_identifier: 'str'}
 
-    Se retorna: {player_id: 'valor', card_id: 'valor'}
+    Se retorna: {player_id: 'int', card_id: 'int'}
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -687,6 +687,9 @@ async def play_card(
     games_repo: GameRepository = Depends(get_games_repo),
     history_repo: HistoryRepository = Depends(get_history_repo),
 ):
+    """
+    Este endpoint se encarga de realizar un movimiento en el tablero de un jugador
+    """
     game = games_repo.get(game_id)
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -728,6 +731,15 @@ async def play_card(
 
     game.remove_card(player.id, req.card_fig_id)
 
+    manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    await manager.broadcast(
+        {
+            "game_id": game_id,
+            "board": [tile.value for tile in game.board],
+        },
+        game_id,
+    )
+
     return {"status": "success!"}
 
 
@@ -739,6 +751,9 @@ async def undo_move(
     games_repo: GameRepository = Depends(get_games_repo),
     history_repo: HistoryRepository = Depends(get_history_repo),
 ):
+    """
+    Este endpoint se encarga de deshacer el último movimiento realizado por un jugador
+    """
     game = games_repo.get(game_id)
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
@@ -763,6 +778,15 @@ async def undo_move(
     game.add_single_mov(last_play.fig_mov_id, player_id)
 
     history_repo.delete(last_play)
+
+    manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    await manager.broadcast(
+        {
+            "game_id": game_id,
+            "board": [tile.value for tile in game.board],
+        },
+        game_id,
+    )
 
     return {"status": "success!"}
 

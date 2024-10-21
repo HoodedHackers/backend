@@ -90,6 +90,54 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
             assert history.json() == []
             assert self.game.player_info[self.players[0].id].hand_mov == [1, 2, 3]
 
+    def test_ws_undo(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), patch("main.history_repo", self.history_repo):
+            
+            self.game.add_player(self.players[0])
+            self.game.add_player(self.players[1])
+
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}/board?player_id={self.game.players[0].id}"
+            ) as websocket:
+                with self.client.websocket_connect(
+                    f"/ws/lobby/{self.game.id}/board?player_id={self.game.players[1].id}"
+                ) as websocket2:
+                    
+                    self.game.add_player(self.players[0])
+
+                    cards_mov = [1, 2, 3]
+                    self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
+
+                    board_before = [tile.value for tile in self.game.board]
+
+                    status = self.client.post(
+                        f"/api/game/{self.game.id}/play_card",
+                        json={
+                            "player_id": self.players[0].id,
+                            "origin_x": 0,
+                            "origin_y": 0,
+                            "destination_x": 1,
+                            "destination_y": 0,
+                            "card_fig_id": 3,
+                        },
+                    )
+                    assert status.status_code == 200
+
+                    status = self.client.post(
+                        f"/api/game/{self.game.id}/undo?player_id={self.players[0].id}"
+                    )
+                    assert status.status_code == 200
+                    assert websocket.receive_json() == {
+                        "game_id": self.game.id,
+                        "board": board_before,
+                    }
+                    assert websocket2.receive_json() == {
+                        "game_id": self.game.id,
+                        "board": board_before,
+                    }
+
     def test_nothing_undo(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
