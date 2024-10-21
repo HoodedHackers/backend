@@ -389,7 +389,8 @@ async def exit_game(
     games_repo.save(game)
 
     if check_victory(game):
-        await leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
+        winner = game.get_player_in_game(0)
+        await leave_manager.broadcast({"response": winner.id}, game.id)
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
@@ -679,11 +680,15 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
             possible_figures = [
                 {
                     "player_id": player.id,
-                    "moves": [{
-                        "tiles": move.true_positions_canonical(),
-                        "fig_id": move.figure_id(),
-                    } for move in game.get_possible_figures(player.id)]
-                } for player in game.players
+                    "moves": [
+                        {
+                            "tiles": move.true_positions_canonical(),
+                            "fig_id": move.figure_id(),
+                        }
+                        for move in game.get_possible_figures(player.id)
+                    ],
+                }
+                for player in game.players
             ]
             await websocket.send_json(
                 {
