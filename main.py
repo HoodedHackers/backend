@@ -1,7 +1,7 @@
 import asyncio
 import random
 from os import getenv
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
@@ -139,8 +139,17 @@ class GameStateOutput(BaseModel):
 @app.get("/api/lobby")
 def get_games_available(
     repo: GameRepository = Depends(get_games_repo),
+    max_players: Optional[int] = None,
+    name: Optional[str] = None,
 ) -> List[GameStateOutput]:
-    lobbies_queries = repo.get_available(10)
+    params: Dict[str, Any] = {
+        "count": 10,
+    }
+    if max_players is not None:
+        params["max_players"] = max_players
+    if name is not None:
+        params["name"] = name
+    lobbies_queries = repo.get_available(**params)
     lobbies = []
     for lobby_query in lobbies_queries:
         lobby = GameStateOutput(
@@ -376,20 +385,24 @@ async def exit_game(
         raise HTTPException(status_code=404, detail="Jugador no encontrade")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     if player == game.host and not game.started:
         games_repo.delete(game)
+        await leave_manager.broadcast("el host ha abandonado la partida", game.id)
         await Managers.disconnect_all(game.id)
         return {"status": "success"}
+
     game.delete_player(player)
     games_repo.save(game)
-    join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+
     if check_victory(game):
-        await join_leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
+        winner = game.get_player_in_game(0)
+        await leave_manager.broadcast({"response": winner.id}, game.id)
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
 
-    await join_leave_manager.broadcast(
+    await leave_manager.broadcast(
         {
             "player_id": player.id,
             "action": "leave",
@@ -639,7 +652,18 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
     Retorna mensajes de la siguiente forma:
         {
             "game_id": int,
-            "board": [int]
+            "board": [int],
+            "possible_moves": [
+                {
+                    "player_id": int,
+                    "moves": [
+                        {
+                            "tiles": int,
+                            "fig_id": int
+                        }
+                    ]
+                }
+            ]
         }
     Tambien se puede recibir pedidos del estado del tablero usando el siguiente mensaje:
         {
@@ -660,10 +684,24 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
                 await websocket.send_json({"error": "invalid game id"})
                 continue
             board = [tile.value for tile in game.board]
+            possible_figures = [
+                {
+                    "player_id": player.id,
+                    "moves": [
+                        {
+                            "tiles": move.true_positions_canonical(),
+                            "fig_id": move.figure_id(),
+                        }
+                        for move in game.get_possible_figures(player.id)
+                    ],
+                }
+                for player in game.players
+            ]
             await websocket.send_json(
                 {
                     "game_id": game_id,
                     "board": board,
+                    "possible_figures": possible_figures,
                 }
             )
     except WebSocketDisconnect:
