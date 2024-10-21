@@ -236,3 +236,11 @@ def test_discard_card_hand_figures():
     g.discard_card_hand_figures(p0.id, 2)
     assert len(g.player_info[p0.id].hand_fig) == 2
     assert g.player_info[p0.id].hand_fig == [1, 3]
+
+def test_get_player_in_game():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    p1 = Player(name="Player 1", id=2)
+    g.add_player(p0)
+    g.add_player(p1)
+    assert g.get_player_in_game(0) == p0

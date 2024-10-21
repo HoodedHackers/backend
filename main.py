@@ -398,7 +398,8 @@ async def exit_game(
     games_repo.save(game)
 
     if check_victory(game):
-        await leave_manager.broadcast({"response": "Hay un ganador"}, game.id)
+        winner = game.get_player_in_game(0)
+        await leave_manager.broadcast({"response": winner.id}, game.id)
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
@@ -688,11 +689,15 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
             possible_figures = [
                 {
                     "player_id": player.id,
-                    "moves": [{
-                        "tiles": move.true_positions_canonical(),
-                        "fig_id": move.figure_id(),
-                    } for move in game.get_possible_figures(player.id)]
-                } for player in game.players
+                    "moves": [
+                        {
+                            "tiles": move.true_positions_canonical(),
+                            "fig_id": move.figure_id(),
+                        }
+                        for move in game.get_possible_figures(player.id)
+                    ],
+                }
+                for player in game.players
             ]
             await websocket.send_json(
                 {
@@ -762,7 +767,7 @@ class InHandFigure(BaseModel):
 
 @app.post("/api/lobby/in-course{game_id}/discard_figs")
 
-async def discard_hand_fIgure(
+async def discard_hand_figure(
     game_id: int,
     player_ident: InHandFigure,
     game_repo: GameRepository = Depends(get_games_repo),
@@ -781,8 +786,10 @@ async def discard_hand_fIgure(
 
 
 
+
+
 @app.websocket("/ws/lobby/figs/{game_id}")
-async def update_cards_figure(websocket: WebSocket, game_id: int):
+async def update_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     """
     Este ws se encarga de actualizar las cartas de la mano del jugador en turno,
     se espera recibir {identifier: 'str'}
@@ -794,9 +801,20 @@ async def update_cards_figure(websocket: WebSocket, game_id: int):
         await websocket.send_json({"error": "Game not found"})
         await websocket.close()
         return
+    player = player_repo.get(player_id)
+    if player is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not found"})
+        await websocket.close()
+        return
+    if player not in game.players:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not in game"})
+        await websocket.close()
+        return
 
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await manager.connect(websocket, game_id, 0)
+    await manager.connect(websocket, game_id, player_id)
     try:
         while True:
             data = await websocket.receive_json()
