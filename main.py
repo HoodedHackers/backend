@@ -676,7 +676,7 @@ class MovePlayer(BaseModel):
     origin_y: int
     destination_x: int
     destination_y: int
-    card_fig_id: int
+    card_mov_id: int
 
 
 @app.post("/api/game/{game_id}/play_card")
@@ -702,11 +702,11 @@ async def play_card(
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
 
-    if req.card_fig_id not in game.get_player_hand_movs(player.id):
+    if req.card_mov_id not in game.get_player_hand_movs(player.id):
         raise HTTPException(status_code=404, detail="Card not in hand")
 
-    card = MoveCards(id=req.card_fig_id, dist=[])
-    card.create_card(req.card_fig_id)
+    card = MoveCards(id=req.card_mov_id, dist=[])
+    card.create_card(req.card_mov_id)
 
     tuple_origin = (req.origin_x, req.origin_y)
     tuple_destination = (req.destination_x, req.destination_y)
@@ -721,7 +721,7 @@ async def play_card(
     history = History(
         game_id=game_id,
         player_id=player.id,
-        fig_mov_id=req.card_fig_id,
+        fig_mov_id=req.card_mov_id,
         origin_x=req.origin_x,
         origin_y=req.origin_y,
         dest_x=req.destination_x,
@@ -729,7 +729,7 @@ async def play_card(
     )
     history_repo.save(history)
 
-    game.remove_card(player.id, req.card_fig_id)
+    game.remove_card(player.id, req.card_mov_id)
 
     manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     await manager.broadcast(

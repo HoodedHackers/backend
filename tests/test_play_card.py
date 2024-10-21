@@ -68,7 +68,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_y": 0,
                     "destination_x": 1,
                     "destination_y": 0,
-                    "card_fig_id": 3,
+                    "card_mov_id": 3,
                 },
             )
             assert status.status_code == 200
@@ -83,7 +83,7 @@ class TestPlayCard(unittest.TestCase):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ), patch("main.history_repo", self.history_repo):
-            
+
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
 
@@ -93,7 +93,7 @@ class TestPlayCard(unittest.TestCase):
                 with self.client.websocket_connect(
                     f"/ws/lobby/{self.game.id}/board?player_id={self.game.players[1].id}"
                 ) as websocket2:
-                    
+
                     self.game.add_player(self.players[0])
 
                     cards_mov = [1, 2, 3]
@@ -107,7 +107,7 @@ class TestPlayCard(unittest.TestCase):
                             "origin_y": 0,
                             "destination_x": 1,
                             "destination_y": 0,
-                            "card_fig_id": 3,
+                            "card_mov_id": 3,
                         },
                     )
                     assert status.status_code == 200
@@ -138,7 +138,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_y": 0,
                     "destination_x": 12,
                     "destination_y": 12,
-                    "card_fig_id": 3,
+                    "card_mov_id": 3,
                 },
             )
             assert status.status_code == 404
@@ -161,7 +161,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_y": 0,
                     "destination_x": 1,
                     "destination_y": 0,
-                    "card_fig_id": 4,
+                    "card_mov_id": 4,
                 },
             )
             assert status.status_code == 404
@@ -188,7 +188,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_y": 0,
                     "destination_x": 1,
                     "destination_y": 0,
-                    "card_fig_id": 3,
+                    "card_mov_id": 3,
                 },
             )
             assert status.status_code == 404
@@ -202,7 +202,7 @@ class TestPlayCard(unittest.TestCase):
                     "origin_y": 0,
                     "destination_x": 1,
                     "destination_y": 0,
-                    "card_fig_id": 3,
+                    "card_mov_id": 3,
                 },
             )
             assert status.status_code == 401
