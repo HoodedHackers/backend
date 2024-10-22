@@ -80,42 +80,8 @@ class TestGameExits(unittest.TestCase):
 
             # Verifica la respuesta del endpoint
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {"status": "success"})
-
-            with client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={player3.id}"
-            ) as websocket1, client.websocket_connect(
-                f"ws/lobby/1/figs?player_id={player2.id}"
-            ) as websocket2, client.websocket_connect(
-                f"ws/lobby/1/figs?player_id={player1.id}"
-            ) as websocket3:
-                try:
-                    websocket1.send_json({"identifier": str(player3.identifier)})
-                    rsp1 = websocket1.receive_json()
-                    print(rsp1)
-
-                    self.assertIn("player_id", rsp1)
-                    self.assertIn("cards", rsp1)
-                    self.assertIsInstance(rsp1["cards"], list)
-                    self.assertEqual(len(rsp1["cards"]), 3)
-
-                    rsp2 = websocket2.receive_json()
-                    print(rsp2)
-
-                    self.assertIn("player_id", rsp2)
-                    self.assertIn("cards", rsp2)
-                    self.assertEqual(rsp2["player_id"], id2)
-                    self.assertEqual(rsp2["cards"], rsp1["cards"])
-
-                    rsp3 = websocket3.receive_json()
-                    print(rsp3)
-                    self.assertIn("player_id", rsp3)
-                    self.assertIn("cards", rsp3)
-                    self.assertEqual(rsp3["player_id"], id2)
-                    self.assertEqual(rsp3["cards"], rsp1["cards"])
-                finally:
-                    websocket1.close()
-                    websocket2.close()
+            self.assertEqual(response.json()["player_id"], player3.id)
+            self.assertEqual(response.json()["cards"], [])
 
     def test_discard_cards_figs(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -139,44 +105,12 @@ class TestGameExits(unittest.TestCase):
                 f"/api/lobby/in-course/1/discard_figs",
                 json={"player_identifier": str(player2.identifier), "card_id": 3},
             )
-
+            print(response.json())
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {"status": "success"})
-
-            with client.websocket_connect(
-                f"ws/lobby/1/figs?player_id={player3.id}"
-            ) as websocket1, client.websocket_connect(
-                f"ws/lobby/1/figs?player_id={player2.id}"
-            ) as websocket2, client.websocket_connect(
-                f"ws/lobby/1/figs?player_id={player1.id}"
-            ) as websocket3:
-                try:
-                    websocket1.send_json({"identifier": str(player3.identifier)})
-                    rsp1 = websocket1.receive_json()
-                    print(rsp1)
-
-                    self.assertIn("player_id", rsp1)
-                    self.assertIn("cards", rsp1)
-                    self.assertIsInstance(rsp1["cards"], list)
-                    self.assertEqual(len(rsp1["cards"]), 3)
-
-                    rsp2 = websocket2.receive_json()
-                    print(rsp2)
-
-                    self.assertIn("player_id", rsp2)
-                    self.assertIn("cards", rsp2)
-                    self.assertEqual(rsp2["player_id"], id2)
-                    self.assertEqual(rsp2["cards"], rsp1["cards"])
-
-                    rsp3 = websocket3.receive_json()
-                    print(rsp3)
-                    self.assertIn("player_id", rsp3)
-                    self.assertIn("cards", rsp3)
-                    self.assertEqual(rsp3["player_id"], id2)
-                    self.assertEqual(rsp3["cards"], rsp1["cards"])
-                finally:
-                    websocket1.close()
-                    websocket2.close()
+            self.assertEqual(response.json()["player_id"], player2.id)
+            cards = response.json()["cards"]
+            assert len(cards) == 2
+            self.assertEqual(response.json()["cards"], [2, 4])
 
     def test_player_not_found(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -255,7 +189,7 @@ class TestGameExits(unittest.TestCase):
             )
 
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {"status": "success"})
+            self.assertEqual(response.json()["cards"], [2, 3])
 
     def test_card_not_in_hand(self):
         with patch("main.game_repo", self.games_repo), patch(

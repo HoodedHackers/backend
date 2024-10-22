@@ -314,58 +314,6 @@ class SetCardsResponse(BaseModel):
     all_cards: List[int]
 
 
-@app.websocket("/ws/lobby/{game_id}/figs")
-async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
-    """
-    Este WS se encarga de repartir las cartas de figura a los jugadores conectados
-    y de mostrar a los demas jugadores las cartas figura del jugador en turno.
-    en espera: {receive: 'cards'} en el mensaje y ademas de el player id en la url
-    """
-    game = game_repo.get(game_id)
-    if game is None:
-        await websocket.accept()
-        await websocket.send_json({"error": "Game not found"})
-        await websocket.close()
-        return
-
-    player = player_repo.get(player_id)
-    if player is None:
-        await websocket.accept()
-        await websocket.send_json({"error": "Player not found"})
-        await websocket.close()
-        return
-    if player not in game.players:
-        await websocket.accept()
-        await websocket.send_json({"error": "Player not in game"})
-        await websocket.close()
-        return
-
-    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await manager.connect(websocket, game_id, player_id)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            request = data.get("identifier")
-            if request is None:
-                await websocket.send_json({"error": "invalid request"})
-                continue
-            identifier_player = player_repo.get_by_identifier(UUID(request))
-            if identifier_player is None:
-                await websocket.send_json({"error": "Player not found"})
-                continue
-            # id_player = identifier_player.id
-            cards = game.add_random_card(player.id)
-            print(
-                f"Enviando broadcast para game_id: {game_id} con player_id: {identifier_player.id} y cartas: {cards}"
-            )
-            await manager.broadcast(
-                {"player_id": identifier_player.id, "cards": cards}, game_id
-            )
-
-    except WebSocketDisconnect:
-        manager.disconnect(game_id, player_id)
-
-
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
 
@@ -733,6 +681,11 @@ class InHandFigure(BaseModel):
     card_id: int
 
 
+class OutHandFigure(BaseModel):
+    player_id: int
+    cards: List[int]
+
+
 @app.post("/api/lobby/in-course/{game_id}/discard_figs")
 async def discard_hand_figure(
     game_id: int,
@@ -759,7 +712,7 @@ async def discard_hand_figure(
     manager = Managers.get_manager(ManagerTypes.DISCARD_HAND_FIG)
     await manager.broadcast({"player_id": player.id, "cards": hand_fig}, game_id)
     game_repo.save(game)
-    return {"status": "success"}
+    return OutHandFigure(player_id=player.id, cards=hand_fig)
 
 
 @app.websocket("/ws/lobby/{game_id}/figs")
