@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from database import Database
 from main import app
-from model import Game, History, Player
+from model import Game, History, MoveCards, Player, all_dist
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 
 
@@ -50,6 +50,39 @@ class TestPlayCard(unittest.TestCase):
         self.dbs.query(History).delete()
         self.dbs.commit()
         self.dbs.close()
+
+    def test_all_cards(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ), patch("main.history_repo", self.history_repo):
+            self.game.add_player(self.players[0])
+
+            cards_mov = [x for x in range(1, 50)]
+            cads_mov_full = cards_mov + cards_mov + cards_mov + cards_mov
+            self.game.add_hand_mov(cads_mov_full, cads_mov_full, self.players[0].id)
+
+            origin_tuple = (3, 3)
+
+            print("cards_mov:", self.game.player_info[self.players[0].id].hand_mov)
+            for card in cards_mov:
+                if card == 49:
+                    print("LLEGA A LA CARTA 49:", card)
+                card_to_play = MoveCards(id=card, dist=[])
+                card_to_play.create_card(card)
+                dest_tiles = card_to_play.sum_dist(origin_tuple)
+                for dest_tile in dest_tiles:
+                    status = self.client.post(
+                        f"/api/game/{self.game.id}/play_card",
+                        json={
+                            "identifier": str(self.players[0].identifier),
+                            "origin_tile": 21,
+                            "dest_tile": dest_tile[0] + dest_tile[1] * 6,
+                            "card_mov_id": card,
+                            "index_hand": 1,
+                        },
+                    )
+                    print(status.json(), "\t card:", card, "\t dest_tile:", dest_tile)
+                    assert status.status_code == 200
 
     def test_play(self):
         with patch("main.game_repo", self.games_repo), patch(

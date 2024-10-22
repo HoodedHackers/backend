@@ -12,8 +12,9 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import (TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game,
-                   History, MoveCards, Player)
+from model import (BOARD_MAX_SIDE, BOARD_MIN_SIDE, TOTAL_FIG_CARDS,
+                   TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, History, MoveCards,
+                   Player)
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 from services import Managers, ManagerTypes
@@ -175,6 +176,7 @@ async def start_timer():
 @app.websocket("/ws/timer")
 async def timer_websocket(websocket: WebSocket):
     timer = services.counter.Counter()
+
     await timer.listen(websocket)
 
 
@@ -301,9 +303,6 @@ async def start_game(
         },
         id_game,
     )
-    await Managers.get_manager(ManagerTypes.BOARD_STATUS).broadcast(
-        board_status_message(selec_game), selec_game.id
-    )
     return {"status": "success!"}
 
 
@@ -367,6 +366,7 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
+
 
 async def nuke_game(game: Game, games_repo: GameRepository):
     games_repo.delete(game)
@@ -778,7 +778,8 @@ async def play_card(
     tuple_origin = (origin_x, origin_y)
     tuple_destination = (destination_x, destination_y)
 
-    tuples_valid = [(x + tuple_origin[0], y + tuple_origin[1]) for x, y in card.dist]
+    tuples_valid = card.sum_dist(tuple_origin)
+
     if tuple_destination not in tuples_valid:
         print("Invalid move")
         raise HTTPException(status_code=404, detail="Invalid move")

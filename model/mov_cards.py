@@ -6,10 +6,10 @@ from sqlalchemy.types import VARCHAR, TypeDecorator
 
 from model.board import SIZE_BOARD
 
-BOARD_MAX_SIDE = math.sqrt(SIZE_BOARD) - 1
+BOARD_MAX_SIDE = int(math.sqrt(SIZE_BOARD) - 1)
 BOARD_MIN_SIDE = 0
 BUNDLE_MOV = 7
-TOTAL_MOV = 49
+TOTAL_MOV = 50
 TOTAL_HAND_MOV = 3
 
 all_dist = {
@@ -56,3 +56,17 @@ class MoveCards(BaseModel):
         self.id = id
         valor = BUNDLE_MOV if id % BUNDLE_MOV == 0 else id % len(all_dist)
         self.dist = all_dist[valor]
+
+    def sum_dist(self, tuple_origin: tuple):
+        if self.id % 7 == 0:
+            tuples_valid = (
+                [(tuple_origin[0], BOARD_MIN_SIDE)]
+                + [(tuple_origin[0], BOARD_MAX_SIDE)]
+                + [(BOARD_MIN_SIDE, tuple_origin[1])]
+                + [(BOARD_MAX_SIDE, tuple_origin[1])]
+            )
+        else:
+            tuples_valid = [
+                (x + tuple_origin[0], y + tuple_origin[1]) for x, y in self.dist
+            ]
+        return tuples_valid

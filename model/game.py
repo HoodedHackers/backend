@@ -275,6 +275,7 @@ class Game(Base):
         self.board[dest_index] = origin_color
 
     def remove_card_mov(self, player_id: int, card_fig_id: int):
+        print("Card to remove", card_fig_id)
         self.player_info[player_id].hand_mov.remove(card_fig_id)
 
     def discard_card_hand_figures(self, player_id: int, card: int):
