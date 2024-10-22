@@ -237,6 +237,8 @@ class Game(Base):
         self.all_movs = res
 
     def get_player_hand_figures(self, player_id: int) -> List[int]:
+        if player_id not in self.player_info:
+            return []
         return self.player_info[player_id].hand_fig
 
     def get_player_figures(self, player_id: int) -> List[int]:
@@ -283,6 +285,7 @@ class Game(Base):
 
     def remove_card(self, player_id: int, card_fig_id: int):
         self.player_info[player_id].mov_parcial.remove(card_fig_id)
+
 
     def discard_card_hand_figures(self, player_id: int, card: int):
         self.player_info[player_id].hand_fig.remove(card)
