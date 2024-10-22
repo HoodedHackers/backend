@@ -183,14 +183,14 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                         "player_id": self.players[0].id,
                         "card_id": 3,
                         "index": 0,
-                        "len": 3,
+                        "len": 0,
                     }
                     assert websocket2.receive_json() == {
                         "action": "recover_card",
                         "player_id": self.players[0].id,
                         "card_id": 3,
                         "index": 0,
-                        "len": 3,
+                        "len": 0,
                     }
 
     def test_nothing_undo(self):

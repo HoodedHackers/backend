@@ -809,7 +809,7 @@ async def play_card(
             "player_id": player.id,
             "card_id": req.card_mov_id,
             "index": req.index_hand,
-            "len": len(game.get_player_hand_movs(player.id)),
+            "len": len(game.get_player_mov_parcial(player.id)),
         },
         game.id,
     )
@@ -882,7 +882,7 @@ async def undo_move(
             "player_id": player.id,
             "card_id": last_play.fig_mov_id,
             "index": 0,
-            "len": len(game.get_player_hand_movs(player.id)),
+            "len": len(game.get_player_mov_parcial(player.id)),
         },
         game.id,
     )

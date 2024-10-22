@@ -264,7 +264,10 @@ class Game(Base):
 
     def get_player_hand_movs(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_mov
-
+    
+    def get_player_mov_parcial(self, player_id: int):
+        return self.player_info[player_id].mov_parcial
+    
     def swap_tiles(self, origin_x: int, origin_y: int, dest_x: int, dest_y: int):
         origin_index = origin_x + origin_y * 6
         dest_index = dest_x + dest_y * 6
@@ -275,7 +278,7 @@ class Game(Base):
         self.board[origin_index] = dest_color
         self.board[dest_index] = origin_color
 
-    def add_single_mov(self, card_id, player_id):
+    def add_single_mov(self, player_id, card_id):
         self.player_info[player_id].mov_parcial.append(card_id)
 
     def remove_card(self, player_id: int, card_fig_id: int):
