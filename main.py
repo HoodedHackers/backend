@@ -316,6 +316,40 @@ class SetCardsResponse(BaseModel):
     player_id: int
     all_cards: List[int]
 
+class InCardFigure(BaseModel):
+    player_identifier: UUID
+
+
+@app.post("/api/lobby/{game_id}/figs")
+async def endpoint_deal_card_figure(
+    game_id: int,
+    card_request: InCardFigure,
+    game_repo: GameRepository = Depends(get_games_repo),
+    player_repo: PlayerRepository = Depends(get_player_repo),
+):
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Partida no encontrada")
+    player = player_repo.get_by_identifier(card_request.player_identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Jugador no encontrade")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    cards = game.add_random_card(player.id)
+    game_repo.save(game)
+
+    
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    players_cards = [
+        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+        for p in game.players
+    ]
+    print(f"se envia por broadcast: {players_cards}")
+    await manager.broadcast({"players": players_cards}, game_id)
+
+    
+    return {"status": "success"}
+
 
 @app.websocket("/ws/lobby/{game_id}/figs")
 async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
@@ -355,7 +389,12 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
                 continue
 
             cards = game.add_random_card(player.id)
-            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+            players_cards = [
+                {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+                for p in game.players
+            ]
+
+            await manager.broadcast({"player_id": player.id, "cards": cards, "players": players_cards}, game_id)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
