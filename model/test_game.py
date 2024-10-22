@@ -237,6 +237,7 @@ def test_discard_card_hand_figures():
     assert len(g.player_info[p0.id].hand_fig) == 2
     assert g.player_info[p0.id].hand_fig == [1, 3]
 
+
 def test_discard_card_hand_figures_empty():
     g = Game(name="test game")
     p0 = Player(name="Player 0", id=1)
@@ -244,6 +245,7 @@ def test_discard_card_hand_figures_empty():
     g.player_info[p0.id].hand_fig = []
     g.discard_card_hand_figures(p0.id, 2)
     assert len(g.player_info[p0.id].hand_fig) == 0
+
 
 def test_discard_card_hand_figures2():
     g = Game(name="test game")
@@ -253,6 +255,7 @@ def test_discard_card_hand_figures2():
     g.discard_card_hand_figures(p0.id, 4)
     assert len(g.player_info[p0.id].hand_fig) == 3
     assert g.player_info[p0.id].hand_fig == [1, 2, 3]
+
 
 def test_get_player_in_game():
     g = Game(name="test game")

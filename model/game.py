@@ -1,7 +1,7 @@
 import json
 import random
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from sqlalchemy import Column
 from sqlalchemy.ext.mutable import MutableDict
@@ -230,7 +230,12 @@ class Game(Base):
         res = [x for x in principal if x not in discard]
         self.all_movs = res
 
+    def add_single_mov(self, card_id, player_id):
+        self.player_info[player_id].hand_mov.append(card_id)
+
     def get_player_hand_figures(self, player_id: int) -> List[int]:
+        if player_id not in self.player_info:
+            return []
         return self.player_info[player_id].hand_fig
 
     def get_player_figures(self, player_id: int) -> List[int]:
@@ -259,18 +264,32 @@ class Game(Base):
     def get_player_hand_movs(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_mov
 
+    def swap_tiles(self, origin_x: int, origin_y: int, dest_x: int, dest_y: int):
+        origin_index = origin_x + origin_y * 6
+        dest_index = dest_x + dest_y * 6
+
+        origin_color = self.board[origin_index]
+        dest_color = self.board[dest_index]
+
+        self.board[origin_index] = dest_color
+        self.board[dest_index] = origin_color
+
+    def remove_card_mov(self, player_id: int, card_fig_id: int):
+        self.player_info[player_id].hand_mov.remove(card_fig_id)
+
     def discard_card_hand_figures(self, player_id: int, card: int):
-        if self.player_info[player_id].hand_fig.count(card) != [] and card in self.player_info[player_id].hand_fig:
+        if (
+            self.player_info[player_id].hand_fig.count(card) != []
+            and card in self.player_info[player_id].hand_fig
+        ):
             self.player_info[player_id].hand_fig.remove(card)
             hand_fig = self.player_info[player_id].hand_fig
         else:
             hand_fig = self.player_info[player_id].hand_fig
         return hand_fig
 
-
     def get_player_in_game(self, position: int) -> Player:
         return self.players[position]
-
 
     def get_possible_figures(self, player_id: int) -> List[CandidateShape]:
         player_figures = [
