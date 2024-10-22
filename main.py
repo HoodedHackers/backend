@@ -313,6 +313,32 @@ class SetCardsResponse(BaseModel):
     player_id: int
     all_cards: List[int]
 
+class GameRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+
+@app.post("/api/lobby/in_course/fig/{game_id}")
+async def give_figure_cards(
+    game_request :GameRequest,
+    game_id: int,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    games_repo: GameRepository = Depends(get_games_repo),
+):
+    selec_game = games_repo.get(game_id)
+    if selec_game is None:
+        raise HTTPException(status_code=404, detail="Game dont found")
+    player = player_repo.get_by_identifier(game_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Requesting player not found")
+    if player not in selec_game.players:
+        raise HTTPException(status_code=404, detail="Non player in game")
+    cards = selec_game.add_random_card(player.id)
+    games_repo.save(selec_game)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.broadcast( {"player_id": player.id, "cards_hand_fig": cards}, game_id)
+
+    return {"status": "success"}
+    
+
 
 @app.websocket("/ws/lobby/{game_id}/figs")
 async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
