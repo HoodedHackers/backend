@@ -347,6 +347,7 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     Este WS se encarga de repartir las cartas de figura a los jugadores conectados
     y de mostrar a los demas jugadores las cartas figura del jugador en turno.
     en espera: {receive: 'cards'} en el mensaje y ademas de el player id en la url
+    
     """
     game = game_repo.get(game_id)
     if game is None:
