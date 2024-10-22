@@ -313,12 +313,14 @@ class SetCardsResponse(BaseModel):
     player_id: int
     all_cards: List[int]
 
+
 class GameRequest(BaseModel):
     identifier: UUID = Field(UUID)
 
+
 @app.post("/api/lobby/in_course/fig/{game_id}")
 async def give_figure_cards(
-    game_request :GameRequest,
+    game_request: GameRequest,
     game_id: int,
     player_repo: PlayerRepository = Depends(get_player_repo),
     games_repo: GameRepository = Depends(get_games_repo),
@@ -334,10 +336,9 @@ async def give_figure_cards(
     cards = selec_game.add_random_card(player.id)
     games_repo.save(selec_game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await manager.broadcast( {"player_id": player.id, "cards_hand_fig": cards}, game_id)
+    await manager.broadcast({"player_id": player.id, "cards_hand_fig": cards}, game_id)
 
     return {"status": "success"}
-    
 
 
 @app.websocket("/ws/lobby/{game_id}/figs")
@@ -389,6 +390,7 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
+
 
 async def nuke_game(game: Game, games_repo: GameRepository):
     games_repo.delete(game)

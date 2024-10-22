@@ -54,7 +54,6 @@ class TestGameExits(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-    
     def test_give_figure_cards(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -70,11 +69,16 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[id0].hand_fig = [1]
             self.game.player_info[id1].hand_fig = [2, 3, 4]
 
-            with client.websocket_connect(f"/ws/lobby/1/figs?player_id={id0}") as websocket:
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={id0}"
+            ) as websocket:
                 try:
                     websocket.send_json({"receive": "cards"})
                     rsp = websocket.receive_json()
-                    rsp_post = self.client.post(f"/api/lobby/in_course/fig/1", json={"identifier":str(self.players[0].identifier)})
+                    rsp_post = self.client.post(
+                        f"/api/lobby/in_course/fig/1",
+                        json={"identifier": str(self.players[0].identifier)},
+                    )
                     self.assertEqual(rsp_post.status_code, 200)
                     print(rsp_post.json())
                     self.assertEqual(rsp["player_id"], id0)
@@ -84,43 +88,47 @@ class TestGameExits(unittest.TestCase):
                 finally:
                     websocket.close()
 
-
     def test_give_figure_cards_game_not_found(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
             game_request = {"identifier": str(self.players[0].identifier)}
-            
-            response = self.client.post(f"/api/lobby/in_course/fig/999", json=game_request)  # ID no existente
-            
+
+            response = self.client.post(
+                f"/api/lobby/in_course/fig/999", json=game_request
+            )  # ID no existente
+
             self.assertEqual(response.status_code, 404)
             self.assertEqual(response.json(), {"detail": "Game dont found"})
 
-
         def test_give_figure_cards_player_not_found(self):
-            game_request = {"identifier": str("00000000-0000-0000-0000-000000000000")}  # UUID no existente
-            
-            response = self.client.post(f"/api/lobby/in_course/fig/{self.game.id}", json=game_request)
-            
+            game_request = {
+                "identifier": str("00000000-0000-0000-0000-000000000000")
+            }  # UUID no existente
+
+            response = self.client.post(
+                f"/api/lobby/in_course/fig/{self.game.id}", json=game_request
+            )
+
             self.assertEqual(response.status_code, 404)
             self.assertEqual(response.json(), {"detail": "Requesting player not found"})
-
 
     def test_give_figure_cards_player_not_in_game(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-        # Crear un nuevo jugador que no esté en el juego
+            # Crear un nuevo jugador que no esté en el juego
             new_player = Player(name="New Player")
             self.player_repo.save(new_player)
-            
+
             game_request = {"identifier": str(new_player.identifier)}
-            
-            response = self.client.post(f"/api/lobby/in_course/fig/1", json=game_request)
+
+            response = self.client.post(
+                f"/api/lobby/in_course/fig/1", json=game_request
+            )
 
             self.assertEqual(response.status_code, 404)
             self.assertEqual(response.json(), {"detail": "Non player in game"})
-
 
     def test_give_figure_cards_check_assigned_cards(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -140,10 +148,12 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[id1].hand_fig = [2, 3, 4]
             # Crear una solicitud válida
             game_request = {"identifier": str(player1.identifier)}
-            
+
             # Realizar la solicitud POST
-            response = self.client.post(f"/api/lobby/in_course/fig/1", json={"identifier":str(self.players[1].identifier)})
+            response = self.client.post(
+                f"/api/lobby/in_course/fig/1",
+                json={"identifier": str(self.players[1].identifier)},
+            )
 
             # Verificar el estado de las cartas del jugador
             self.assertEqual(response.status_code, 200)
-
