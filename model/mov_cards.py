@@ -14,13 +14,13 @@ TOTAL_HAND_MOV = 3
 
 all_dist = {
     # (i+-num, j+-num) si no tiene signo es un valor, no una distancia
-    1: [(2, 2), (-2, -2), (2, -2), (-2, 2)],
-    2: [(2, 0), (-2, 0), (0, 2), (0, -2)],
-    3: [(1, 0), (-1, 0), (0, 1), (0, -1)],
-    4: [(1, 1), (1, -1), (-1, 1), (-1, -1)],
-    5: [(-2, 1), (-1, -2), (2, -1), (1, 2)],
-    6: [(-2, -1), (-1, 2), (2, 1), (1, -2)],
-    7: [
+    1: [(2, 2), (-2, -2), (2, -2), (-2, 2)],  # Diagonal doble
+    2: [(2, 0), (-2, 0), (0, 2), (0, -2)],  # Horizontal y vertical doble
+    3: [(1, 0), (-1, 0), (0, 1), (0, -1)],  # Horizontal y vertical simple
+    4: [(1, 1), (1, -1), (-1, 1), (-1, -1)],  # Diagonal simple
+    5: [(-2, 1), (-1, -2), (2, -1), (1, 2)],  # L antihorario
+    6: [(-2, -1), (-1, 2), (2, 1), (1, -2)],  # L horario
+    7: [  # Bordes
         (BOARD_MIN_SIDE, 0),
         (0, BOARD_MIN_SIDE),
         (BOARD_MAX_SIDE, 0),

@@ -57,16 +57,20 @@ class TestPlayCard(unittest.TestCase):
         ), patch("main.history_repo", self.history_repo):
             self.game.add_player(self.players[0])
 
-            cards_mov = [x for x in range(1, 50)]
-            cads_mov_full = cards_mov + cards_mov + cards_mov + cards_mov
-            self.game.add_hand_mov(cads_mov_full, cads_mov_full, self.players[0].id)
+            cards_mov = list(range(1, 50))
+            repeated_cards_mov = cards_mov * 4
+            self.game.add_hand_mov(repeated_cards_mov, repeated_cards_mov, self.players[0].id)
 
-            origin_tuple = (3, 3)
+            origin_tuple = (3, 2)
 
-            print("cards_mov:", self.game.player_info[self.players[0].id].hand_mov)
+            expected_results = [
+            (5, 4), (1, 0), (5, 0), (1, 4), (5, 2), (1, 2), (3, 4), (3, 0),
+            (4, 2), (2, 2), (3, 3), (3, 1), (4, 3), (4, 1), (2, 3), (2, 1),
+            (1, 3), (2, 0), (5, 1), (4, 4), (1, 1), (2, 4), (5, 3), (4, 0),
+            (3, 0), (3, 5), (0, 2), (5, 2)
+        ] * 7 
+
             for card in cards_mov:
-                if card == 49:
-                    print("LLEGA A LA CARTA 49:", card)
                 card_to_play = MoveCards(id=card, dist=[])
                 card_to_play.create_card(card)
                 dest_tiles = card_to_play.sum_dist(origin_tuple)
@@ -75,13 +79,14 @@ class TestPlayCard(unittest.TestCase):
                         f"/api/game/{self.game.id}/play_card",
                         json={
                             "identifier": str(self.players[0].identifier),
-                            "origin_tile": 21,
+                            "origin_tile": 15,
                             "dest_tile": dest_tile[0] + dest_tile[1] * 6,
                             "card_mov_id": card,
                             "index_hand": 1,
                         },
                     )
                     print(status.json(), "\t card:", card, "\t dest_tile:", dest_tile)
+                    assert expected_results.pop(0) == (dest_tile[0], dest_tile[1])
                     assert status.status_code == 200
 
     def test_play(self):
