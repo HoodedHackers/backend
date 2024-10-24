@@ -85,14 +85,14 @@ class TestGameExits(unittest.TestCase):
             self.assertEqual(response.json(), {"status": "success"})
 
             with client.websocket_connect(
-                f"/ws/lobby/figs/1?player_id={player3.id}"
+                f"/ws/lobby/1/figs?player_id={player3.id}"
             ) as websocket1, client.websocket_connect(
-                f"/ws/lobby/figs/1?player_id={player2.id}"
+                f"/ws/lobby/1/figs?player_id={player2.id}"
             ) as websocket2, client.websocket_connect(
-                f"/ws/lobby/figs/1?player_id={player1.id}"
+                f"/ws/lobby/1/figs?player_id={player1.id}"
             ) as websocket3:
                 try:
-                    websocket1.send_json({"identifier": str(player3.identifier)})
+                    websocket1.send_json({"receive": "cards"})
                     rsp1 = websocket1.receive_json()
                     print(rsp1)
 
@@ -113,12 +113,14 @@ class TestGameExits(unittest.TestCase):
                     self.assertEqual(rsp2, rsp1)
 
                     rsp3 = websocket3.receive_json()
+                    print("llegue aca")
                     print(rsp3)
                     self.assertIn("player_id", rsp3)
                     self.assertIn("cards", rsp3)
                     self.assertEqual(rsp3["player_id"], id2)
                     self.assertEqual(rsp3["cards"], rsp1["cards"])
                     self.assertEqual(rsp3, rsp1)
+
                 finally:
                     websocket1.close()
                     websocket2.close()

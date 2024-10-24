@@ -234,8 +234,6 @@ class Game(Base):
         self.player_info[player_id].hand_mov.append(card_id)
 
     def get_player_hand_figures(self, player_id: int) -> List[int]:
-        if player_id not in self.player_info:
-            return []
         return self.player_info[player_id].hand_fig
 
     def get_player_figures(self, player_id: int) -> List[int]:
@@ -254,8 +252,24 @@ class Game(Base):
                 if not self.player_info[player_id].fig:
                     break
                 id = random.choice(self.player_info[player_id].fig)
-                self.player_info[player_id].fig.remove(id)
-                self.player_info[player_id].hand_fig.append(id)
+
+
+                fig_aux = self.player_info[player_id].fig
+                cards_hand_fig_aux = self.player_info[player_id].hand_fig
+
+                fig_aux.remove(id)
+                cards_hand_fig_aux.append(id)
+
+                self.player_info[player_id] = PlayerInfo(
+                    player_id=self.player_info[player_id].player_id,
+                    turn_position=self.player_info[player_id].turn_position,
+                    hand_mov=self.player_info[player_id].hand_mov,
+                    hand_fig=cards_hand_fig_aux,
+                    fig= fig_aux,
+                )
+                                           
+                #self.player_info[player_id].fig.remove(id)
+                #self.player_info[player_id].hand_fig.append(id)
 
             return self.player_info[player_id].hand_fig
         else:
