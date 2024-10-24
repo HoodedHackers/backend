@@ -267,10 +267,6 @@ class Game(Base):
                     hand_fig=cards_hand_fig_aux,
                     fig= fig_aux,
                 )
-                                           
-                #self.player_info[player_id].fig.remove(id)
-                #self.player_info[player_id].hand_fig.append(id)
-
             return self.player_info[player_id].hand_fig
         else:
             return self.player_info[player_id].hand_fig

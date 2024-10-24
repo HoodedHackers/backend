@@ -609,7 +609,8 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             game_repo.save(game)
 
             players_raw = game.players
-            players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
+            #hand_fig = game.get_player_hand_figures(player.id)
+            players = [{"player_id": p.id, "player_name": p.name, "hand_fig": game.get_player_hand_figures(p.id)} for p in players_raw]
 
             await manager.broadcast({"players": players}, game_id)
 
