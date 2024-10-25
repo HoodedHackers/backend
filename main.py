@@ -443,17 +443,27 @@ async def exit_game(
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
-
-    await leave_manager.broadcast(
-        {
-            "player_id": player.id,
-            "action": "leave",
-            "player_name": player.name,
-            "players": [player.id for player in game.players],
-            
-        },
-        game.id,
-    )
+    if game.started : 
+        await leave_manager.broadcast(
+            {
+                "player_id": player.id,
+                "action": "leave",
+                "player_name": player.name,
+                "players": [player.id for player in game.players],
+                "cards_fig": game.get_player_hand_figures(player.id),
+            },
+            game.id,
+        )
+    else:
+        await leave_manager.broadcast(
+            {
+                "player_id": player.id,
+                "action": "leave",
+                "player_name": player.name,
+                "players": [player.id for player in game.players],
+            },
+            game.id,
+        )
     return {"status": "success"}
 
 
@@ -609,8 +619,11 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             game_repo.save(game)
 
             players_raw = game.players
-            players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
-
+            if game.started:
+            #, "hand_fig": game.get_player_hand_figures(p.id)
+                players = [{"player_id": p.id, "player_name": p.name, "cards_fig": game.get_player_hand_figures(p.id)} for p in players_raw]
+            else: 
+                players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
             await manager.broadcast({"players": players}, game_id)
 
     except WebSocketDisconnect:
