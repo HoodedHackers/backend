@@ -291,7 +291,7 @@ class Game(Base):
                 hand_mov=self.player_info[player_id].hand_mov,
                 fig=self.player_info[player_id].fig,
             )
-            #self.player_info[player_id].hand_fig.remove(card)
+            # self.player_info[player_id].hand_fig.remove(card)
             hand_fig = self.player_info[player_id].hand_fig
         else:
             hand_fig = self.player_info[player_id].hand_fig

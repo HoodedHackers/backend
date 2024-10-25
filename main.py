@@ -361,7 +361,6 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
         manager.disconnect(game_id, player_id)
 
 
-
 class ExitRequest(BaseModel):  # le llega esto al endpoint
     identifier: UUID
 
