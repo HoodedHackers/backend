@@ -237,6 +237,8 @@ class Game(Base):
         return self.player_info[player_id].hand_fig
 
     def get_player_figures(self, player_id: int) -> List[int]:
+        if len(self.player_info[player_id].fig) == 0:
+            return []
         return self.player_info[player_id].fig
 
     # falta verificar si el hand_fig es vacio o si fig es vacio (si es ambos en ese caso gana)
