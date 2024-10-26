@@ -318,40 +318,6 @@ class SetCardsResponse(BaseModel):
     player_id: int
     all_cards: List[int]
 
-class InCardFigure(BaseModel):
-    player_identifier: UUID
-
-
-@app.post("/api/lobby/{game_id}/figs")
-async def endpoint_deal_card_figure(
-    game_id: int,
-    card_request: InCardFigure,
-    game_repo: GameRepository = Depends(get_games_repo),
-    player_repo: PlayerRepository = Depends(get_player_repo),
-):
-    game = game_repo.get(game_id)
-    if game is None:
-        raise HTTPException(status_code=404, detail="Partida no encontrada")
-    player = player_repo.get_by_identifier(card_request.player_identifier)
-    if player is None:
-        raise HTTPException(status_code=404, detail="Jugador no encontrade")
-    if player not in game.players:
-        raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
-    cards = game.add_random_card(player.id)
-    game_repo.save(game)
-
-    
-    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    players_cards = [
-        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
-        for p in game.players
-    ]
-    print(f"se envia por broadcast: {players_cards}")
-    await manager.broadcast({"players": players_cards}, game_id)
-
-    
-    return {"status": "success"}
-
 
 @app.websocket("/ws/lobby/{game_id}/figs")
 async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
@@ -445,27 +411,16 @@ async def exit_game(
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
-    if game.started : 
-        await leave_manager.broadcast(
-            {
-                "player_id": player.id,
-                "action": "leave",
-                "player_name": player.name,
-                "players": [player.id for player in game.players],
-                "cards_fig": game.get_player_hand_figures(player.id),
-            },
+    await leave_manager.broadcast(
+        {                
+            "player_id": player.id,
+            "action": "leave",
+            "player_name": player.name,
+            "players": [player.id for player in game.players],
+        },
             game.id,
         )
-    else:
-        await leave_manager.broadcast(
-            {
-                "player_id": player.id,
-                "action": "leave",
-                "player_name": player.name,
-                "players": [player.id for player in game.players],
-            },
-            game.id,
-        )
+        
     return {"status": "success"}
 
 
@@ -624,11 +579,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             game_repo.save(game)
 
             players_raw = game.players
-            if game.started:
-            #, "hand_fig": game.get_player_hand_figures(p.id)
-                players = [{"player_id": p.id, "player_name": p.name, "cards_fig": game.get_player_hand_figures(p.id)} for p in players_raw]
-            else: 
-                players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
+            players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
             await manager.broadcast({"players": players}, game_id)
 
     except WebSocketDisconnect:

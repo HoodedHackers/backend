@@ -254,21 +254,9 @@ class Game(Base):
                 if not self.player_info[player_id].fig:
                     break
                 id = random.choice(self.player_info[player_id].fig)
+                self.player_info[player_id].fig.remove(id)
+                self.player_info[player_id].hand_fig.append(id)
 
-
-                fig_aux = self.player_info[player_id].fig
-                cards_hand_fig_aux = self.player_info[player_id].hand_fig
-
-                fig_aux.remove(id)
-                cards_hand_fig_aux.append(id)
-
-                self.player_info[player_id] = PlayerInfo(
-                    player_id=self.player_info[player_id].player_id,
-                    turn_position=self.player_info[player_id].turn_position,
-                    hand_mov=self.player_info[player_id].hand_mov,
-                    hand_fig=cards_hand_fig_aux,
-                    fig= fig_aux,
-                )
             return self.player_info[player_id].hand_fig
         else:
             return self.player_info[player_id].hand_fig

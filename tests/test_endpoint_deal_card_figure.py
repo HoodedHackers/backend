@@ -1,3 +1,4 @@
+"""
 import unittest
 from os import getenv
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -153,7 +154,7 @@ class TestGameExits(unittest.TestCase):
                 response.json(), {"detail": "Jugador no presente en la partida"}
             )
 
-"""
+
     def test_broadcast_cards(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
