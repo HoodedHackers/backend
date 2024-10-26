@@ -130,6 +130,7 @@ class TestGameExits(unittest.TestCase):
             )
             self.assertEqual(rsp.status_code, 200)
             message = ws.receive_json()
+            print(message)
             self.assertIn("players", message)
             self.assertEqual(message.get("players"), [self.players[1].id])
 

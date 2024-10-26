@@ -301,6 +301,9 @@ async def start_game(
         },
         id_game,
     )
+    await Managers.get_manager(ManagerTypes.BOARD_STATUS).broadcast(
+        board_status_message(selec_game), selec_game.id
+    )
     return {"status": "success!"}
 
 
@@ -320,6 +323,7 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
     Este WS se encarga de repartir las cartas de figura a los jugadores conectados
     y de mostrar a los demas jugadores las cartas figura del jugador en turno.
     en espera: {receive: 'cards'} en el mensaje y ademas de el player id en la url
+
     """
     game = game_repo.get(game_id)
     if game is None:
@@ -364,7 +368,6 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
 
-
 async def nuke_game(game: Game, games_repo: GameRepository):
     games_repo.delete(game)
     await Managers.disconnect_all(game.id)
@@ -408,6 +411,7 @@ async def exit_game(
             "action": "leave",
             "player_name": player.name,
             "players": [player.id for player in game.players],
+            "cards_fig": game.get_player_hand_figures(player.id),
         },
         game.id,
     )
