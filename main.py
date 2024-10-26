@@ -797,8 +797,17 @@ async def play_card(
     )
     history_repo.save(history)
 
+    print("BEFORE the CHANGE Cartas en mano", game.player_info[player.id].hand_mov)
     game.remove_card_mov(player.id, req.card_mov_id)
+    
+    print("AFTER the CHANGE Cartas en mano", game.player_info[player.id].hand_mov)
+    print("AFTER the CHANGE #Cartas en mano", len(game.player_info[player.id].hand_mov))
+    
+    game_repo.save(game)
 
+    print("AFTER SAVE", game.player_info[player.id].hand_mov)
+    print("AFTER SAVE #Cartas en mano", len(game.player_info[player.id].hand_mov))
+    
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
 
