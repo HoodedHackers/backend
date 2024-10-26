@@ -293,6 +293,8 @@ async def start_game(
         raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
     selec_game.shuffle_players()
+    for player in selec_game.players:
+        selec_game.add_random_card(player.id)
     games_repo.save(selec_game)
     await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
         {
@@ -445,6 +447,9 @@ async def advance_game_turn(
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
     current_player = game.current_player()
     assert current_player is not None
+    cards = game.add_random_card(player.id)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
     await turn_manager.broadcast(
         {
