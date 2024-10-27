@@ -282,7 +282,16 @@ class Game(Base):
             self.player_info[player_id].hand_fig.count(card) != []
             and card in self.player_info[player_id].hand_fig
         ):
-            self.player_info[player_id].hand_fig.remove(card)
+            hand_fig_aux = self.player_info[player_id].hand_fig
+            hand_fig_aux.remove(card)
+            self.player_info[player_id] = PlayerInfo(
+                player_id=player_id,
+                turn_position=self.player_info[player_id].turn_position,
+                hand_fig=hand_fig_aux,
+                hand_mov=self.player_info[player_id].hand_mov,
+                fig=self.player_info[player_id].fig,
+            )
+            # self.player_info[player_id].hand_fig.remove(card)
             hand_fig = self.player_info[player_id].hand_fig
         else:
             hand_fig = self.player_info[player_id].hand_fig
