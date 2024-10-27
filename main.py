@@ -362,7 +362,10 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
                 for p in game.players
             ]
 
-            await manager.broadcast({"player_id": player.id, "cards": cards, "players": players_cards}, game_id)
+            await manager.broadcast(
+                {"player_id": player.id, "cards": cards, "players": players_cards},
+                game_id,
+            )
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
@@ -374,6 +377,7 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
+
 
 async def nuke_game(game: Game, games_repo: GameRepository):
     games_repo.delete(game)
@@ -412,15 +416,15 @@ async def exit_game(
         games_repo.delete(game)
         return {"status": "success"}
     await leave_manager.broadcast(
-        {                
+        {
             "player_id": player.id,
             "action": "leave",
             "player_name": player.name,
             "players": [player.id for player in game.players],
         },
-            game.id,
-        )
-        
+        game.id,
+    )
+
     return {"status": "success"}
 
 
