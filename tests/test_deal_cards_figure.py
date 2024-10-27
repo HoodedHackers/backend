@@ -79,6 +79,8 @@ class TestGameExits(unittest.TestCase):
                     self.assertIn("cards", rsp)
                     self.assertIsInstance(rsp["cards"], list)
                     assert len(rsp["cards"]) == 3
+                    self.assertIn("players", rsp)
+                    self.assertIsInstance(rsp["players"], list)
                 finally:
                     websocket.close()
 
@@ -184,7 +186,9 @@ class TestGameExits(unittest.TestCase):
 
                     self.assertIn("player_id", rsp)
                     self.assertIn("cards", rsp)
+                    self.assertIn("players", rsp)
                     self.assertIsInstance(rsp["cards"], list)
+                    self.assertIsInstance(rsp["players"], list)
                     assert len(rsp["cards"]) == 2
                     assert len(self.game.player_info[id0].fig) == 0
                 finally:
@@ -217,10 +221,15 @@ class TestGameExits(unittest.TestCase):
                     self.assertIn("player_id", rsp1)
                     self.assertIn("cards", rsp1)
                     self.assertEqual(rsp1["player_id"], id0)
+                    self.assertIn("players", rsp1)
+                    self.assertIsInstance(rsp1["players"], list)
 
                     rsp2 = websocket2.receive_json()
                     self.assertIn("cards", rsp2)
                     self.assertEqual(rsp2["cards"], rsp1["cards"])
+                    self.assertIn("players", rsp2)
+                    self.assertIsInstance(rsp2["players"], list)
+
                 finally:
                     websocket1.close()
                     websocket2.close()
