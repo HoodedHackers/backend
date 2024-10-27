@@ -328,13 +328,12 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
 
     """
     game = game_repo.get(game_id)
+    player = player_repo.get(player_id)
     if game is None:
         await websocket.accept()
         await websocket.send_json({"error": "Game not found"})
         await websocket.close()
         return
-
-    player = player_repo.get(player_id)
     if player is None:
         await websocket.accept()
         await websocket.send_json({"error": "Player not found"})
@@ -371,7 +370,7 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
         manager.disconnect(game_id, player_id)
 
 
-class ExitRequest(BaseModel):  # le llega esto al endpoint
+class ExitRequest(BaseModel):
     identifier: UUID
 
 
