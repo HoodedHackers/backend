@@ -677,7 +677,7 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
 
 
 class InHandFigure(BaseModel):
-    player_identifier: UUID
+    player_identifier: UUID = Field(UUID)
     card_id: int
 
 
@@ -701,18 +701,23 @@ async def discard_hand_figure(
         raise HTTPException(status_code=404, detail="Jugador no encontrade")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
+    
     hand_figures = game.get_player_hand_figures(player.id)
     if player_ident.card_id not in hand_figures:
         raise HTTPException(
             status_code=404, detail="Carta no encontrada en la mano del jugador"
         )
 
-    hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+    figures = game.get_possible_figures(player.id)
+    if player_ident.card_id not in figures:
+        return OutHandFigure(player_id=player.id, cards=hand_figures)
+    else: 
+        hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
 
-    manager = Managers.get_manager(ManagerTypes.DISCARD_HAND_FIG)
-    await manager.broadcast({"player_id": player.id, "cards": hand_fig}, game_id)
-    game_repo.save(game)
-    return OutHandFigure(player_id=player.id, cards=hand_fig)
+        manager = Managers.get_manager(ManagerTypes.DISCARD_HAND_FIG)
+        await manager.broadcast({"player_id": player.id, "cards": hand_fig}, game_id)
+        game_repo.save(game)
+        return OutHandFigure(player_id=player.id, cards=hand_fig)
 
 
 @app.websocket("/ws/lobby/{game_id}/figs")
