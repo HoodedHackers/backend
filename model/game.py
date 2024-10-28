@@ -218,13 +218,7 @@ class Game(Base):
         self.started = True
 
     def add_hand_mov(self, new_cards, discard, id):
-        self.player_info[id] = PlayerInfo(
-            player_id=id,
-            turn_position=self.player_info[id].turn_position,
-            hand_mov=new_cards,
-            hand_fig=self.player_info[id].hand_fig,
-            fig=self.player_info[id].fig,
-        )
+        self.player_info[id].hand_mov = new_cards
         self.all_movs = [x for x in self.all_movs if x not in discard]
 
     def add_single_mov(self, card_id, player_id):

@@ -486,9 +486,9 @@ async def repartir_cartas_movimiento(
     conjunto = set()
     while(len(conjunto)!= count):
         conjunto.add(random.choice(movs_in_game))
-    all_cards = list(conjunto)
-    mov_hand.extend(all_cards)
-    in_game.add_hand_mov(mov_hand, all_cards, in_game_player.id)
+    cards = list(conjunto)
+    mov_hand.extend(cards)
+    in_game.add_hand_mov(mov_hand, cards, in_game_player.id)
     games_repo.save(in_game)
     return SetCardsResponse(player_id=in_game_player.id, all_cards=mov_hand)
 
