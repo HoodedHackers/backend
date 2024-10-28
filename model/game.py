@@ -223,18 +223,8 @@ class Game(Base):
         self.started = True
 
     def add_hand_mov(self, new_cards, discard, id):
-        turn = self.player_info[id].turn_position
-        self.player_info[id] = PlayerInfo(
-            player_id=id,
-            turn_position=turn,
-            hand_mov=new_cards,
-            hand_fig=self.player_info[id].hand_fig,
-            fig=self.player_info[id].fig,
-            mov_parcial=self.player_info[id].mov_parcial
-        )
-        principal = self.all_movs
-        res = [x for x in principal if x not in discard]
-        self.all_movs = res
+        self.player_info[id].hand_mov = new_cards
+        self.all_movs = [x for x in self.all_movs if x not in discard]
 
     def get_player_hand_figures(self, player_id: int) -> List[int]:
         if player_id not in self.player_info:

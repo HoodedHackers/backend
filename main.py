@@ -463,8 +463,9 @@ async def advance_game_turn(
     return {"status": "success"}
 
 
-@app.post("/api/partida/en_curso/movimiento", response_model=SetCardsResponse)
-async def repartir_cartas_movimiento(
+@app.post("/api/lobby/{game_id}/movs", response_model=SetCardsResponse)
+async def deal_card_mov(
+    game_id : int,
     req: GameIn2,
     player_repo: PlayerRepository = Depends(get_player_repo),
     games_repo: GameRepository = Depends(get_games_repo),
@@ -482,15 +483,14 @@ async def repartir_cartas_movimiento(
 
     mov_hand = in_game.get_player_hand_movs(in_game_player.id)
     count = TOTAL_HAND_MOV - len(mov_hand)
-
     movs_in_game = in_game.all_movs
-    all_cards = [random.choice(movs_in_game) for _ in range(count)]
-    mov_hand.extend(all_cards)
-
-    in_game.add_hand_mov(mov_hand, all_cards, in_game_player.id)
-
+    conjunto = set()
+    while(len(conjunto) < count):
+        conjunto.add(random.choice(movs_in_game))
+    cards = list(conjunto)
+    mov_hand.extend(cards)
+    in_game.add_hand_mov(mov_hand, cards, in_game_player.id)
     games_repo.save(in_game)
-
     return SetCardsResponse(player_id=in_game_player.id, all_cards=mov_hand)
 
 
