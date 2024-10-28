@@ -601,7 +601,7 @@ async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int
 
 
 @app.websocket("/ws/lobby/{game_id}/select")
-async def select_card(
+async def select_card_mov(
     websocket: WebSocket,
     game_id: int,
     player_id: int,
@@ -732,7 +732,7 @@ class MovePlayer(BaseModel):
 
 
 @app.post("/api/game/{game_id}/play_card")
-async def play_card(
+async def play_card_mov(
     req: MovePlayer,
     game_id: int,
     player_repo: PlayerRepository = Depends(get_player_repo),
@@ -797,7 +797,6 @@ async def play_card(
     history_repo.save(history)
 
     game.add_single_mov(player.id, req.card_mov_id)
-    # game.remove_card(player.id, req.card_mov_id)
 
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
@@ -867,8 +866,7 @@ async def undo_move(
         last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
     )
     # recordar que aplica sobre la mano de movimientos parciales del jugador 
-    game.remove_card(player.id, last_play.fig_mov_id)
-    # game.add_single_mov(last_play.fig_mov_id, player.id)
+    game.remove_single_mov(player.id, last_play.fig_mov_id)
 
     history_repo.delete(last_play)
 

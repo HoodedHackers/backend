@@ -283,7 +283,7 @@ class Game(Base):
     def add_single_mov(self, player_id, card_id):
         self.player_info[player_id].mov_parcial.append(card_id)
 
-    def remove_card(self, player_id: int, card_fig_id: int):
+    def remove_single_mov(self, player_id: int, card_fig_id: int):
         self.player_info[player_id].mov_parcial.remove(card_fig_id)
 
     def discard_card_hand_figures(self, player_id: int, card: int):
