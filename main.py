@@ -454,6 +454,7 @@ async def advance_game_turn(
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
     current_player = game.current_player()
     assert current_player is not None
+    """
     cards = game.add_random_card(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     players_cards = [
@@ -463,6 +464,7 @@ async def advance_game_turn(
     await manager.broadcast(
         {"player_id": player.id, "cards": cards, "players": players_cards}, game_id
     )
+    """
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
 
     await turn_manager.broadcast(
