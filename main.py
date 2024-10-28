@@ -460,7 +460,9 @@ async def advance_game_turn(
         {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
         for p in game.players
     ]
-    await manager.broadcast({"player_id": player.id, "cards": cards, "players": players_cards}, game_id)
+    await manager.broadcast(
+        {"player_id": player.id, "cards": cards, "players": players_cards}, game_id
+    )
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
 
     await turn_manager.broadcast(
