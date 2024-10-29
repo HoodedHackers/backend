@@ -246,7 +246,7 @@ class Game(Base):
         if len(self.player_info[player_id].hand_fig) == TOTAL_HAND_FIG:
             return self.player_info[player_id].hand_fig
 
-        if len(self.player_info[player_id].fig) != 0:
+        elif len(self.player_info[player_id].fig) != 0:
             cards_hand_fig = self.player_info[player_id].hand_fig
             needs_cards = len(cards_hand_fig)
             count = TOTAL_HAND_FIG - needs_cards
@@ -254,8 +254,20 @@ class Game(Base):
                 if not self.player_info[player_id].fig:
                     break
                 id = random.choice(self.player_info[player_id].fig)
-                self.player_info[player_id].fig.remove(id)
-                self.player_info[player_id].hand_fig.append(id)
+                
+                #self.player_info[player_id].fig.remove(id)
+                #self.player_info[player_id].hand_fig.append(id)
+                aux_hand_fig = self.player_info[player_id].hand_fig
+                aux_fig = self.player_info[player_id].fig
+                aux_fig.remove(id)
+                aux_hand_fig.append(id)
+                self.player_info[player_id] = PlayerInfo(
+                    player_id=player_id,
+                    turn_position=self.player_info[player_id].turn_position,
+                    hand_fig=aux_hand_fig,
+                    hand_mov=self.player_info[player_id].hand_mov,
+                    fig=aux_fig
+                )
 
             return self.player_info[player_id].hand_fig
         else:
