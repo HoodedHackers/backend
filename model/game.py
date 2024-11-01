@@ -255,8 +255,6 @@ class Game(Base):
                     break
                 id = random.choice(self.player_info[player_id].fig)
 
-                # self.player_info[player_id].fig.remove(id)
-                # self.player_info[player_id].hand_fig.append(id)
                 aux_hand_fig = self.player_info[player_id].hand_fig
                 aux_fig = self.player_info[player_id].fig
                 aux_fig.remove(id)
