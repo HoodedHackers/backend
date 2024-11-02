@@ -12,16 +12,6 @@ class GameRepository(Repository):
         self.db.add(game)
         self.db.commit()
 
-    def update(self, game: Game):
-        self.db.merge(game)
-        try:
-            self.db.flush()
-            self.db.commit()
-        except Exception as e:
-            self.db.rollback()
-            print(f"Error al guardar el juego : {e}")
-            raise
-
     def delete(self, game: Game):
         self.db.delete(game)
         self.db.commit()

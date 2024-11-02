@@ -59,16 +59,42 @@ class TestPlayCard(unittest.TestCase):
 
             cards_mov = list(range(1, 50))
             repeated_cards_mov = cards_mov * 4
-            self.game.add_hand_mov(repeated_cards_mov, repeated_cards_mov, self.players[0].id)
+            self.game.add_hand_mov(
+                repeated_cards_mov, repeated_cards_mov, self.players[0].id
+            )
 
             origin_tuple = (3, 2)
 
             expected_results = [
-            (5, 4), (1, 0), (5, 0), (1, 4), (5, 2), (1, 2), (3, 4), (3, 0),
-            (4, 2), (2, 2), (3, 3), (3, 1), (4, 3), (4, 1), (2, 3), (2, 1),
-            (1, 3), (2, 0), (5, 1), (4, 4), (1, 1), (2, 4), (5, 3), (4, 0),
-            (3, 0), (3, 5), (0, 2), (5, 2)
-        ] * 7 
+                (5, 4),
+                (1, 0),
+                (5, 0),
+                (1, 4),
+                (5, 2),
+                (1, 2),
+                (3, 4),
+                (3, 0),
+                (4, 2),
+                (2, 2),
+                (3, 3),
+                (3, 1),
+                (4, 3),
+                (4, 1),
+                (2, 3),
+                (2, 1),
+                (1, 3),
+                (2, 0),
+                (5, 1),
+                (4, 4),
+                (1, 1),
+                (2, 4),
+                (5, 3),
+                (4, 0),
+                (3, 0),
+                (3, 5),
+                (0, 2),
+                (5, 2),
+            ] * 7
 
             for card in cards_mov:
                 card_to_play = MoveCards(id=card, dist=[])
