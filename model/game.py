@@ -247,15 +247,14 @@ class Game(Base):
             cards_hand_fig = self.player_info[player_id].hand_fig
             needs_cards = len(cards_hand_fig)
             count = TOTAL_HAND_FIG - needs_cards
+            new_player_info = self.player_info[player_id].copy()
             for _ in range(count):
-                if not self.player_info[player_id].fig:
+                if not new_player_info.fig:
                     break
-                id = random.choice(self.player_info[player_id].fig)
-
-                new_player_info = self.player_info[player_id].copy()
-                new_player_info.hand_fig.remove(id)
+                id = random.choice(new_player_info.fig)
+                new_player_info.fig.remove(id)
                 new_player_info.hand_fig.append(id)
-                self.player_info[player_id] = new_player_info
+            self.player_info[player_id] = new_player_info
 
             return self.player_info[player_id].hand_fig
         else:
