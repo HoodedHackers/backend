@@ -21,7 +21,7 @@ def test_create_game():
     host = Player(name="host", identifier=test_identifier)
     player_repo.save(host)
 
-    # Guarda al jugador usando el endpoint
+    # Crea una partida y unimos al host usando el endpoint
     response = client.post(
         "/api/lobby",
         json={
@@ -29,8 +29,10 @@ def test_create_game():
             "name": "partida1",
             "max_players": 4,
             "min_players": 2,
+            "is_private": False,
         },
     )
+    print(response.json())
 
     # Verifica el estado de la respuesta
     assert response.status_code == 200
@@ -56,6 +58,7 @@ def test_crear_partida_error_min_mayor_max(mock_game_repo):
             "name": "partida1",
             "max_players": 3,
             "min_players": 4,
+            "is_private": True,
         },
     )
     assert response.status_code == 412
@@ -73,6 +76,7 @@ def test_crear_partida_error_min_jugadores_invalido(mock_game_repo):
             "name": "partida1",
             "max_players": 4,
             "min_players": 1,
+            "is_private": True,
         },
     )
     assert response.status_code == 422
@@ -87,6 +91,7 @@ def test_crear_partida_nombre_vacio(mock_game_repo):
             "name": "",
             "max_players": 4,
             "min_players": 2,
+            "is_private": True,
         },
     )
     assert response.status_code == 422
@@ -128,6 +133,7 @@ def test_creaar_partida_jugador_no_encontrado():
             "name": "partida1",
             "max_players": 4,
             "min_players": 2,
+            "is_private": False,
         },
     )
     assert response.status_code == 404

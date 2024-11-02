@@ -69,6 +69,7 @@ class GameIn(BaseModel):
     name: str = Field(min_length=1, max_length=64)
     max_players: int = Field(ge=2, le=4)
     min_players: int = Field(ge=2, le=4)
+    is_private: bool
 
 
 class PlayerOut(BaseModel):
@@ -81,6 +82,7 @@ class GameOut(BaseModel):
     max_players: int
     min_players: int
     started: bool
+    is_private: bool
     players: List[PlayerOut]
 
 
@@ -90,6 +92,9 @@ async def create_game(
     game_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ) -> GameOut:
+    '''
+    Crea un nuevo juego en el lobby
+    '''
 
     if game_create.min_players > game_create.max_players:
         raise HTTPException(
@@ -107,6 +112,7 @@ async def create_game(
         max_players=game_create.max_players,
         min_players=game_create.min_players,
         started=False,
+        is_private= game_create.is_private,
     )
     new_game.add_player(player)
     game_repo.save(new_game)
@@ -121,6 +127,7 @@ async def create_game(
         max_players=new_game.max_players,
         min_players=new_game.min_players,
         started=new_game.started,
+        is_private=new_game.is_private,
         players=players_out,
     )
 
@@ -133,6 +140,7 @@ class GameStateOutput(BaseModel):
     min_players: int
     started: bool
     turn: int
+    is_private: bool = False
     players: List[str]
 
 
@@ -142,6 +150,9 @@ def get_games_available(
     max_players: Optional[int] = None,
     name: Optional[str] = None,
 ) -> List[GameStateOutput]:
+    ''' 
+    Retorna una lista de juegos disponibles
+    '''
     params: Dict[str, Any] = {
         "count": 10,
     }
@@ -160,6 +171,7 @@ def get_games_available(
             min_players=lobby_query.min_players,
             started=lobby_query.started,
             turn=lobby_query.current_player_turn,
+            is_private=lobby_query.is_private,
             players=[player.name for player in lobby_query.players],
         )
         lobbies.append(lobby)
@@ -205,6 +217,7 @@ def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
         min_players=lobby_query.min_players,
         started=lobby_query.started,
         turn=lobby_query.current_player_turn,
+        is_private=lobby_query.is_private,
         players=[player.name for player in lobby_query.players],
     )
     return lobby
