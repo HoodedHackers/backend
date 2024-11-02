@@ -23,6 +23,8 @@ from .mov_cards import IdMov
 from .player import Player
 
 TOTAL_NUM_HAND = 3
+DECK_SIZE = 50
+
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
@@ -173,7 +175,7 @@ class Game(Base):
             turn_position=len(self.players) - 1,
             hand_fig=[],
             hand_mov=[],
-            fig=list(range(1, TOTAL_FIG_CARDS + 1)),
+            fig= [],
             mov_parcial=[],
         )
 
@@ -234,8 +236,6 @@ class Game(Base):
         return self.player_info[player_id].hand_fig
 
     def get_player_figures(self, player_id: int) -> List[int]:
-        if len(self.player_info[player_id].fig) == 0:
-            return []
         return self.player_info[player_id].fig
 
     # falta verificar si el hand_fig es vacio o si fig es vacio (si es ambos en ese caso gana)
@@ -295,3 +295,12 @@ class Game(Base):
             for fig_id in self.player_info[player_id].hand_fig
         ]
         return find_figures(self.board, player_figures)
+
+    def distribute_deck(self):
+        players = len(self.players)
+        count_deck = DECK_SIZE // players
+        
+        for players in self.players:
+            new_player_info = self.player_info[players.id].copy()
+            new_player_info.fig = list(range(1, count_deck + 1))
+            self.player_info[players.id] = new_player_info

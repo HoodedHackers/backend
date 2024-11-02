@@ -263,6 +263,17 @@ async def join_game(
     )
     return {"status": "success!"}
 
+def get_players_and_cards(game: Game):
+    return [
+        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+        for p in game.players
+    ]
+async def broadcast_players_and_cards(manager, game_id, game):
+    players_cards = get_players_and_cards(game)
+    await manager.broadcast(
+        {"players": players_cards},
+        game_id,
+    )
 
 class StartGameRequest(BaseModel):
     identifier: UUID = Field(UUID)
@@ -293,9 +304,12 @@ async def start_game(
         raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
     selec_game.shuffle_players()
+    selec_game.distribute_deck()
     for player in selec_game.players:
         selec_game.add_random_card(player.id)
     games_repo.save(selec_game)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await broadcast_players_and_cards(manager, id_game, selec_game)
     await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
         {
             "game_id": id_game,
@@ -354,18 +368,18 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
             if request is None:
                 await websocket.send_json({"error": "invalid request"})
                 continue
-
-            cards = game.add_random_card(player.id)
+            await broadcast_players_and_cards(manager, game_id, game)
+            """
             players_cards = [
                 {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
                 for p in game.players
             ]
 
             await manager.broadcast(
-                {"player_id": player.id, "cards": cards, "players": players_cards},
+                {"players": players_cards},
                 game_id,
             )
-
+            """
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
@@ -454,15 +468,17 @@ async def advance_game_turn(
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
     current_player = game.current_player()
     assert current_player is not None
-    """
+    
     cards = game.add_random_card(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await broadcast_players_and_cards(manager, game_id, game)
+    """
     players_cards = [
         {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
         for p in game.players
     ]
     await manager.broadcast(
-        {"player_id": player.id, "cards": cards, "players": players_cards}, game_id
+        {"players": players_cards}, game_id
     )
     """
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
