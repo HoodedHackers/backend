@@ -3,6 +3,7 @@ import random
 from os import getenv
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
+from passlib.context import CryptContext
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +18,8 @@ from model import (TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game,
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 from services import Managers, ManagerTypes
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -70,6 +73,7 @@ class GameIn(BaseModel):
     max_players: int = Field(ge=2, le=4)
     min_players: int = Field(ge=2, le=4)
     is_private: bool
+    password: Optional[str] = None
 
 
 class PlayerOut(BaseModel):
@@ -83,6 +87,7 @@ class GameOut(BaseModel):
     min_players: int
     started: bool
     is_private: bool
+    password: Optional[str] = None
     players: List[PlayerOut]
 
 
@@ -101,9 +106,23 @@ async def create_game(
             status_code=412,
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
         )
+    if game_create.min_players < 2 or game_create.max_players > 4:
+        raise HTTPException(
+            status_code=412,
+            detail="El número de jugadores debe estar entre 2 y 4",
+        )
+    if game_create.is_private and game_create.password is None:
+        raise HTTPException(
+            status_code=412,
+            detail="Se necesita una contraseña para un juego privado",
+        )
     player = player_repo.get_by_identifier(game_create.identifier)
     if player is None:
         raise HTTPException(status_code=404, detail="Jugador no encontrado")
+
+    password_hash = None
+    if game_create.password:
+        password_hash = pwd_context.hash(game_create.password)
 
     new_game = Game(
         name=game_create.name,
@@ -113,6 +132,7 @@ async def create_game(
         min_players=game_create.min_players,
         started=False,
         is_private=game_create.is_private,
+        password=password_hash,
     )
     new_game.add_player(player)
     game_repo.save(new_game)
@@ -129,6 +149,7 @@ async def create_game(
         started=new_game.started,
         is_private=new_game.is_private,
         players=players_out,
+        password=new_game.password,
     )
 
 
@@ -248,6 +269,7 @@ async def set_player_name(
 class JoinGameRequest(BaseModel):
     id_game: int = Field()
     identifier_player: str = Field()
+    password: Optional[str] = None
 
 
 @app.put("/api/lobby/{id_game}")
@@ -265,6 +287,11 @@ async def join_game(
         raise HTTPException(status_code=404, detail="Game dont found!")
     selec_game.add_player(selec_player)
     games_repo.save(selec_game)
+
+    if selec_game.is_private and req.password is not None:
+        if not pwd_context.verify(req.password, selec_game.password):
+            raise HTTPException(status_code=401, detail="Invalid password")
+
     join_leave_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
     await join_leave_manager.broadcast(
         {
