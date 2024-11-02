@@ -10,13 +10,13 @@ from fastapi.websockets import WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-import services.counter
 from database import Database
 from model import (TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game,
                    History, MoveCards, Player)
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 from services import Managers, ManagerTypes
+from services.counter import Counter, CounterManager
 
 db_uri = getenv("DB_URI")
 if db_uri is not None:
@@ -173,9 +173,32 @@ async def start_timer():
 
 
 @app.websocket("/ws/timer")
-async def timer_websocket(websocket: WebSocket):
-    timer = services.counter.Counter()
-    await timer.listen(websocket)
+async def timer_websocket(websocket: WebSocket, game_id: int, player_id: int):
+    manager = Managers.get_manager(ManagerTypes.GAME_CLOCK)
+    await manager.connect(websocket, game_id, player_id)
+    counter = CounterManager.get_counter(game_id)
+    if counter is None:
+        counter = Counter(
+            tick_callback=(
+                lambda time: manager.broadcast(
+                    {
+                        "time": time,
+                    },
+                    game_id,
+                )
+            ),
+            stop_callback=(lambda: manager.broadcast({"status": "timeout"}, game_id)),
+        )
+        await counter.start()
+        counter = CounterManager.add_counter(game_id, counter)
+    try:
+        while True:
+            _ = await websocket.receive_json()
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+        if manager.is_empty_empty(game_id):
+            assert counter is not None
+            await counter.stop()
 
 
 @app.websocket("/ws/api/lobby")

@@ -12,6 +12,7 @@ class ManagerTypes(Enum):
     BOARD_STATUS = 4
     CARDS_FIGURE = 5
     CARDS_MOV = 6
+    GAME_CLOCK = 7
 
 
 @dataclass
@@ -42,6 +43,9 @@ class ConnectionManager:
         if len(self.lobbies[lobby_id]) == 0:
             del self.lobbies[lobby_id]
 
+    def is_empty_empty(self, lobby_id):
+        return len(self.lobbies[lobby_id]) == 0
+
     async def disconnect_all(self, lobby_id: int):
         if lobby_id not in self.lobbies:
             return
@@ -69,6 +73,7 @@ class Managers:
         ManagerTypes.GAME_STATUS: ConnectionManager(),
         ManagerTypes.BOARD_STATUS: ConnectionManager(),
         ManagerTypes.CARDS_FIGURE: ConnectionManager(),
+        ManagerTypes.GAME_CLOCK: ConnectionManager(),
     }
 
     @classmethod
