@@ -61,7 +61,7 @@ class TestSelectCard(unittest.TestCase):
             id_game = self.game.id
             str_player = str(self.players[0].identifier)
             response = client.post(
-                "/api/partida/en_curso/movimiento",
+                f"/api/lobby/{id_game}/movs",
                 json={
                     "game_id": id_game,
                     "player": str_player,
@@ -86,7 +86,7 @@ class TestSelectCard(unittest.TestCase):
             list = [1, 2]
             self.game.player_info[id_p].hand_mov = list
             response = client.post(
-                "/api/partida/en_curso/movimiento",
+                f"/api/lobby/{id_game}/movs",
                 json={
                     "game_id": id_game,
                     "player": str_player,
@@ -111,14 +111,14 @@ class TestSelectCard(unittest.TestCase):
             str_player0 = str(self.players[0].identifier)
             str_player1 = str(self.players[1].identifier)
             response0 = client.post(
-                "/api/partida/en_curso/movimiento",
+                f"/api/lobby/{id_game}/movs",
                 json={
                     "game_id": id_game,
                     "player": str_player0,
                 },
             )
             response1 = client.post(
-                "/api/partida/en_curso/movimiento",
+                f"/api/lobby/{id_game}/movs",
                 json={
                     "game_id": id_game,
                     "player": str_player1,

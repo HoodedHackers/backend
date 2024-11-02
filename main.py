@@ -479,8 +479,9 @@ async def advance_game_turn(
     return {"status": "success"}
 
 
-@app.post("/api/partida/en_curso/movimiento", response_model=SetCardsResponse)
-async def repartir_cartas_movimiento(
+@app.post("/api/lobby/{game_id}/movs", response_model=SetCardsResponse)
+async def deal_card_mov(
+    game_id: int,
     req: GameIn2,
     player_repo: PlayerRepository = Depends(get_player_repo),
     games_repo: GameRepository = Depends(get_games_repo),
@@ -498,15 +499,14 @@ async def repartir_cartas_movimiento(
 
     mov_hand = in_game.get_player_hand_movs(in_game_player.id)
     count = TOTAL_HAND_MOV - len(mov_hand)
-
     movs_in_game = in_game.all_movs
-    all_cards = [random.choice(movs_in_game) for _ in range(count)]
-    mov_hand.extend(all_cards)
-
-    in_game.add_hand_mov(mov_hand, all_cards, in_game_player.id)
-
+    conjunto = set()
+    while len(conjunto) < count:
+        conjunto.add(random.choice(movs_in_game))
+    cards = list(conjunto)
+    mov_hand.extend(cards)
+    in_game.add_hand_mov(mov_hand, cards, in_game_player.id)
     games_repo.save(in_game)
-
     return SetCardsResponse(player_id=in_game_player.id, all_cards=mov_hand)
 
 
@@ -621,7 +621,7 @@ async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int
 
 
 @app.websocket("/ws/lobby/{game_id}/select")
-async def select_card(
+async def select_card_mov(
     websocket: WebSocket,
     game_id: int,
     player_id: int,
@@ -752,7 +752,7 @@ class MovePlayer(BaseModel):
 
 
 @app.post("/api/game/{game_id}/play_card")
-async def play_card(
+async def play_card_mov(
     req: MovePlayer,
     game_id: int,
     player_repo: PlayerRepository = Depends(get_player_repo),
@@ -816,7 +816,7 @@ async def play_card(
     )
     history_repo.save(history)
 
-    game.remove_card_mov(player.id, req.card_mov_id)
+    game.add_single_mov(player.id, req.card_mov_id)
 
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
@@ -832,7 +832,7 @@ async def play_card(
             "player_id": player.id,
             "card_id": req.card_mov_id,
             "index": req.index_hand,
-            "len": len(game.get_player_hand_movs(player.id)),
+            "len": len(game.get_player_mov_parcial(player.id)),
         },
         game.id,
     )
@@ -885,7 +885,9 @@ async def undo_move(
     game.swap_tiles(
         last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
     )
-    game.add_single_mov(last_play.fig_mov_id, player.id)
+    # recordar que aplica sobre la mano de movimientos parciales del jugador
+    game.remove_single_mov(player.id, last_play.fig_mov_id)
+    game_repo.save(game)
 
     history_repo.delete(last_play)
 
@@ -903,7 +905,7 @@ async def undo_move(
             "player_id": player.id,
             "card_id": last_play.fig_mov_id,
             "index": 0,
-            "len": len(game.get_player_hand_movs(player.id)),
+            "len": len(game.get_player_mov_parcial(player.id)),
         },
         game.id,
     )
