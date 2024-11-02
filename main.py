@@ -87,7 +87,6 @@ class GameOut(BaseModel):
     min_players: int
     started: bool
     is_private: bool
-    password: Optional[str] = None
     players: List[PlayerOut]
 
 
@@ -105,11 +104,6 @@ async def create_game(
         raise HTTPException(
             status_code=412,
             detail="El número mínimo de jugadores no puede ser mayor al máximo",
-        )
-    if game_create.min_players < 2 or game_create.max_players > 4:
-        raise HTTPException(
-            status_code=412,
-            detail="El número de jugadores debe estar entre 2 y 4",
         )
     if game_create.is_private and game_create.password is None:
         raise HTTPException(
@@ -149,7 +143,6 @@ async def create_game(
         started=new_game.started,
         is_private=new_game.is_private,
         players=players_out,
-        password=new_game.password,
     )
 
 
