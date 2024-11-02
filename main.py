@@ -370,6 +370,7 @@ class ExitRequest(BaseModel):  # le llega esto al endpoint
 def check_victory(game: Game):
     return game.started and len(game.players) == 1
 
+
 async def nuke_game(game: Game, games_repo: GameRepository):
     games_repo.delete(game)
     await Managers.disconnect_all(game.id)
@@ -465,7 +466,7 @@ async def advance_game_turn(
 
 @app.post("/api/lobby/{game_id}/movs", response_model=SetCardsResponse)
 async def deal_card_mov(
-    game_id : int,
+    game_id: int,
     req: GameIn2,
     player_repo: PlayerRepository = Depends(get_player_repo),
     games_repo: GameRepository = Depends(get_games_repo),
@@ -485,7 +486,7 @@ async def deal_card_mov(
     count = TOTAL_HAND_MOV - len(mov_hand)
     movs_in_game = in_game.all_movs
     conjunto = set()
-    while(len(conjunto) < count):
+    while len(conjunto) < count:
         conjunto.add(random.choice(movs_in_game))
     cards = list(conjunto)
     mov_hand.extend(cards)
@@ -870,8 +871,9 @@ async def undo_move(
     game.swap_tiles(
         last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
     )
-    # recordar que aplica sobre la mano de movimientos parciales del jugador 
+    # recordar que aplica sobre la mano de movimientos parciales del jugador
     game.remove_single_mov(player.id, last_play.fig_mov_id)
+    game_repo.save(game)
 
     history_repo.delete(last_play)
 
