@@ -46,7 +46,7 @@ class PlayerInfo:
             "hand_fig": self.hand_fig,
             "hand_mov": self.hand_mov,
             "fig": self.fig,
-            "mov_parcial": self.mov_parcial
+            "mov_parcial": self.mov_parcial,
         }
 
     @staticmethod
@@ -57,7 +57,7 @@ class PlayerInfo:
             hand_fig=data["hand_fig"],
             hand_mov=data["hand_mov"],
             fig=data["fig"],
-            mov_parcial=data["mov_parcial"]
+            mov_parcial=data["mov_parcial"],
         )
 
 
@@ -114,7 +114,7 @@ class Game(Base):
                     hand_fig=[],
                     hand_mov=[],
                     fig=[],
-                    mov_parcial=[]
+                    mov_parcial=[],
                 )
 
     def __eq__(self, other):
@@ -170,7 +170,7 @@ class Game(Base):
             hand_fig=[],
             hand_mov=[],
             fig=list(range(1, TOTAL_FIG_CARDS + 1)),
-            mov_parcial=[]
+            mov_parcial=[],
         )
 
     def count_players(self) -> int:
@@ -256,10 +256,10 @@ class Game(Base):
 
     def get_player_hand_movs(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_mov
-    
+
     def get_player_mov_parcial(self, player_id: int):
         return self.player_info[player_id].mov_parcial
-    
+
     def swap_tiles(self, origin_x: int, origin_y: int, dest_x: int, dest_y: int):
         origin_index = origin_x + origin_y * 6
         dest_index = dest_x + dest_y * 6
