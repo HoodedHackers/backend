@@ -3,11 +3,11 @@ import random
 from os import getenv
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
-from passlib.context import CryptContext
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.websockets import WebSocket, WebSocketDisconnect
+from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
