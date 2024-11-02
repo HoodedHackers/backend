@@ -75,10 +75,6 @@ class TestGameExits(unittest.TestCase):
                     websocket.send_json({"receive": "cards"})
                     rsp = websocket.receive_json()
 
-                    #self.assertIn("player_id", rsp)
-                    #self.assertIn("cards", rsp)
-                    #self.assertIsInstance(rsp["cards"], list)
-                    #assert len(rsp["cards"]) == 1
                     self.assertIn("players", rsp)
                     self.assertIsInstance(rsp["players"], list)
                 finally:
@@ -184,13 +180,8 @@ class TestGameExits(unittest.TestCase):
                     websocket.send_json({"receive": "cards"})
                     rsp = websocket.receive_json()
 
-                    #self.assertIn("player_id", rsp)
-                    #self.assertIn("cards", rsp)
                     self.assertIn("players", rsp)
-                    #self.assertIsInstance(rsp["cards"], list)
                     self.assertIsInstance(rsp["players"], list)
-                    #assert len(rsp["cards"]) == 1
-                    #assert rsp["cards"] == [1]
                     assert len(self.game.player_info[id0].fig) == 1
                 finally:
                     websocket.close()
@@ -200,21 +191,16 @@ class TestGameExits(unittest.TestCase):
             "main.player_repo", self.player_repo
         ):
             player1 = self.players[0]
-            print("player1")
-            print(self.players[0].id)
-            print(self.players[0].name)
             player2 = self.players[1]
-            print("player2")
-            print(self.players[1].id)
-            print(self.players[1].name)
             id0 = player1.id
             id1 = player2.id
 
             self.game.add_player(player1)
             self.game.add_player(player2)
             self.game.player_info[id0].hand_fig = [1]
+            self.game.player_info[id1].hand_fig = [2, 3, 4]
 
-            manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+            # manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
 
             with client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={id0}"
@@ -225,18 +211,14 @@ class TestGameExits(unittest.TestCase):
                     websocket1.send_json({"receive": "cards"})
 
                     rsp1 = websocket1.receive_json()
-                    #self.assertIn("player_id", rsp1)
-                    #self.assertIn("cards", rsp1)
-                    #self.assertEqual(rsp1["player_id"], id0)
-                    print(rsp1)
                     self.assertIn("players", rsp1)
                     self.assertIsInstance(rsp1["players"], list)
-                    #self.assertEqual(rsp1["players"], [1])
-                    assert rsp1["players"] == [{"player_id":2, "cards":[1]}, {"player_id":3, "cards":[]}]
+                    assert rsp1["players"] == [
+                        {"player_id": 2, "cards": [1]},
+                        {"player_id": 3, "cards": [2, 3, 4]},
+                    ]
 
                     rsp2 = websocket2.receive_json()
-                    #self.assertIn("cards", rsp2)
-                    #self.assertEqual(rsp2["cards"], rsp1["cards"])
                     self.assertIn("players", rsp2)
                     self.assertIsInstance(rsp2["players"], list)
 

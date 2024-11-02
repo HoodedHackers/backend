@@ -263,17 +263,21 @@ async def join_game(
     )
     return {"status": "success!"}
 
+
 def get_players_and_cards(game: Game):
     return [
         {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
         for p in game.players
     ]
+
+
 async def broadcast_players_and_cards(manager, game_id, game):
     players_cards = get_players_and_cards(game)
     await manager.broadcast(
         {"players": players_cards},
         game_id,
     )
+
 
 class StartGameRequest(BaseModel):
     identifier: UUID = Field(UUID)
@@ -369,17 +373,7 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
                 await websocket.send_json({"error": "invalid request"})
                 continue
             await broadcast_players_and_cards(manager, game_id, game)
-            """
-            players_cards = [
-                {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
-                for p in game.players
-            ]
 
-            await manager.broadcast(
-                {"players": players_cards},
-                game_id,
-            )
-            """
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
@@ -468,19 +462,10 @@ async def advance_game_turn(
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
     current_player = game.current_player()
     assert current_player is not None
-    
+
     cards = game.add_random_card(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game_id, game)
-    """
-    players_cards = [
-        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
-        for p in game.players
-    ]
-    await manager.broadcast(
-        {"players": players_cards}, game_id
-    )
-    """
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
 
     await turn_manager.broadcast(

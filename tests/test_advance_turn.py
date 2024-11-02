@@ -28,7 +28,7 @@ class TestAdvanceTurn(unittest.TestCase):
     def add_test_entitnies(self):
         host = Player(name="Ely")
         self.player_repo.save(host)
-        g = Game(name="test game", host=host)
+        g = Game(name="test game", host=host, id=1)
         g.add_player(host)
         self.games_repo.save(g)
         self.host = host

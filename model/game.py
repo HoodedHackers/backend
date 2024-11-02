@@ -175,7 +175,7 @@ class Game(Base):
             turn_position=len(self.players) - 1,
             hand_fig=[],
             hand_mov=[],
-            fig= [],
+            fig=[],
             mov_parcial=[],
         )
 
@@ -299,7 +299,7 @@ class Game(Base):
     def distribute_deck(self):
         players = len(self.players)
         count_deck = DECK_SIZE // players
-        
+
         for players in self.players:
             new_player_info = self.player_info[players.id].copy()
             new_player_info.fig = list(range(1, count_deck + 1))

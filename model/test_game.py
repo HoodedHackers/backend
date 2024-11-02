@@ -130,7 +130,7 @@ def test_get_player_figures():
     p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
     g.add_player(p0)
     g.add_player(p1)
-    
+
     g.distribute_deck()
     figure = g.get_player_figures(p0.id)
     assert len(figure) == 25
@@ -160,7 +160,7 @@ def test_add_random_card():
     g.add_player(p1)
     g.add_player(p2)
     g.distribute_deck()
-    
+
     g.player_info[p0.id].hand_fig = [1]
 
     hand_fig = g.add_random_card(p0.id)
