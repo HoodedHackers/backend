@@ -229,7 +229,7 @@ class Game(Base):
             hand_fig=self.player_info[id].hand_fig,
             hand_mov=new_cards,
             fig=self.player_info[id].fig,
-            mov_parcial=self.player_info[id].mov_parcial
+            mov_parcial=self.player_info[id].mov_parcial,
         )
         self.all_movs = [x for x in self.all_movs if x not in discard]
 
