@@ -583,7 +583,7 @@ async def turn_change_notifier(websocket: WebSocket, game_id: int, player_id: in
 async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int):
     """
     Este ws se encarga de notificar a los usuarios conectados dentro de un juego cuando otro usuario se conecta o desconecta, enviando la lista
-    actualizada de jugadores actuales.
+    actualizada de jugadores actuales, tambien los agrega a la DB.
 
     Se espera: {user_identifier: 'str'}
 
@@ -611,6 +611,12 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
             if player is None:
                 await websocket.send_json({"error": "Player not found"})
                 continue
+
+            seed_password = data.get("password")
+            if seed_password is not None:
+                if not pwd_context.verify(seed_password, game.password):
+                    await websocket.send_json({"error": "Invalid password"})
+                    continue
 
             game.add_player(player)
             game_repo.save(game)
