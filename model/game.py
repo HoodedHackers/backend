@@ -258,6 +258,7 @@ class Game(Base):
                     hand_fig=aux_hand_fig,
                     hand_mov=self.player_info[player_id].hand_mov,
                     fig=aux_fig,
+                    mov_parcial=self.player_info[player_id].mov_parcial,
                 )
 
             return self.player_info[player_id].hand_fig
