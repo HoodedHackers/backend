@@ -13,8 +13,9 @@ from sqlalchemy.orm import Session
 
 import services.counter
 from database import Database
-from model import (TOTAL_FIG_CARDS, TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game,
-                   History, MoveCards, Player)
+from model import (BOARD_MAX_SIDE, BOARD_MIN_SIDE, TOTAL_FIG_CARDS,
+                   TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, History, MoveCards,
+                   Player)
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 from services import Managers, ManagerTypes
@@ -201,6 +202,7 @@ async def start_timer():
 @app.websocket("/ws/timer")
 async def timer_websocket(websocket: WebSocket):
     timer = services.counter.Counter()
+
     await timer.listen(websocket)
 
 
@@ -335,9 +337,6 @@ async def start_game(
             "status": "started",
         },
         id_game,
-    )
-    await Managers.get_manager(ManagerTypes.BOARD_STATUS).broadcast(
-        board_status_message(selec_game), selec_game.id
     )
     return {"status": "success!"}
 
@@ -823,7 +822,8 @@ async def play_card_mov(
     tuple_origin = (origin_x, origin_y)
     tuple_destination = (destination_x, destination_y)
 
-    tuples_valid = [(x + tuple_origin[0], y + tuple_origin[1]) for x, y in card.dist]
+    tuples_valid = card.sum_dist(tuple_origin)
+
     if tuple_destination not in tuples_valid:
         print("Invalid move")
         raise HTTPException(status_code=404, detail="Invalid move")
@@ -912,6 +912,7 @@ async def undo_move(
     )
     # recordar que aplica sobre la mano de movimientos parciales del jugador
     game.remove_single_mov(player.id, last_play.fig_mov_id)
+    game_repo.save(game)
 
     history_repo.delete(last_play)
 
