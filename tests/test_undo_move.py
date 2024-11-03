@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from database import Database
 from main import app
-from model import Game, History, Player
+from model import Game, History, Player, board
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 
 
@@ -31,6 +31,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
         for p in self.players:
             self.player_repo.save(p)
 
+        rng = random.Random(413)
         self.game = Game(
             name="Game of Falls",
             current_player_turn=0,
@@ -40,6 +41,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
             players=[],
             host=self.host,
             host_id=self.host.id,
+            board=[board.Color(rng.randint(1, 4)) for _ in range(36)],
         )
 
         self.games_repo.save(self.game)
@@ -130,6 +132,12 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                             "identifier": str(self.players[0].identifier),
                         },
                     )
+
+                    g = self.games_repo.get(self.game.id)
+                    assert g is not None
+                    db_board = [tile.value for tile in g.board]
+                    self.assertEqual(board_before, db_board)
+
                     assert status.status_code == 200
                     rsp = websocket.receive_json()
                     assert rsp["game_id"] == self.game.id
@@ -183,14 +191,14 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                         "player_id": self.players[0].id,
                         "card_id": 3,
                         "index": 0,
-                        "len": 3,
+                        "len": 0,
                     }
                     assert websocket2.receive_json() == {
                         "action": "recover_card",
                         "player_id": self.players[0].id,
                         "card_id": 3,
                         "index": 0,
-                        "len": 3,
+                        "len": 0,
                     }
 
     def test_nothing_undo(self):
