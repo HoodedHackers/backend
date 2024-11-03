@@ -355,9 +355,11 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
             if request is None:
                 await websocket.send_json({"error": "invalid request"})
                 continue
-
-            cards = game.add_random_card(player.id)
-            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+            players = [
+        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+        for p in game.players
+        ]
+            await manager.broadcast({"players": players}, game_id)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
@@ -764,7 +766,6 @@ async def discard_hand_figure(
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if player_ident.card_id not in figures:
         await manager.broadcast({"error": "Invalid figure"}, game_id)
-        #return OutHandFigure(player_id=player.id, cards=hand_figures)
     else: 
         hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
         players = [
