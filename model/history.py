@@ -17,7 +17,7 @@ from .exceptions import *
 class History(Base):
     __tablename__ = "history"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     game_id: Mapped[int] = mapped_column(Integer, ForeignKey("games.id"))
     player_id: Mapped[int] = mapped_column(Integer, ForeignKey("players.id"))
     fig_mov_id: Mapped[int] = mapped_column(Integer)
