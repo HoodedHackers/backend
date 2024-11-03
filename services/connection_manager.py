@@ -70,7 +70,6 @@ class Managers:
         ManagerTypes.GAME_STATUS: ConnectionManager(),
         ManagerTypes.BOARD_STATUS: ConnectionManager(),
         ManagerTypes.CARDS_FIGURE: ConnectionManager(),
-        ManagerTypes.DISCARD_HAND_FIG: ConnectionManager(),
     }
 
     @classmethod

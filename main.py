@@ -756,17 +756,20 @@ async def discard_hand_figure(
         )
 
     figures = game.get_possible_figures(player.id)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if player_ident.card_id not in figures:
-        return OutHandFigure(player_id=player.id, cards=hand_figures)
+        await manager.broadcast({"error": "Invalid figure"}, game_id)
+        #return OutHandFigure(player_id=player.id, cards=hand_figures)
     else: 
         hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+        players = [
+        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+        for p in game.players
+        ]
 
-        manager = Managers.get_manager(ManagerTypes.DISCARD_HAND_FIG)
-        #TENGO QUE MANDAR LA LISTA DE IDS DE LOS JUGADORES CON LAS CARTAS
-        await manager.broadcast({"player_id": player.id, "cards": hand_fig}, game_id)
+        await manager.broadcast({"players": players}, game_id)
         game_repo.save(game)
-        #STATUS SUCES ACA
-        return OutHandFigure(player_id=player.id, cards=hand_fig)
+        return {"status": "success"}#OutHandFigure(player_id=player.id, cards=hand_fig)
 
 
 class MovePlayer(BaseModel):
