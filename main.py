@@ -265,6 +265,7 @@ async def join_game(
 
 
 def get_players_and_cards(game: Game):
+    #print(game.get_player_hand_figures(1))
     return [
         {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
         for p in game.players
@@ -464,6 +465,9 @@ async def advance_game_turn(
     assert current_player is not None
 
     cards = game.add_random_card(player.id)
+    print("luego de add_random_card:")
+    print(cards)
+    game_repo.save(game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game_id, game)
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
@@ -477,6 +481,7 @@ async def advance_game_turn(
         },
         game_id,
     )
+
     return {"status": "success"}
 
 
