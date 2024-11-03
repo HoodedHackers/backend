@@ -289,6 +289,7 @@ class Game(Base):
                 hand_fig=hand_fig_aux,
                 hand_mov=self.player_info[player_id].hand_mov,
                 fig=self.player_info[player_id].fig,
+                mov_parcial=self.player_info[player_id].mov_parcial,
             )
             # self.player_info[player_id].hand_fig.remove(card)
             hand_fig = self.player_info[player_id].hand_fig
