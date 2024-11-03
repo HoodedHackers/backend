@@ -762,8 +762,10 @@ async def discard_hand_figure(
         hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
 
         manager = Managers.get_manager(ManagerTypes.DISCARD_HAND_FIG)
+        #TENGO QUE MANDAR LA LISTA DE IDS DE LOS JUGADORES CON LAS CARTAS
         await manager.broadcast({"player_id": player.id, "cards": hand_fig}, game_id)
         game_repo.save(game)
+        #STATUS SUCES ACA
         return OutHandFigure(player_id=player.id, cards=hand_fig)
 
 
