@@ -48,16 +48,12 @@ class TestGameExits(unittest.TestCase):
         )
         self.games_repo.save(self.game)
 
-    
-
     def tearDown(self):
         self.dbs.query(Game).delete()
         self.dbs.query(Player).delete()
         self.dbs.commit()
         self.dbs.close()
 
-    # tests con el ws
-    #@patch("main.get_possible_figures", return_value=[1, 2, 3])
     def test_discard_cards_figs_vacio(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -75,18 +71,36 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[id0].hand_fig = [1, 2, 3]
             self.game.player_info[id1].hand_fig = [2, 3, 4]
             self.game.player_info[id2].hand_fig = [1]
-            self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
-            response = self.client.post(
-                f"/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(player3.identifier), "card_id": 1},
-            )
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player1.id}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player2.id}"
+            ) as websocket2:
 
-            # Verifica la respuesta del endpoint
-            self.assertEqual(response.status_code, 200)
-            #self.assertEqual(response.json()["player_id"], player3.id)
-            #self.assertEqual(response.json()["cards"], [])
+                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                response = self.client.post(
+                    f"/api/lobby/in-course/1/discard_figs",
+                    json={"player_identifier": str(player3.identifier), "card_id": 1},
+                )
 
-    #@patch("main.get_possible_figures", return_value=[1, 2, 3])
+                # Verifica la respuesta del endpoint
+                self.assertEqual(response.status_code, 200)
+                websocket1.send_json({"receive": "cards"})
+                rsp1 = websocket1.receive_json()
+                websocket2.send_json({"receive": "cards"})
+                rsp2 = websocket1.receive_json()
+                print(rsp1)
+                assert rsp1["players"] == [
+                    {"player_id": 2, "cards": [1, 2, 3]},
+                    {"player_id": 3, "cards": [2, 3, 4]},
+                    {"player_id": 4, "cards": []},
+                ]
+                assert rsp2["players"] == [
+                    {"player_id": 2, "cards": [1, 2, 3]},
+                    {"player_id": 3, "cards": [2, 3, 4]},
+                    {"player_id": 4, "cards": []},
+                ]
+
     def test_discard_cards_figs(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -105,18 +119,33 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[id1].hand_fig = [2, 3, 4]
             self.game.player_info[id2].hand_fig = [1]
 
-           # figs= game.get_possible_figures()
-            self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
-            response = self.client.post(
-                f"/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(player2.identifier), "card_id": 3},
-            )
-            print(response.json())
-            self.assertEqual(response.status_code, 200)
-            #self.assertEqual(response.json()["player_id"], player2.id)
-            #cards = response.json()["cards"]
-            #assert len(cards) == 2
-            #sself.assertEqual(response.json()["cards"], [2, 4])
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player1.id}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player2.id}"
+            ) as websocket2:
+
+                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                response = self.client.post(
+                    f"/api/lobby/in-course/1/discard_figs",
+                    json={"player_identifier": str(player2.identifier), "card_id": 3},
+                )
+                self.assertEqual(response.status_code, 200)
+                websocket1.send_json({"receive": "cards"})
+                rsp1 = websocket1.receive_json()
+                websocket2.send_json({"receive": "cards"})
+                rsp2 = websocket1.receive_json()
+                print(rsp1)
+                assert rsp1["players"] == [
+                    {"player_id": 2, "cards": [1, 2, 3]},
+                    {"player_id": 3, "cards": [2, 4]},
+                    {"player_id": 4, "cards": [1]},
+                ]
+                assert rsp2["players"] == [
+                    {"player_id": 2, "cards": [1, 2, 3]},
+                    {"player_id": 3, "cards": [2, 4]},
+                    {"player_id": 4, "cards": [1]},
+                ]
 
     def test_player_not_found(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -176,28 +205,31 @@ class TestGameExits(unittest.TestCase):
                 {"detail": "Carta no encontrada en la mano del jugador"},
             )
 
-    # tests sin el ws
-    #@patch("main.get_possible_figures", return_value=[1, 2, 3])
     def test_discard_hand_figure_success(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
+
             player1 = self.players[0]
             self.game.add_player(player1)
             self.game.player_info[player1.id].hand_fig = [
                 1,
                 2,
                 3,
-            ]  # El jugador tiene estas cartas
-            self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
-            response = self.client.post(
-                "/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(player1.identifier), "card_id": 1},
-            )
+            ]
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player1.id}"
+            ) as websocket:
+                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                response = self.client.post(
+                    "/api/lobby/in-course/1/discard_figs",
+                    json={"player_identifier": str(player1.identifier), "card_id": 1},
+                )
+                self.assertEqual(response.status_code, 200)
+                websocket.send_json({"receive": "cards"})
+                rsp = websocket.receive_json()
+                assert rsp["players"] == [{"player_id": 2, "cards": [2, 3]}]
 
-            self.assertEqual(response.status_code, 200)
-            #self.assertEqual(response.json()["cards"], [2, 3])
-            #FALTA AGREGAR ALGO ACA
     def test_card_not_in_hand(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -207,8 +239,7 @@ class TestGameExits(unittest.TestCase):
             self.game.player_info[player1.id].hand_fig = [
                 2,
                 3,
-            ]  # El jugador solo tiene estas cartas
-
+            ]
             response = self.client.post(
                 "/api/lobby/in-course/1/discard_figs",
                 json={"player_identifier": str(player1.identifier), "card_id": 1},
@@ -232,3 +263,45 @@ class TestGameExits(unittest.TestCase):
             )
             self.assertEqual(response.status_code, 404)
             self.assertEqual(response.json(), {"detail": "Partida no encontrada"})
+
+    def test_discard_cards_figs_invalid(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player1 = self.players[0]
+            player2 = self.players[1]
+            player3 = self.players[2]
+            id0 = self.players[0].id
+            id1 = self.players[1].id
+            id2 = self.players[2].id
+
+            self.game.add_player(player1)
+            self.game.add_player(player2)
+            self.game.add_player(player3)
+            self.game.player_info[id0].hand_fig = [1, 2, 3]
+            self.game.player_info[id1].hand_fig = [2, 3, 4]
+            self.game.player_info[id2].hand_fig = [1]
+
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player1.id}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player2.id}"
+            ) as websocket2:
+
+                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                response = self.client.post(
+                    f"/api/lobby/in-course/1/discard_figs",
+                    json={"player_identifier": str(player2.identifier), "card_id": 4},
+                )
+                self.assertEqual(response.status_code, 200)
+                websocket1.send_json({"receive": "cards"})
+                rsp1 = websocket1.receive_json()
+                websocket2.send_json({"receive": "cards"})
+                rsp2 = websocket1.receive_json()
+                print(rsp1)
+                assert rsp1 == {"error": "Invalid figure"}
+                assert rsp2["players"] == [
+                    {"player_id": 2, "cards": [1, 2, 3]},
+                    {"player_id": 3, "cards": [2, 3, 4]},
+                    {"player_id": 4, "cards": [1]},
+                ]

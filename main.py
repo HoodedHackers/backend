@@ -356,16 +356,16 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
                 await websocket.send_json({"error": "invalid request"})
                 continue
             players = [
-        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
-        for p in game.players
-        ]
+                {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+                for p in game.players
+            ]
             await manager.broadcast({"players": players}, game_id)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
 
-class ExitRequest(BaseModel):  
+class ExitRequest(BaseModel):
     identifier: UUID
 
 
@@ -735,11 +735,6 @@ class InHandFigure(BaseModel):
     card_id: int
 
 
-class OutHandFigure(BaseModel):
-    player_id: int
-    cards: List[int]
-
-
 @app.post("/api/lobby/in-course/{game_id}/discard_figs")
 async def discard_hand_figure(
     game_id: int,
@@ -755,7 +750,7 @@ async def discard_hand_figure(
         raise HTTPException(status_code=404, detail="Jugador no encontrade")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
-    
+
     hand_figures = game.get_player_hand_figures(player.id)
     if player_ident.card_id not in hand_figures:
         raise HTTPException(
@@ -766,16 +761,16 @@ async def discard_hand_figure(
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if player_ident.card_id not in figures:
         await manager.broadcast({"error": "Invalid figure"}, game_id)
-    else: 
+    else:
         hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
         players = [
-        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
-        for p in game.players
+            {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+            for p in game.players
         ]
 
         await manager.broadcast({"players": players}, game_id)
         game_repo.save(game)
-        return {"status": "success"}#OutHandFigure(player_id=player.id, cards=hand_fig)
+        return {"status": "success"}
 
 
 class MovePlayer(BaseModel):
