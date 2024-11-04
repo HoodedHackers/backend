@@ -38,6 +38,7 @@ class PlayerInfo:
     hand_mov: List[int]
     fig: List[int]
     mov_parcial: List[int]
+    block_card: int 
 
     def to_dict(self):
         return {
@@ -47,6 +48,7 @@ class PlayerInfo:
             "hand_mov": self.hand_mov,
             "fig": self.fig,
             "mov_parcial": self.mov_parcial,
+            "block_card": self.block_card
         }
 
     @staticmethod
@@ -58,6 +60,7 @@ class PlayerInfo:
             hand_mov=data["hand_mov"],
             fig=data["fig"],
             mov_parcial=data["mov_parcial"],
+            block_card=data["block_card"]
         )
 
 
@@ -115,6 +118,7 @@ class Game(Base):
                     hand_mov=[],
                     fig=[],
                     mov_parcial=[],
+                    block_card=0
                 )
 
     def __eq__(self, other):
@@ -171,6 +175,7 @@ class Game(Base):
             hand_mov=[],
             fig=list(range(1, TOTAL_FIG_CARDS + 1)),
             mov_parcial=[],
+            block_card=0
         )
 
     def count_players(self) -> int:
@@ -289,3 +294,9 @@ class Game(Base):
             for fig_id in self.player_info[player_id].hand_fig
         ]
         return find_figures(self.board, player_figures)
+    
+    def get_card_block(self, other_player: int, card_block:int): 
+        return self.player_info[other_player].block_card
+
+    #def block_card(self, other_player: int, card_block:int):
+        

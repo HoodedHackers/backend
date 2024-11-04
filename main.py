@@ -420,6 +420,42 @@ async def exit_game(
     )
     return {"status": "success"}
 
+class BlockCardRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+    id_player_block: int 
+    id_card_block: int 
+
+
+@app.post("/api/lobby/{game_id}/block")
+async def block_card(
+    game_id: int, 
+    block_request: BlockCardRequest,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    player = player_repo.get_by_identifier(block_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player dont found")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+    hand_figures_other_player = game.get_player_hand_figures(block_request.id_player_block)
+    if block_request.id_card_block not in hand_figures_other_player:
+        raise HTTPException(
+            status_code=404, detail="Wrong card, dont found in hand of player!"
+        )
+    if game.get_card_block != 0:
+        raise HTTPException(status_code=404, detail="The player has a card that is already blocked")
+    figures = game.get_possible_figures(player.id)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    if block_request.id_card_block not in figures:
+        await manager.broadcast({"error": "Invalid figure"}, game_id)
+     
+    #falta funcionalidad de bloquear 
+
 
 class AdvanceTurnRequest(BaseModel):
     identifier: UUID = Field(UUID)
@@ -664,6 +700,7 @@ async def select_card_mov(
         manager.disconnect(game_id, player_id)
 
 
+
 def board_status_message(game: Game):
     board = [tile.value for tile in game.board]
     possible_figures = [
@@ -684,6 +721,7 @@ def board_status_message(game: Game):
         "board": board,
         "possible_figures": possible_figures,
     }
+
 
 
 @app.websocket("/ws/lobby/{game_id}/board")
@@ -905,3 +943,5 @@ async def get_history(
 ):
     history = history_repo.get_all(game_id)
     return history
+
+
