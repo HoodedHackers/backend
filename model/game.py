@@ -108,6 +108,8 @@ class Game(Base):
         PlayerInfoMapper, default=lambda: {}
     )
     all_movs: Mapped[List[int]] = mapped_column(IdMov, default=IdMov.total)
+    is_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    password: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -134,6 +136,7 @@ class Game(Base):
             and self.min_players == other.min_players
             and self.started == other.started
             and self.players == other.players
+            and self.is_private == other.is_private
         )
 
     def set_defaults(self):
@@ -156,7 +159,7 @@ class Game(Base):
         return (
             f"<Game(id={self.id}, name={self.name}, current_player_turn={self.current_player_turn}, "
             f"max_players={self.max_players}, min_players={self.min_players}, started={self.started}, "
-            f"host_id={self.host_id})>"
+            f"host_id={self.host_id}, is_private={self.is_private})>"
         )
 
     def advance_player(self):

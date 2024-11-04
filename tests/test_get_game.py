@@ -16,6 +16,7 @@ data_out = Game(
     max_players=4,
     min_players=2,
     started=False,
+    is_private=False,
     players=[Player(id=1, name="Player 1"), Player(id=2, name="Player 2")],
 )
 
@@ -33,6 +34,7 @@ def test_get_game():
             "min_players": 2,
             "started": False,
             "turn": 0,
+            "is_private": False,
             "players": ["Player 1", "Player 2"],
         }
 
