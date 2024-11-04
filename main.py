@@ -465,8 +465,6 @@ async def advance_game_turn(
     assert current_player is not None
 
     cards = game.add_random_card(player.id)
-    print("luego de add_random_card:")
-    print(cards)
     game_repo.save(game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game_id, game)
