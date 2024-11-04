@@ -125,8 +125,8 @@ class TestGameStart(unittest.TestCase):
 
             self.game_1.add_player(player1)
             self.game_1.add_player(player2)
-            #self.game_1.player_info[id0].hand_fig = [1]
-            #self.game_1.player_info[id1].hand_fig = [2, 3, 4]
+            # self.game_1.player_info[id0].hand_fig = [1]
+            # self.game_1.player_info[id1].hand_fig = [2, 3, 4]
 
             with client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={id0}"
@@ -150,8 +150,8 @@ class TestGameStart(unittest.TestCase):
                     self.assertIn("players", rsp2)
                     self.assertIsInstance(rsp2["players"], list)
                     assert len(rsp2["players"]) == 2
-                    #print(rsp1)
-                    #assert 1 ==2
+                    # print(rsp1)
+                    # assert 1 ==2
 
                 finally:
                     websocket1.close()

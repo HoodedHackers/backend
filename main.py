@@ -300,7 +300,7 @@ async def join_game(
 
 
 def get_players_and_cards(game: Game):
-    #print(game.get_player_hand_figures(1))
+    # print(game.get_player_hand_figures(1))
     return [
         {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
         for p in game.players

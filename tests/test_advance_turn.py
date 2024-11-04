@@ -131,23 +131,25 @@ class TestAdvanceTurn(unittest.TestCase):
     def test_ws_message_hand_card_fig(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ):  
-            #self.game.started = True
-            #self.game.player_info[self.host.id].hand_fig = [1, 2]
-            #self.game.player_info[self.host.id].fig = [3, 4]
-                #self.game.add_player(self.game.host)
-            #print(self.game.player_info[self.host.id].hand_fig)
-                    #self.game.distribute_deck()
-            #self.games_repo.save(self.game)
-            with self.client.websocket_connect(f"/ws/lobby/{self.game.id}/figs?player_id={self.host.id}") as ws:
+        ):
+            # self.game.started = True
+            # self.game.player_info[self.host.id].hand_fig = [1, 2]
+            # self.game.player_info[self.host.id].fig = [3, 4]
+            # self.game.add_player(self.game.host)
+            # print(self.game.player_info[self.host.id].hand_fig)
+            # self.game.distribute_deck()
+            # self.games_repo.save(self.game)
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}/figs?player_id={self.host.id}"
+            ) as ws:
                 try:
                     ws.send_json({"receive": "cards"})
                     self.game.started = True
                     self.game.player_info[self.host.id].hand_fig = [1, 2]
                     self.game.player_info[self.host.id].fig = [3, 4, 5]
-                    #self.game.add_player(self.game.host)
+                    # self.game.add_player(self.game.host)
                     print(self.game.player_info[self.host.id].hand_fig)
-                    #self.game.distribute_deck()
+                    # self.game.distribute_deck()
                     self.games_repo.save(self.game)
                     response = self.client.post(
                         f"/api/lobby/{self.game.id}/advance",
@@ -167,9 +169,6 @@ class TestAdvanceTurn(unittest.TestCase):
                     assert message.get("player_id") == current_player.id
                     ws.close()
                     """
-                   # assert 1 == 2
+                # assert 1 == 2
                 finally:
                     ws.close()
-
-
-        
