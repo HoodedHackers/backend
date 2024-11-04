@@ -6,21 +6,21 @@ from sqlalchemy.types import VARCHAR, TypeDecorator
 
 from model.board import SIZE_BOARD
 
-BOARD_MAX_SIDE = math.sqrt(SIZE_BOARD) - 1
+BOARD_MAX_SIDE = int(math.sqrt(SIZE_BOARD) - 1)
 BOARD_MIN_SIDE = 0
 BUNDLE_MOV = 7
-TOTAL_MOV = 49
+TOTAL_MOV = 50
 TOTAL_HAND_MOV = 3
 
 all_dist = {
     # (i+-num, j+-num) si no tiene signo es un valor, no una distancia
-    1: [(2, 2), (-2, -2), (2, -2), (-2, 2)],
-    2: [(2, 0), (-2, 0), (0, 2), (0, -2)],
-    3: [(1, 0), (-1, 0), (0, 1), (0, -1)],
-    4: [(1, 1), (1, -1), (-1, 1), (-1, -1)],
-    5: [(-2, 1), (-1, -2), (2, -1), (1, 2)],
-    6: [(-2, -1), (-1, 2), (2, 1), (1, -2)],
-    7: [
+    1: [(2, 2), (-2, -2), (2, -2), (-2, 2)],  # Diagonal doble
+    2: [(2, 0), (-2, 0), (0, 2), (0, -2)],  # Horizontal y vertical doble
+    3: [(1, 0), (-1, 0), (0, 1), (0, -1)],  # Horizontal y vertical simple
+    4: [(1, 1), (1, -1), (-1, 1), (-1, -1)],  # Diagonal simple
+    5: [(-2, 1), (-1, -2), (2, -1), (1, 2)],  # L antihorario
+    6: [(-2, -1), (-1, 2), (2, 1), (1, -2)],  # L horario
+    7: [  # Bordes
         (BOARD_MIN_SIDE, 0),
         (0, BOARD_MIN_SIDE),
         (BOARD_MAX_SIDE, 0),
@@ -56,3 +56,17 @@ class MoveCards(BaseModel):
         self.id = id
         valor = BUNDLE_MOV if id % BUNDLE_MOV == 0 else id % len(all_dist)
         self.dist = all_dist[valor]
+
+    def sum_dist(self, tuple_origin: tuple):
+        if self.id % 7 == 0:
+            tuples_valid = (
+                [(tuple_origin[0], BOARD_MIN_SIDE)]
+                + [(tuple_origin[0], BOARD_MAX_SIDE)]
+                + [(BOARD_MIN_SIDE, tuple_origin[1])]
+                + [(BOARD_MAX_SIDE, tuple_origin[1])]
+            )
+        else:
+            tuples_valid = [
+                (x + tuple_origin[0], y + tuple_origin[1]) for x, y in self.dist
+            ]
+        return tuples_valid
