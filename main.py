@@ -299,6 +299,22 @@ async def join_game(
     return {"status": "success!"}
 
 
+def get_players_and_cards(game: Game):
+    # print(game.get_player_hand_figures(1))
+    return [
+        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+        for p in game.players
+    ]
+
+
+async def broadcast_players_and_cards(manager, game_id, game):
+    players_cards = get_players_and_cards(game)
+    await manager.broadcast(
+        {"players": players_cards},
+        game_id,
+    )
+
+
 class StartGameRequest(BaseModel):
     identifier: UUID = Field(UUID)
 
@@ -328,9 +344,12 @@ async def start_game(
         raise HTTPException(status_code=400, detail="Game has already started")
     selec_game.started = True
     selec_game.shuffle_players()
+    selec_game.distribute_deck()
     for player in selec_game.players:
         selec_game.add_random_card(player.id)
     games_repo.save(selec_game)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await broadcast_players_and_cards(manager, id_game, selec_game)
     await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
         {
             "game_id": id_game,
@@ -360,13 +379,12 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
 
     """
     game = game_repo.get(game_id)
+    player = player_repo.get(player_id)
     if game is None:
         await websocket.accept()
         await websocket.send_json({"error": "Game not found"})
         await websocket.close()
         return
-
-    player = player_repo.get(player_id)
     if player is None:
         await websocket.accept()
         await websocket.send_json({"error": "Player not found"})
@@ -387,15 +405,13 @@ async def deal_cards_figure(websocket: WebSocket, game_id: int, player_id: int):
             if request is None:
                 await websocket.send_json({"error": "invalid request"})
                 continue
-
-            cards = game.add_random_card(player.id)
-            await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+            await broadcast_players_and_cards(manager, game_id, game)
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
 
-class ExitRequest(BaseModel):  # le llega esto al endpoint
+class ExitRequest(BaseModel):
     identifier: UUID
 
 
@@ -439,17 +455,16 @@ async def exit_game(
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
-
     await leave_manager.broadcast(
         {
             "player_id": player.id,
             "action": "leave",
             "player_name": player.name,
             "players": [player.id for player in game.players],
-            "cards_fig": game.get_player_hand_figures(player.id),
         },
         game.id,
     )
+
     return {"status": "success"}
 
 class BlockCardRequest(BaseModel):
@@ -485,8 +500,10 @@ async def block_card(
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if block_request.id_card_block not in figures:
         await manager.broadcast({"error": "Invalid figure"}, game_id)
-     
-    #falta funcionalidad de bloquear 
+    game.block_card(block_request.id_player_block, block_request.id_card_block)
+    game_repo.save(game)
+
+    #falta ver que le devuelvo al front jeje
 
 
 class AdvanceTurnRequest(BaseModel):
@@ -516,10 +533,13 @@ async def advance_game_turn(
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
     current_player = game.current_player()
     assert current_player is not None
+
     cards = game.add_random_card(player.id)
+    game_repo.save(game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+    await broadcast_players_and_cards(manager, game_id, game)
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
+
     await turn_manager.broadcast(
         {
             "current_turn": game.current_player_turn,
@@ -529,6 +549,7 @@ async def advance_game_turn(
         },
         game_id,
     )
+
     return {"status": "success"}
 
 
@@ -651,7 +672,6 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
             players_raw = game.players
             players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
-
             await manager.broadcast({"players": players}, game_id)
 
     except WebSocketDisconnect:

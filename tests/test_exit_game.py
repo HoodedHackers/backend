@@ -95,6 +95,7 @@ class TestGameExits(unittest.TestCase):
                 f"/api/lobby/{self.game.id}/exit",
                 json={"identifier": str(self.players[0].identifier)},
             )
+            print(rsp.json())
             self.assertEqual(rsp.status_code, 200)
             game = self.games_repo.get(self.game.id)
             assert game is not None
