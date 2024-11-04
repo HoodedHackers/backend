@@ -1,3 +1,4 @@
+import copy
 import json
 import random
 from dataclasses import dataclass
@@ -22,6 +23,8 @@ from .mov_cards import IdMov
 from .player import Player
 
 TOTAL_NUM_HAND = 3
+DECK_SIZE = 50
+
 game_player_association = Table(
     "game_player_association",
     Base.metadata,
@@ -59,6 +62,9 @@ class PlayerInfo:
             fig=data["fig"],
             mov_parcial=data["mov_parcial"],
         )
+
+    def copy(self):
+        return copy.deepcopy(self)
 
 
 class PlayerInfoMapper(TypeDecorator):
@@ -172,7 +178,7 @@ class Game(Base):
             turn_position=len(self.players) - 1,
             hand_fig=[],
             hand_mov=[],
-            fig=list(range(1, TOTAL_FIG_CARDS + 1)),
+            fig=[],
             mov_parcial=[],
         )
 
@@ -230,8 +236,6 @@ class Game(Base):
         self.all_movs = [x for x in self.all_movs if x not in discard]
 
     def get_player_hand_figures(self, player_id: int) -> List[int]:
-        if player_id not in self.player_info:
-            return []
         return self.player_info[player_id].hand_fig
 
     def get_player_figures(self, player_id: int) -> List[int]:
@@ -246,12 +250,14 @@ class Game(Base):
             cards_hand_fig = self.player_info[player_id].hand_fig
             needs_cards = len(cards_hand_fig)
             count = TOTAL_HAND_FIG - needs_cards
+            new_player_info = self.player_info[player_id].copy()
             for _ in range(count):
-                if not self.player_info[player_id].fig:
+                if not new_player_info.fig:
                     break
-                id = random.choice(self.player_info[player_id].fig)
-                self.player_info[player_id].fig.remove(id)
-                self.player_info[player_id].hand_fig.append(id)
+                id = random.choice(new_player_info.fig)
+                new_player_info.fig.remove(id)
+                new_player_info.hand_fig.append(id)
+            self.player_info[player_id] = new_player_info
 
             return self.player_info[player_id].hand_fig
         else:
@@ -292,3 +298,12 @@ class Game(Base):
             for fig_id in self.player_info[player_id].hand_fig
         ]
         return find_figures(self.board, player_figures)
+
+    def distribute_deck(self):
+        players = len(self.players)
+        count_deck = DECK_SIZE // players
+
+        for players in self.players:
+            new_player_info = self.player_info[players.id].copy()
+            new_player_info.fig = list(range(1, count_deck + 1))
+            self.player_info[players.id] = new_player_info
