@@ -33,6 +33,7 @@ class TestGameStart(unittest.TestCase):
             self.player_repo.save(p)
         self.game_1 = Game(
             name="Game of Falls",
+            id=1,
             current_player_turn=0,
             max_players=4,
             min_players=2,
@@ -94,7 +95,6 @@ class TestGameStart(unittest.TestCase):
                 f"/api/lobby/{self.game_2.id}/start",
                 json={"identifier": str(self.host.identifier)},
             )
-            print(response.json())
             assert response.status_code == 200
             assert response.json() == {"status": "success!"}
 
@@ -113,3 +113,42 @@ class TestGameStart(unittest.TestCase):
             msg = ws.receive_json()
             self.assertIn("status", msg)
             self.assertEqual(msg["status"], "started")
+
+    def test_start_game_hand_cards_broadcast(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player1 = self.players[0]
+            player2 = self.players[1]
+            id0 = player1.id
+            id1 = player2.id
+
+            self.game_1.add_player(player1)
+            self.game_1.add_player(player2)
+
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={id0}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={id1}"
+            ) as websocket2:
+                try:
+                    response = self.client.put(
+                        f"/api/lobby/1/start",
+                        json={"identifier": str(self.host.identifier)},
+                    )
+                    websocket1.send_json({"receive": "cards"})
+
+                    assert response.status_code == 200
+                    rsp1 = websocket1.receive_json()
+                    self.assertIn("players", rsp1)
+                    self.assertIsInstance(rsp1["players"], list)
+                    assert len(rsp1["players"]) == 2
+
+                    rsp2 = websocket2.receive_json()
+                    self.assertIn("players", rsp2)
+                    self.assertIsInstance(rsp2["players"], list)
+                    assert len(rsp2["players"]) == 2
+
+                finally:
+                    websocket1.close()
+                    websocket2.close()

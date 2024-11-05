@@ -130,42 +130,44 @@ def test_get_player_figures():
     p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
     g.add_player(p0)
     g.add_player(p1)
-    # assert g.get_player_figures(p0.id) == []
-    g.player_info[p0.id].fig = [1, 2, 3]
 
+    g.distribute_deck()
     figure = g.get_player_figures(p0.id)
-    assert len(figure) == 3
-    assert figure == [1, 2, 3]
+    assert len(figure) == 25
     assert g.get_player_figures(p1.id) != []
 
 
 def test_get_player_hand_figure():
     g = Game(name="test game")
-    g.set_defaults()
     p0, p1 = Player(name="0", id=1), Player(name="1", id=2)
     g.add_player(p0)
     g.add_player(p1)
-    # assert g.get_player_hand_figures(p0.id) == []
+    g.distribute_deck()
     g.player_info[p0.id].hand_fig = [1, 2, 3]
 
-    figure = g.get_player_hand_figures(p0.id)
-    assert len(figure) == 3
-    assert figure == [1, 2, 3]
-    assert g.get_player_figures(p1.id) != []
+    hand_figure = g.get_player_hand_figures(p0.id)
+    assert len(hand_figure) == 3
+    assert g.get_player_figures(p0.id) != []
+    assert g.get_player_hand_figures(p0.id) == [1, 2, 3]
 
 
 def test_add_random_card():
     g = Game(name="test game")
-    g.set_defaults()
     p0 = Player(name="Player 0", id=1)
+    p1 = Player(name="Player 1", id=2)
+    p2 = Player(name="Player 2", id=3)
     g.add_player(p0)
+    g.add_player(p1)
+    g.add_player(p2)
+    g.distribute_deck()
+
     g.player_info[p0.id].hand_fig = [1]
 
     hand_fig = g.add_random_card(p0.id)
     assert len(hand_fig) == 3
     print(hand_fig)
     print(g.player_info[p0.id].fig)
-    assert len(g.player_info[p0.id].fig) == 23
+    assert len(g.player_info[p0.id].fig) == 14
 
 
 def test_add_random_card2():
@@ -208,14 +210,6 @@ def test_add_random_card_with_non_figs2():
     print(hand_fig)
     assert len(hand_fig) == 3
     assert len(g.player_info[p0.id].fig) == 6
-
-
-def test_init_fig():
-    g = Game(name="test game")
-    p0 = Player(name="Player 0", id=1)
-    g.add_player(p0)
-    g.__init__()
-    assert len(g.player_info[p0.id].fig) == 25
 
 
 def test_get_player_hand_movs():
@@ -264,3 +258,16 @@ def test_get_player_in_game():
     g.add_player(p0)
     g.add_player(p1)
     assert g.get_player_in_game(0) == p0
+
+
+def test_distribute_deck():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    p1 = Player(name="Player 1", id=2)
+    g.add_player(p0)
+    g.add_player(p1)
+    g.add_player(Player(name="Player 2", id=3))
+    g.distribute_deck()
+    assert len(g.player_info[p0.id].fig) == 16
+    assert len(g.player_info[p1.id].fig) == 16
+    assert len(g.player_info[3].fig) == 16
