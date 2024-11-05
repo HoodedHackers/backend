@@ -41,6 +41,8 @@ class PlayerInfo:
     hand_mov: List[int]
     fig: List[int]
     mov_parcial: List[int]
+   # blocked_figure: int  #si la figura es cero significa que no esta bloqueada
+
 
     def to_dict(self):
         return {
