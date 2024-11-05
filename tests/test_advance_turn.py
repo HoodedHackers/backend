@@ -120,47 +120,41 @@ class TestAdvanceTurn(unittest.TestCase):
                 f"/api/lobby/{self.game.id}/advance",
                 json={"identifier": str(self.host.identifier)},
             )
-            message = await ws.receive_json()
+            message =  ws.receive_json()
             assert message.get("game_id") == self.game.host_id
             assert message.get("current_turn") == self.game.current_player_turn
             current_player = self.game.current_player()
             assert current_player is not None
             assert message.get("player_id") == current_player.id
+            assert 1 == 2
             ws.close()
 
     def test_ws_message_hand_card_fig(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
-            # self.game.started = True
-            # self.game.player_info[self.host.id].hand_fig = [1, 2]
-            # self.game.player_info[self.host.id].fig = [3, 4]
-            # self.game.add_player(self.game.host)
-            # print(self.game.player_info[self.host.id].hand_fig)
-            # self.game.distribute_deck()
-            # self.games_repo.save(self.game)
             with self.client.websocket_connect(
                 f"/ws/lobby/{self.game.id}/figs?player_id={self.host.id}"
             ) as ws:
                 try:
-                    ws.send_json({"receive": "cards"})
                     self.game.started = True
                     self.game.player_info[self.host.id].hand_fig = [1, 2]
                     self.game.player_info[self.host.id].fig = [3, 4, 5]
-                    # self.game.add_player(self.game.host)
+                    print(self.game.player_info[self.host.id].fig)
                     print(self.game.player_info[self.host.id].hand_fig)
-                    # self.game.distribute_deck()
+                    #self.game.add_random_card(self.host.id)
                     self.games_repo.save(self.game)
+                    
                     response = self.client.post(
                         f"/api/lobby/{self.game.id}/advance",
                         json={"identifier": str(self.host.identifier)},
                     )
+                    ws.send_json({"receive": "cards"})
                     patos = self.game.get_player_hand_figures(self.host.id)
                     print(patos)
                     assert response.status_code == 200
                     message = ws.receive_json()
                     print(message)
-                    print(response)
                     """
                     assert message.get("game_id") == self.game.host_id
                     assert message.get("current_turn") == self.game.current_player_turn
@@ -168,7 +162,26 @@ class TestAdvanceTurn(unittest.TestCase):
                     assert current_player is not None
                     assert message.get("player_id") == current_player.id
                     ws.close()
+
+
+                    for _ in range(count):
+                if not self.player_info[player_id].fig:
+                    break
+                id = random.choice(self.player_info[player_id].fig)
+
+                aux_hand_fig = self.player_info[player_id].hand_fig
+                aux_fig = self.player_info[player_id].fig
+                aux_fig.remove(id)
+                aux_hand_fig.append(id)
+                self.player_info[player_id] = PlayerInfo(
+                    player_id=player_id,
+                    turn_position=self.player_info[player_id].turn_position,
+                    hand_fig=aux_hand_fig,
+                    hand_mov=self.player_info[player_id].hand_mov,
+                    fig=aux_fig,
+                    mov_parcial=self.player_info[player_id].mov_parcial,
+                )
                     """
-                # assert 1 == 2
+                    assert 1 == 2
                 finally:
                     ws.close()
