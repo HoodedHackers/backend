@@ -512,8 +512,6 @@ async def advance_game_turn(
     current_player = game.current_player()
     assert current_player is not None
     for player in game.players:
-        print("PEPEEEEE")
-        print(len(game.get_player_hand_movs(player.id)))
         handMov = deal_card_mov(game, player, game_repo)
         await Managers.get_manager(ManagerTypes.CARDS_MOV).send(
             {
@@ -702,8 +700,6 @@ def deal_card_mov(
 ):
     mov_hand = game.get_player_hand_movs(player.id)
     count = TOTAL_HAND_MOV - len(mov_hand)
-    print("PEPE")
-    print(count)
     movs_in_game = game.all_movs
     conjunto = set()
     while len(conjunto) < count:
