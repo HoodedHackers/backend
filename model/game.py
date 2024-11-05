@@ -314,3 +314,15 @@ class Game(Base):
             new_player_info = self.player_info[players.id].copy()
             new_player_info.fig = list(range(1, count_deck + 1))
             self.player_info[players.id] = new_player_info
+
+    def deal_card_mov(self, player_id: int):
+        mov_hand = self.get_player_hand_movs(player_id)
+        count = TOTAL_NUM_HAND - len(mov_hand)
+        movs_in_self = self.all_movs
+        conjunto = set()
+        while len(conjunto) < count:
+            conjunto.add(random.choice(movs_in_self))
+        cards = list(conjunto)
+        mov_hand.extend(cards)
+        self.add_hand_mov(mov_hand, cards, player_id)
+        return mov_hand

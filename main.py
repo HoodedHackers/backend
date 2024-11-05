@@ -348,9 +348,11 @@ async def start_game(
     selec_game.distribute_deck()
     for player in selec_game.players:
         selec_game.add_random_card(player.id)
-        handMov = deal_card_mov(selec_game, player, game_repo)
+        selec_game.deal_card_mov(player.id)
+        game_repo.save(selec_game)
+        handMov = selec_game.get_player_hand_movs(player.id)
         manager0 = Managers.get_manager(ManagerTypes.CARDS_MOV)
-        await manager0.send(
+        await manager0.single_send(
             {
                 "action": "deal",
                 "card_mov": handMov,
@@ -512,8 +514,10 @@ async def advance_game_turn(
     current_player = game.current_player()
     assert current_player is not None
     for player in game.players:
-        handMov = deal_card_mov(game, player, game_repo)
-        await Managers.get_manager(ManagerTypes.CARDS_MOV).send(
+        game.deal_card_mov(player.id)
+        game_repo.save(game)
+        handMov = game.get_player_hand_movs(player.id)
+        await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
             {
                 "action": "deal",
                 "card_mov": handMov,
@@ -693,22 +697,22 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
         manager.disconnect(game_id, player_id)
 
 
-def deal_card_mov(
-    game: Game,
-    player: Player,
-    games_repo: GameRepository = Depends(get_games_repo),
-):
-    mov_hand = game.get_player_hand_movs(player.id)
-    count = TOTAL_HAND_MOV - len(mov_hand)
-    movs_in_game = game.all_movs
-    conjunto = set()
-    while len(conjunto) < count:
-        conjunto.add(random.choice(movs_in_game))
-    cards = list(conjunto)
-    mov_hand.extend(cards)
-    game.add_hand_mov(mov_hand, cards, player.id)
-    games_repo.save(game)
-    return mov_hand
+# def deal_card_mov(
+#     game: Game,
+#     player: Player,
+#     games_repo: GameRepository = Depends(get_games_repo),
+# ):
+#     mov_hand = game.get_player_hand_movs(player.id)
+#     count = TOTAL_HAND_MOV - len(mov_hand)
+#     movs_in_game = game.all_movs
+#     conjunto = set()
+#     while len(conjunto) < count:
+#         conjunto.add(random.choice(movs_in_game))
+#     cards = list(conjunto)
+#     mov_hand.extend(cards)
+#     game.add_hand_mov(mov_hand, cards, player.id)
+#     games_repo.save(game)
+#     return mov_hand
 
 
 @app.websocket("/ws/lobby/{game_id}/turns")
