@@ -351,18 +351,19 @@ async def start_game(
         handMov = deal_card_mov(selec_game, player, game_repo)
 
         print("si entra aca")
-        print(id_game)
-        print(selec_game.id)
         print(selec_game.players)
-        await Managers.get_manager(ManagerTypes.CARDS_MOV).send(
+        manager0 = Managers.get_manager(ManagerTypes.CARDS_MOV)
+        await manager0.send(
             {
-            "action":"deal",
-            "card_mov":handMov,
-            "player_id": player.id,
-            "card_id": 0,
-            "index": 0,
-            "len": len(handMov),
-        }, id_game, player.id)
+                "action":"deal",
+                "card_mov":handMov,
+                "player_id": player.id,
+                "card_id": 0,
+                "index": 0,
+                "len": len(handMov),
+            }, 
+            id_game, player.id
+        )
 
     games_repo.save(selec_game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)

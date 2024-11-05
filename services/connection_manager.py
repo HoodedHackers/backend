@@ -57,6 +57,8 @@ class ConnectionManager:
             await connection.websockets.send_json(message)
 
     async def send(self, message: Any, lobby_id: int, player_id: int):
+        if lobby_id not in self.lobbies:
+            return
         for player in self.lobbies[lobby_id]:
             if player.id_player == player_id:
                 await player.websockets.send_json(message)

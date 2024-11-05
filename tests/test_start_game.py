@@ -96,7 +96,6 @@ class TestGameStart(unittest.TestCase):
                 f"/api/lobby/{self.game_2.id}/start",
                 json={"identifier": str(self.host.identifier)},
             )
-            print(self.game_2.players)
             assert response.status_code == 200
             assert response.json() == {"status": "success!"}
 
