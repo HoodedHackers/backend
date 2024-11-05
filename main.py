@@ -606,6 +606,7 @@ async def select_movement_card(
     current_card = req.card_id
     hand = game.get_player_hand_movs(player.id)
     if current_card not in hand:
+        print("entro aca?")
         raise HTTPException(status_code=404, detail="Card not in hand")
     manager = Managers.get_manager(ManagerTypes.CARDS_MOV)
     await manager.broadcast(

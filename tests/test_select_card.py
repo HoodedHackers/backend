@@ -54,10 +54,10 @@ class TestSelectCard(unittest.TestCase):
             "main.player_repo", self.player_repo
         ):
             with self.client.websocket_connect(
-                f"/ws/lobby/{self.game.id}/select?player_id={self.players[0].id}"
+                f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[0].identifier}"
             ) as websocket0:
                 with self.client.websocket_connect(
-                    f"/ws/lobby/{self.game.id}/select?player_id={self.players[1].id}"
+                    f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[1].identifier}"
                 ) as websocket1:
 
                     index = 1
@@ -74,15 +74,15 @@ class TestSelectCard(unittest.TestCase):
 
                     # El jugador 0 selecciona una de sus cartas
                     card0 = self.game.player_info[player0.id].hand_mov[0]
+                    response = self.client.post(f"/api/lobby/{self.game.id}/use_movement_card",
+                                           json={"identifier":str(self.players[0].identifier),
+                                                 "card_id": card0,
+                                                 "card_index": index,
+                                                 "game_id": self.game.id},)
+                    
+                    assert response.status_code == 200
                     print("CARD0", card0)
                     print("PLAYER0", str(player0.identifier))
-                    websocket0.send_json(
-                        {
-                            "card_id": card0,
-                            "player_identifier": str(player0.identifier),
-                            "index": index,
-                        }
-                    )
 
                     # Comprobamos que se haya efectuado el broadcast
                     data1 = websocket0.receive_json()

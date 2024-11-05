@@ -192,10 +192,10 @@ class TestPlayCard(unittest.TestCase):
             self.game.add_player(self.players[1])
 
             with self.client.websocket_connect(
-                f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[0].id}"
+                f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[0].identifier}"
             ) as websocket:
                 with self.client.websocket_connect(
-                    f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[1].id}"
+                    f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[1].identifier}"
                 ) as websocket2:
 
                     self.game.add_player(self.players[0])

@@ -13,7 +13,7 @@ from repositories import GameRepository, PlayerRepository
 client = TestClient(app)
 
 
-class TestSelectCard(unittest.TestCase):
+class TestDealCard(unittest.TestCase):
 
     def setUp(self):
         self.client = TestClient(app)
