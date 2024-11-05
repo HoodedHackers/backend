@@ -45,11 +45,12 @@ class TestGameStart(unittest.TestCase):
 
         self.game_2 = Game(
             name="Game of Thrones",
+            id=2,
             current_player_turn=0,
             max_players=4,
             min_players=2,
             started=False,
-            players=self.players[1:3],
+            players=self.players[0:3],
             host=self.host,
             host_id=self.host.id,
         )
@@ -95,6 +96,7 @@ class TestGameStart(unittest.TestCase):
                 f"/api/lobby/{self.game_2.id}/start",
                 json={"identifier": str(self.host.identifier)},
             )
+            print(self.game_2.players)
             assert response.status_code == 200
             assert response.json() == {"status": "success!"}
 
