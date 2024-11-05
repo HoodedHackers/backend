@@ -349,20 +349,18 @@ async def start_game(
     for player in selec_game.players:
         selec_game.add_random_card(player.id)
         handMov = deal_card_mov(selec_game, player, game_repo)
-
-        print("si entra aca")
-        print(selec_game.players)
         manager0 = Managers.get_manager(ManagerTypes.CARDS_MOV)
         await manager0.send(
             {
-                "action":"deal",
-                "card_mov":handMov,
+                "action": "deal",
+                "card_mov": handMov,
                 "player_id": player.id,
                 "card_id": 0,
                 "index": 0,
                 "len": len(handMov),
-            }, 
-            id_game, player.id
+            },
+            id_game,
+            player.id,
         )
 
     games_repo.save(selec_game)
@@ -514,16 +512,20 @@ async def advance_game_turn(
     current_player = game.current_player()
     assert current_player is not None
     for player in game.players:
+        print("PEPEEEEE")
+        print(len(game.get_player_hand_movs(player.id)))
         handMov = deal_card_mov(game, player, game_repo)
         await Managers.get_manager(ManagerTypes.CARDS_MOV).send(
             {
-            "action":"deal",
-            "card_mov":handMov,
-            "player_id": player.id,
-            "card_id": 0,
-            "index": 0,
-            "len": len(handMov),
-        }, game.id, player.id
+                "action": "deal",
+                "card_mov": handMov,
+                "player_id": player.id,
+                "card_id": 0,
+                "index": 0,
+                "len": len(handMov),
+            },
+            game.id,
+            player.id,
         )
 
     cards = game.add_random_card(player.id)
@@ -553,7 +555,7 @@ async def notify_movement_card(
 ):
     """
     Este WS se encarga de notificar la mano de cartas de movimiento de cada jugador.
-    Retorna mensajes de tipo: 
+    Retorna mensajes de tipo:
         {
             "action": "select"|"use_card"|"recover_card"|"deal",
             "card_mov":[card.id],
@@ -700,6 +702,8 @@ def deal_card_mov(
 ):
     mov_hand = game.get_player_hand_movs(player.id)
     count = TOTAL_HAND_MOV - len(mov_hand)
+    print("PEPE")
+    print(count)
     movs_in_game = game.all_movs
     conjunto = set()
     while len(conjunto) < count:

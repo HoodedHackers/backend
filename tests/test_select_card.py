@@ -74,12 +74,16 @@ class TestSelectCard(unittest.TestCase):
 
                     # El jugador 0 selecciona una de sus cartas
                     card0 = self.game.player_info[player0.id].hand_mov[0]
-                    response = self.client.post(f"/api/lobby/{self.game.id}/use_movement_card",
-                                           json={"identifier":str(self.players[0].identifier),
-                                                 "card_id": card0,
-                                                 "card_index": index,
-                                                 "game_id": self.game.id},)
-                    
+                    response = self.client.post(
+                        f"/api/lobby/{self.game.id}/use_movement_card",
+                        json={
+                            "identifier": str(self.players[0].identifier),
+                            "card_id": card0,
+                            "card_index": index,
+                            "game_id": self.game.id,
+                        },
+                    )
+
                     assert response.status_code == 200
                     print("CARD0", card0)
                     print("PLAYER0", str(player0.identifier))

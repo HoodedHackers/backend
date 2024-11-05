@@ -157,3 +157,47 @@ class TestGameStart(unittest.TestCase):
                 finally:
                     websocket1.close()
                     websocket2.close()
+
+    def test_start_game_hand_mov(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player0 = self.players[0]
+            player1 = self.players[1]
+            self.game_1.add_player(self.players[0])
+            self.game_1.add_player(self.players[1])
+            with client.websocket_connect(
+                f"/ws/lobby/{self.game_1.id}/movement_cards?player_UUID={player0.identifier}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/{self.game_1.id}/movement_cards?player_UUID={player1.identifier}"
+            ) as websocket2:
+                response = self.client.put(
+                    f"/api/lobby/1/start",
+                    json={"identifier": str(self.host.identifier)},
+                )
+                assert response.status_code == 200
+
+                # Comprobamos que se haya efectuado el broadcast
+                data1 = websocket1.receive_json()
+                assert len(self.game_1.all_movs) == 43
+                assert data1 == {
+                    "action": "deal",
+                    "card_mov": self.game_1.player_info[player0.id].hand_mov,
+                    "player_id": player0.id,
+                    "card_id": 0,
+                    "index": 0,
+                    "len": 3,
+                }
+                data2 = websocket2.receive_json()
+                assert data2 == {
+                    "action": "deal",
+                    "card_mov": self.game_1.player_info[player1.id].hand_mov,
+                    "player_id": player1.id,
+                    "card_id": 0,
+                    "index": 0,
+                    "len": 3,
+                }
+                result_list0 = data1["card_mov"]
+                result_list1 = data2["card_mov"]
+                bool = any(i in result_list1 for i in result_list0)
+                assert bool == False
