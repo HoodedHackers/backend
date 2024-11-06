@@ -232,7 +232,14 @@ class Game(Base):
         self.started = True
 
     def add_hand_mov(self, new_cards, discard, id):
-        self.player_info[id].hand_mov = new_cards
+        self.player_info[id] = PlayerInfo(
+            player_id=id,
+            turn_position=self.player_info[id].turn_position,
+            hand_fig=self.player_info[id].hand_fig,
+            hand_mov=new_cards,
+            fig=self.player_info[id].fig,
+            mov_parcial=self.player_info[id].mov_parcial,
+        )
         self.all_movs = [x for x in self.all_movs if x not in discard]
 
     def get_player_hand_figures(self, player_id: int) -> List[int]:
@@ -267,7 +274,7 @@ class Game(Base):
                     fig=aux_fig,
                     mov_parcial=self.player_info[player_id].mov_parcial,
                 )
-            '''
+            """
             new_player_info = self.player_info[player_id].copy()
             for _ in range(count):
                 if not new_player_info.fig:
@@ -276,7 +283,7 @@ class Game(Base):
                 new_player_info.fig.remove(id)
                 new_player_info.hand_fig.append(id)
             self.player_info[player_id] = new_player_info
-            '''
+            """
             return self.player_info[player_id].hand_fig
         else:
             return self.player_info[player_id].hand_fig
@@ -334,3 +341,15 @@ class Game(Base):
             new_player_info = self.player_info[players.id].copy()
             new_player_info.fig = random.sample(range(1, 51), count_deck)
             self.player_info[players.id] = new_player_info
+
+    def deal_card_mov(self, player_id: int):
+        mov_hand = self.get_player_hand_movs(player_id)
+        count = TOTAL_NUM_HAND - len(mov_hand)
+        movs_in_self = self.all_movs
+        conjunto = set()
+        while len(conjunto) < count:
+            conjunto.add(random.choice(movs_in_self))
+        cards = list(conjunto)
+        mov_hand.extend(cards)
+        self.add_hand_mov(mov_hand, cards, player_id)
+        return mov_hand

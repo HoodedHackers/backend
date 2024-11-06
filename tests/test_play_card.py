@@ -57,7 +57,7 @@ class TestPlayCard(unittest.TestCase):
         ), patch("main.history_repo", self.history_repo):
             self.game.add_player(self.players[0])
 
-            cards_mov = list(range(1, 50))
+            cards_mov = list(range(1, 49))
             repeated_cards_mov = cards_mov * 4
             self.game.add_hand_mov(
                 repeated_cards_mov, repeated_cards_mov, self.players[0].id
@@ -192,10 +192,10 @@ class TestPlayCard(unittest.TestCase):
             self.game.add_player(self.players[1])
 
             with self.client.websocket_connect(
-                f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[0].id}"
+                f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[0].identifier}"
             ) as websocket:
                 with self.client.websocket_connect(
-                    f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[1].id}"
+                    f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[1].identifier}"
                 ) as websocket2:
 
                     self.game.add_player(self.players[0])
