@@ -305,3 +305,21 @@ class TestGameExits(unittest.TestCase):
                     {"player_id": 3, "cards": [2, 3, 4]},
                     {"player_id": 4, "cards": [1]},
                 ]
+
+    def test_discard_cards_mov(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player1 = self.players[0]
+            self.game.add_player(player1)
+            self.game.player_info[player1.id].hand_fig = [1, 2, 3]
+            self.game.player_info[player1.id].hand_mov = [1, 2, 3]
+            self.game.player_info[player1.id].mov_parcial = [1, 2]
+            self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+            response = self.client.post(
+                "/api/lobby/in-course/1/discard_figs",
+                json={"player_identifier": str(player1.identifier), "card_id": 1},
+            )
+            spect_hand_mov = self.game.player_info[player1.id].hand_mov
+            assert response.status_code == 200
+            assert spect_hand_mov == [3]

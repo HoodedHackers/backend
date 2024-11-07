@@ -95,13 +95,12 @@ class TestSelectCard(unittest.TestCase):
                         "player_id": player0.id,
                         "card_id": card0,
                         "index": index,
-                        "len": 3,
                     }
+
                     data2 = websocket1.receive_json()
                     assert data2 == {
                         "action": "select",
                         "player_id": player0.id,
                         "card_id": card0,
                         "index": index,
-                        "len": 3,
                     }

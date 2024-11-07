@@ -155,34 +155,6 @@ class TestAdvanceTurn(unittest.TestCase):
                     assert response.status_code == 200
                     message = ws.receive_json()
                     print(message)
-                    """
-                    assert message.get("game_id") == self.game.host_id
-                    assert message.get("current_turn") == self.game.current_player_turn
-                    current_player = self.game.current_player()
-                    assert current_player is not None
-                    assert message.get("player_id") == current_player.id
-                    ws.close()
-
-
-                    for _ in range(count):
-                if not self.player_info[player_id].fig:
-                    break
-                id = random.choice(self.player_info[player_id].fig)
-
-                aux_hand_fig = self.player_info[player_id].hand_fig
-                aux_fig = self.player_info[player_id].fig
-                aux_fig.remove(id)
-                aux_hand_fig.append(id)
-                self.player_info[player_id] = PlayerInfo(
-                    player_id=player_id,
-                    turn_position=self.player_info[player_id].turn_position,
-                    hand_fig=aux_hand_fig,
-                    hand_mov=self.player_info[player_id].hand_mov,
-                    fig=aux_fig,
-                    mov_parcial=self.player_info[player_id].mov_parcial,
-                )
-                    """
-                    # assert 1 == 2
                 finally:
                     ws.close()
 
@@ -215,8 +187,4 @@ class TestAdvanceTurn(unittest.TestCase):
                 assert data == {
                     "action": "deal",
                     "card_mov": self.game.player_info[self.host.id].hand_mov,
-                    "player_id": self.host.id,
-                    "card_id": 0,
-                    "index": 0,
-                    "len": 3,
                 }
