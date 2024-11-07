@@ -180,7 +180,7 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                     assert status.status_code == 200
                     websocket.receive_json()
                     websocket2.receive_json()
-                    
+
                     status = self.client.post(
                         f"/api/game/{self.game.id}/undo",
                         json={

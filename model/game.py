@@ -14,7 +14,7 @@ from typing_extensions import Optional
 
 from database import Base
 from model import TOTAL_FIG_CARDS, TOTAL_HAND_FIG
-from model.fig_cards import all_coord, TOTAL_FIG_CARDS
+from model.fig_cards import TOTAL_FIG_CARDS, all_coord
 from model.figure_search import CandidateShape, Figure, find_figures
 
 from .board import Board, Color
@@ -233,7 +233,7 @@ class Game(Base):
 
     def get_player_in_game(self, position: int) -> Player:
         return self.players[position]
-    
+
     def get_player_hand_movs(self, player_id: int) -> List[int]:
         return self.player_info[player_id].hand_mov
 
@@ -268,11 +268,11 @@ class Game(Base):
         mov_hand.extend(cards)
         self.add_hand_mov(mov_hand, cards, player_id)
         return mov_hand
-    
+
     def add_single_mov(self, player_id, card_id):
         cards_left = self.player_info[player_id].hand_mov
         cards_left.remove(card_id)
-        aux_parcial =  self.player_info[player_id].copy()
+        aux_parcial = self.player_info[player_id].copy()
         aux_parcial.mov_parcial.append(card_id)
         self.player_info[player_id] = aux_parcial
         return cards_left
@@ -280,7 +280,7 @@ class Game(Base):
     def remove_single_mov(self, player_id: int, card_id: int):
         cards_left = self.player_info[player_id].hand_mov
         cards_left.append(card_id)
-        aux_parcial =  self.player_info[player_id].copy()
+        aux_parcial = self.player_info[player_id].copy()
         aux_parcial.mov_parcial.remove(card_id)
         self.player_info[player_id] = aux_parcial
         return cards_left
@@ -288,7 +288,7 @@ class Game(Base):
     def discard_card_movement(self, player_id: int):
         list_parcial = self.player_info[player_id].mov_parcial
         aux_player_info = self.player_info[player_id].copy()
-        for card in list_parcial: 
+        for card in list_parcial:
             aux_player_info.hand_mov.remove(card)
             aux_player_info.mov_parcial.remove(card)
         self.player_info[player_id] = aux_player_info
@@ -374,12 +374,10 @@ class Game(Base):
         for players in self.players:
             new_player_info = self.player_info[players.id].copy()
             new_fig = []
-            while len(new_fig) < count_deck: 
+            while len(new_fig) < count_deck:
                 card_fig = random.choice(all_figs_cards)
                 if card_fig in all_figs_cards:
                     all_figs_cards.remove(card_fig)
                     new_fig.append(card_fig)
             new_player_info.fig = new_fig
             self.player_info[players.id] = new_player_info
-
-    
