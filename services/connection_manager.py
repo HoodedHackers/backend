@@ -12,6 +12,7 @@ class ManagerTypes(Enum):
     BOARD_STATUS = 4
     CARDS_FIGURE = 5
     CARDS_MOV = 6
+    DISCARD_HAND_FIG = 7
 
 
 @dataclass
@@ -55,6 +56,13 @@ class ConnectionManager:
             return
         for connection in self.lobbies[lobby_id]:
             await connection.websockets.send_json(message)
+
+    async def single_send(self, message: Any, lobby_id: int, player_id: int):
+        if lobby_id not in self.lobbies:
+            return
+        for player in self.lobbies[lobby_id]:
+            if player.id_player == player_id:
+                await player.websockets.send_json(message)
 
     def remove_lobby(self, lobby_id: int):
         if lobby_id in self.lobbies:

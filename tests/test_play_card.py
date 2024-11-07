@@ -57,7 +57,7 @@ class TestPlayCard(unittest.TestCase):
         ), patch("main.history_repo", self.history_repo):
             self.game.add_player(self.players[0])
 
-            cards_mov = list(range(1, 50))
+            cards_mov = list(range(1, 49))
             repeated_cards_mov = cards_mov * 4
             self.game.add_hand_mov(
                 repeated_cards_mov, repeated_cards_mov, self.players[0].id
@@ -192,17 +192,18 @@ class TestPlayCard(unittest.TestCase):
             self.game.add_player(self.players[1])
 
             with self.client.websocket_connect(
-                f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[0].id}"
+                f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[0].identifier}"
             ) as websocket:
                 with self.client.websocket_connect(
-                    f"/ws/lobby/{self.game.id}/select?player_id={self.game.players[1].id}"
+                    f"/ws/lobby/{self.game.id}/movement_cards?player_UUID={self.players[1].identifier}"
                 ) as websocket2:
 
                     self.game.add_player(self.players[0])
 
                     cards_mov = [1, 2, 3]
                     self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
-
+                    # sin el save no se guarda nada!
+                    self.games_repo.save(self.game)
                     status = self.client.post(
                         f"/api/game/{self.game.id}/play_card",
                         json={
@@ -213,20 +214,22 @@ class TestPlayCard(unittest.TestCase):
                             "index_hand": 1,
                         },
                     )
+
                     assert status.status_code == 200
                     assert websocket.receive_json() == {
                         "action": "use_card",
                         "player_id": self.players[0].id,
-                        "card_id": 3,
-                        "index": 1,
-                        "len": 1,
+                        "len": 2,
+                    }
+                    assert websocket.receive_json() == {
+                        "action": "use_card_single",
+                        "card_mov": [1, 2],  # hand_mov - mov_parcial
+                        "player_id": self.players[0].id,
                     }
                     assert websocket2.receive_json() == {
                         "action": "use_card",
                         "player_id": self.players[0].id,
-                        "card_id": 3,
-                        "index": 1,
-                        "len": 1,
+                        "len": 2,
                     }
 
     def test_play_invalid_move(self):
@@ -296,6 +299,7 @@ class TestPlayCard(unittest.TestCase):
                     "index_hand": 1,
                 },
             )
+
             assert status.status_code == 404
             assert status.json() == {"detail": "Player not in game"}
 
