@@ -355,16 +355,11 @@ async def start_game(
         await manager0.single_send(
             {
                 "action": "deal",
-                "card_mov": handMov,
-                "player_id": player.id,
-                "card_id": 0,
-                "index": 0,
-                "len": len(handMov),
+                "card_mov": handMov
             },
             id_game,
             player.id,
         )
-
     games_repo.save(selec_game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, id_game, selec_game)
@@ -522,16 +517,11 @@ async def advance_game_turn(
         await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
             {
                 "action": "deal",
-                "card_mov": handMov,
-                "player_id": player.id,
-                "card_id": 0,
-                "index": 0,
-                "len": len(handMov),
+                "card_mov": handMov
             },
             game.id,
             player.id,
         )
-
     cards = game.add_random_card(player.id)
     game_repo.save(game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
@@ -559,9 +549,9 @@ async def notify_movement_card(
 ):
     """
     Este WS se encarga de notificar la mano de cartas de movimiento de cada jugador.
-    Retorna mensajes de tipo:
+    Retorna mensajes con alguno o todos los parametros segun disponga el front:
         {
-            "action": "select"|"use_card"|"recover_card"|"deal",
+            "action": "select"|"use_card"|"use_card_single"|"recover_card"|"deal"|,
             "card_mov":[card.id],
             "player_id": int,
             "card_id": int,
@@ -618,7 +608,6 @@ async def select_movement_card(
     current_card = req.card_id
     hand = game.get_player_hand_movs(player.id)
     if current_card not in hand:
-        print("entro aca?")
         raise HTTPException(status_code=404, detail="Card not in hand")
     manager = Managers.get_manager(ManagerTypes.CARDS_MOV)
     await manager.broadcast(
@@ -627,7 +616,6 @@ async def select_movement_card(
             "player_id": player.id,
             "card_id": current_card,
             "index": index,
-            "len": len(hand),
         },
         game.id,
     )
@@ -698,25 +686,6 @@ async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int)
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
 
-
-# def deal_card_mov(
-#     game: Game,
-#     player: Player,
-#     games_repo: GameRepository = Depends(get_games_repo),
-# ):
-#     mov_hand = game.get_player_hand_movs(player.id)
-#     count = TOTAL_HAND_MOV - len(mov_hand)
-#     movs_in_game = game.all_movs
-#     conjunto = set()
-#     while len(conjunto) < count:
-#         conjunto.add(random.choice(movs_in_game))
-#     cards = list(conjunto)
-#     mov_hand.extend(cards)
-#     game.add_hand_mov(mov_hand, cards, player.id)
-#     games_repo.save(game)
-#     return mov_hand
-
-
 class InHandFigure(BaseModel):
     player_identifier: UUID = Field(UUID)
     card_id: int
@@ -750,11 +719,11 @@ async def discard_hand_figure(
         await manager.broadcast({"error": "Invalid figure"}, game_id)
     else:
         hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+        game.discard_card_movement(player.id)
         players = [
             {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
             for p in game.players
         ]
-
         await manager.broadcast({"players": players}, game_id)
         game_repo.save(game)
         return {"status": "success"}
@@ -898,10 +867,9 @@ async def play_card_mov(
     Se retorna al ws de tablero: (ver /ws/lobby/{game_id}/board)
     Se retorna al ws de cartas:
         {
-            "action": "use_card",
+            "action": "use_card"|"use_card_single"
+            "card_mov":         |[card.id]
             "player_id": int,
-            "card_id": int,
-            "index": int,
             "len": int
         }
     """
@@ -949,9 +917,10 @@ async def play_card_mov(
         dest_y=destination_y,
     )
     history_repo.save(history)
-
-    game.add_single_mov(player.id, req.card_mov_id)
-
+    
+    cards_left = game.add_single_mov(player.id, req.card_mov_id)
+    mov_parcial = game.get_player_mov_parcial(player.id)
+    game_repo.save(game)
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
 
@@ -963,14 +932,19 @@ async def play_card_mov(
     await manager_card_mov.broadcast(
         {
             "action": "use_card",
-            "player_id": player.id,
-            "card_id": req.card_mov_id,
-            "index": req.index_hand,
-            "len": len(game.get_player_mov_parcial(player.id)),
+            "player_id": player.id, 
+            "len": TOTAL_HAND_MOV - len(mov_parcial), # LEN DE LA DIFERENCIA (3-mov_parcial)
         },
         game.id,
     )
-
+    await manager_card_mov.single_send(
+        {
+            "action": "use_card_single",
+            "card_mov": cards_left, # hand_mov - mov_parcial 
+            "player_id": player.id, 
+        },
+        game.id, player.id
+    )
     return {"status": "success!"}
 
 
@@ -992,10 +966,9 @@ async def undo_move(
     Se envia por el ws ws de tablero: (ver /ws/lobby/{game_id}/board)
     Se envia por el ws de cartas:
         {
-            "action": "recover_card",
+            "action": "recover_card"|"recover_card_single"
+            "card_mov":             |[card.id]
             "player_id": int,
-            "card_id": int,
-            "index": 0,
             "len": int
         }
     """
@@ -1020,7 +993,7 @@ async def undo_move(
         last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
     )
     # recordar que aplica sobre la mano de movimientos parciales del jugador
-    game.remove_single_mov(player.id, last_play.fig_mov_id)
+    cards_left = game.remove_single_mov(player.id, last_play.fig_mov_id)
     game_repo.save(game)
 
     history_repo.delete(last_play)
@@ -1037,13 +1010,19 @@ async def undo_move(
         {
             "action": "recover_card",
             "player_id": player.id,
-            "card_id": last_play.fig_mov_id,
-            "index": 0,
-            "len": len(game.get_player_mov_parcial(player.id)),
+            "len": len(cards_left),
         },
         game.id,
     )
 
+    await manager_card_mov.single_send(
+        {
+            "action": "recover_card_single",
+            "card_mov": cards_left, # hand_mov - mov_parcial 
+            "player_id": player.id, 
+        },
+        game.id, player.id
+    )
     return {"status": "success!"}
 
 

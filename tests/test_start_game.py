@@ -179,19 +179,11 @@ class TestGameStart(unittest.TestCase):
                 assert data1 == {
                     "action": "deal",
                     "card_mov": self.game_1.player_info[player0.id].hand_mov,
-                    "player_id": player0.id,
-                    "card_id": 0,
-                    "index": 0,
-                    "len": 3,
                 }
                 data2 = websocket2.receive_json()
                 assert data2 == {
                     "action": "deal",
                     "card_mov": self.game_1.player_info[player1.id].hand_mov,
-                    "player_id": player1.id,
-                    "card_id": 0,
-                    "index": 0,
-                    "len": 3,
                 }
                 result_list0 = data1["card_mov"]
                 result_list1 = data2["card_mov"]

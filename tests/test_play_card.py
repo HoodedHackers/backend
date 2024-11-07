@@ -202,7 +202,8 @@ class TestPlayCard(unittest.TestCase):
 
                     cards_mov = [1, 2, 3]
                     self.game.add_hand_mov(cards_mov, cards_mov, self.players[0].id)
-
+                    #sin el save no se guarda nada!
+                    self.games_repo.save(self.game)
                     status = self.client.post(
                         f"/api/game/{self.game.id}/play_card",
                         json={
@@ -213,20 +214,22 @@ class TestPlayCard(unittest.TestCase):
                             "index_hand": 1,
                         },
                     )
+                    
                     assert status.status_code == 200
                     assert websocket.receive_json() == {
                         "action": "use_card",
                         "player_id": self.players[0].id,
-                        "card_id": 3,
-                        "index": 1,
-                        "len": 1,
+                        "len": 2,
+                    }
+                    assert websocket.receive_json() == {
+                        "action": "use_card_single",
+                        "card_mov": [1, 2], # hand_mov - mov_parcial 
+                        "player_id": self.players[0].id, 
                     }
                     assert websocket2.receive_json() == {
                         "action": "use_card",
                         "player_id": self.players[0].id,
-                        "card_id": 3,
-                        "index": 1,
-                        "len": 1,
+                        "len": 2,
                     }
 
     def test_play_invalid_move(self):
@@ -296,6 +299,7 @@ class TestPlayCard(unittest.TestCase):
                     "index_hand": 1,
                 },
             )
+            
             assert status.status_code == 404
             assert status.json() == {"detail": "Player not in game"}
 

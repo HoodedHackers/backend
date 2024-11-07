@@ -305,3 +305,13 @@ class TestGameExits(unittest.TestCase):
                     {"player_id": 3, "cards": [2, 3, 4]},
                     {"player_id": 4, "cards": [1]},
                 ]
+    def test_discard_cards_mov(self): 
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player1 = self.players[0]
+            player2 = self.players[1]
+            id0 = self.players[0].id
+            id1 = self.players[1].id
+            self.game.add_player(player1)
+            self.game.add_player(player2)
