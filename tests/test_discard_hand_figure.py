@@ -18,7 +18,7 @@ from services import Managers, ManagerTypes
 client = TestClient(app)
 
 
-class TestGameExits(unittest.TestCase):
+class TestDiscardCardFigure(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
         self.dbs = Database().session()
@@ -405,3 +405,57 @@ class TestGameExits(unittest.TestCase):
             spect_hand_mov = self.game.player_info[player1.id].hand_mov
             assert response.status_code == 200
             assert spect_hand_mov == [3]
+
+    def test_unblock(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player1 = self.players[0]
+            player2 = self.players[1]
+
+            self.game.add_player(player1)
+            self.game.add_player(player2)
+
+            self.games_repo.save(self.game)
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player1.id}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player2.id}"
+            ) as websocket2:
+                self.game.distribute_deck()
+                elems = self.game.add_random_card(player1.id)
+                self.game.block_card(player1.id, elems[0])
+                self.game.discard_card_hand_figures(player1.id, elems[1])
+                self.game.discard_card_hand_figures(player1.id, elems[2])
+
+                self.games_repo.save(self.game)
+
+                self.game.player_info[player2.id].hand_fig = [2, 3, 4]
+                self.game.get_possible_figures = MagicMock(
+                    return_value=[x for x in elems]
+                )
+
+                response = self.client.post(
+                    "/api/lobby/in-course/1/discard_figs",
+                    json={
+                        "player_identifier": str(player1.identifier),
+                        "card_id": elems[0],
+                    },
+                )
+                assert response.status_code == 200
+
+                assert len(self.game.get_player_hand_figures(player1.id)) == 0
+                assert websocket1.receive_json()["players"] == [
+                    {
+                        "player_id": player1.id,
+                        "cards": self.game.get_player_hand_figures(player1.id),
+                        "block_card": 0,
+                        "invisible_block": -1,
+                    },
+                    {
+                        "player_id": 3,
+                        "cards": [2, 3, 4],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                ]

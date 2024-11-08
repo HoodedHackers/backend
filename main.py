@@ -316,6 +316,7 @@ def get_players_and_cards(game: Game):
 
 async def broadcast_players_and_cards(manager, game_id, game):
     players_cards = get_players_and_cards(game)
+    print(players_cards)
     await manager.broadcast(
         {"players": players_cards},
         game_id,
@@ -516,17 +517,22 @@ async def block_card(
         raise HTTPException(
             status_code=404, detail="Wrong card, dont found in hand of player!"
         )
-    if game.get_card_block != 0:
+    if game.get_card_block(block_request.id_player_block):
         raise HTTPException(
             status_code=404, detail="The player has a card that is already blocked"
         )
-    figures = game.get_possible_figures(player.id)
+
+    figures = game.get_id_possible_figures(block_request.id_player_block)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+
     if block_request.id_card_block not in figures:
         await manager.broadcast({"error": "Invalid figure"}, game_id)
+
     game.block_card(block_request.id_player_block, block_request.id_card_block)
+    game.discard_card_movement(player.id)
     game_repo.save(game)
     await broadcast_players_and_cards(manager, game_id, game)
+    return {"status": "success!"}
 
 
 class AdvanceTurnRequest(BaseModel):
@@ -541,34 +547,37 @@ async def advance_game_turn(
     game_repo: GameRepository = Depends(get_games_repo),
 ):
     player = player_repo.get_by_identifier(advance_request.identifier)
+
     if player is None:
         raise HTTPException(status_code=404, detail="Player not found")
     game = game_repo.get(game_id)
+
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player is not in game")
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
-    try:
-        game.advance_turn()
-    except PreconditionsNotMet:
+    if game.started == False:
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
-    current_player = game.current_player()
-    assert current_player is not None
-    for player in game.players:
-        game.deal_card_mov(player.id)
-        game_repo.save(game)
-        handMov = game.get_player_hand_movs(player.id)
-        await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
-            {"action": "deal", "card_mov": handMov},
-            game.id,
-            player.id,
-        )
+
+    game.deal_card_mov(player.id)
+    handMov = game.get_player_hand_movs(player.id)
     cards = game.add_random_card(player.id)
     game_repo.save(game)
+    await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
+        {"action": "deal", "card_mov": handMov},
+        game.id,
+        player.id,
+    )
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game_id, game)
+    try:
+        game.advance_turn()
+    except:
+        raise HTTPException(status_code=401, detail="send help")
+    current_player = game.current_player()
+    assert current_player is not None
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
 
     await turn_manager.broadcast(
