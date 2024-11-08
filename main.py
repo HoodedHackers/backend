@@ -455,15 +455,6 @@ async def exit_game(
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
-    await leave_manager.broadcast(
-        {
-            "player_id": player.id,
-            "action": "leave",
-            "player_name": player.name,
-            "players": [player.id for player in game.players],
-        },
-        game.id,
-    )
 
     return {"status": "success"}
 
