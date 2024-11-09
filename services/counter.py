@@ -7,32 +7,35 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 class Counter:
     def __init__(
-        self, tick_callback, stop_callback, tick_time: float = 0.5, timeout: float = 120
+        self, tick_callback, timeout_callback, tick_time: float = 0.5, timeout: float = 120
     ):
         self.scheduler = AsyncIOScheduler()
         self.count = 0
         self.running = False
         self.timeout = timeout
         self.tick_callback = tick_callback
-        self.stop_callback = stop_callback
+        self.stop_callback = timeout_callback
         self.tick_time = tick_time
 
     async def count_up(self):
         self.count += self.tick_time
         self.tick_callback(self.count)
         if self.count >= self.timeout:
-            await self.stop()
+            await self.timeout_func()
 
     async def start(self):
         self.running = True
         self.scheduler.add_job(self.count_up, "interval", seconds=self.tick_time)
         self.scheduler.start()
 
+    async def timeout_func(self):
+        self.stop_callback()
+        self.count = 0
+
     async def stop(self):
         if self.running:
             self.running = False
             self.scheduler.shutdown(wait=False)
-            self.stop_callback()
 
 
 class CounterManager:

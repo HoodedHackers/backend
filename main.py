@@ -176,29 +176,18 @@ async def start_timer():
 async def timer_websocket(websocket: WebSocket, game_id: int, player_id: int):
     manager = Managers.get_manager(ManagerTypes.GAME_CLOCK)
     await manager.connect(websocket, game_id, player_id)
-    counter = CounterManager.get_counter(game_id)
-    if counter is None:
-        counter = Counter(
-            tick_callback=(
-                lambda time: manager.broadcast(
-                    {
-                        "time": time,
-                    },
-                    game_id,
-                )
-            ),
-            stop_callback=(lambda: manager.broadcast({"status": "timeout"}, game_id)),
-        )
-        await counter.start()
-        counter = CounterManager.add_counter(game_id, counter)
     try:
         while True:
             _ = await websocket.receive_json()
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
-        if manager.is_empty_empty(game_id):
-            assert counter is not None
-            await counter.stop()
+
+
+async def notify_tick(game_id: int, time: float):
+    manager = Managers.get_manager(ManagerTypes.GAME_CLOCK)
+    await manager.broadcast({
+        time: time,
+    }, game_id)
 
 
 @app.websocket("/ws/api/lobby")
@@ -319,6 +308,11 @@ async def start_game(
     for player in selec_game.players:
         selec_game.add_random_card(player.id)
     games_repo.save(selec_game)
+    game_timer = Counter(
+        tick_callback=(lambda t: notify_tick(selec_game.id, t)),
+        timeout_callback=(lambda: advance_turn_internal(selec_game))
+    )
+    CounterManager.add_counter(selec_game.id, game_timer)
     await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
         {
             "game_id": id_game,
@@ -465,6 +459,13 @@ async def advance_game_turn(
         raise HTTPException(status_code=404, detail="Player is not in game")
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
+    await advance_turn_internal(game)
+    return {"status": "success"}
+
+
+async def advance_turn_internal(game: Game):
+    player = game.current_player()
+    assert player is not None
     try:
         game.advance_turn()
     except PreconditionsNotMet:
@@ -473,7 +474,7 @@ async def advance_game_turn(
     assert current_player is not None
     cards = game.add_random_card(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await manager.broadcast({"player_id": player.id, "cards": cards}, game_id)
+    await manager.broadcast({"player_id": player.id, "cards": cards}, game.id)
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
     await turn_manager.broadcast(
         {
@@ -482,9 +483,8 @@ async def advance_game_turn(
             "player_id": current_player.id,
             "player_name": current_player.name,
         },
-        game_id,
+        game.id,
     )
-    return {"status": "success"}
 
 
 @app.post("/api/lobby/{game_id}/movs", response_model=SetCardsResponse)
