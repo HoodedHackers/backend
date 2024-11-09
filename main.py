@@ -300,7 +300,6 @@ async def join_game(
 
 
 def get_players_and_cards(game: Game):
-    # print(game.get_player_hand_figures(1))
     # Si no hay carta bloqueada es 0, si hay es el id en cuestion
     # len -1 = si es distinto de 0, es invisible, si no, es visible
     return [
@@ -316,7 +315,6 @@ def get_players_and_cards(game: Game):
 
 async def broadcast_players_and_cards(manager, game_id, game):
     players_cards = get_players_and_cards(game)
-    print(players_cards)
     await manager.broadcast(
         {"players": players_cards},
         game_id,
@@ -558,9 +556,10 @@ async def advance_game_turn(
         raise HTTPException(status_code=404, detail="Player is not in game")
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
-    if game.started == False:
+    try:
+        game.advance_turn()
+    except PreconditionsNotMet:
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
-
     game.deal_card_mov(player.id)
     handMov = game.get_player_hand_movs(player.id)
     cards = game.add_random_card(player.id)
@@ -1010,7 +1009,6 @@ async def play_card_mov(
     tuples_valid = card.sum_dist(tuple_origin)
 
     if tuple_destination not in tuples_valid:
-        print("Invalid move")
         raise HTTPException(status_code=404, detail="Invalid move")
 
     game.swap_tiles(origin_x, origin_y, destination_x, destination_y)
