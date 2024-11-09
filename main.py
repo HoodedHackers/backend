@@ -588,6 +588,9 @@ async def select_movement_card(
 
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
+    
+    if player != game.current_player():
+        raise HTTPException(status_code=401, detail="It's not your turn")
 
     index = req.card_index
     current_card = req.card_id
