@@ -1002,16 +1002,7 @@ async def undo_move(
         game.id,
     )
 
-    await manager_card_mov.single_send(
-        {
-            "action": "recover_card_single",
-            "card_mov": cards_left,  # hand_mov - mov_parcial
-            "player_id": player.id,
-        },
-        game.id,
-        player.id,
-    )
-    return {"status": "success!"}
+    return PlayResponseSingle(card_mov=cards_left)
 
 
 @app.get("/api/history/{game_id}")
