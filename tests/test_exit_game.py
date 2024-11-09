@@ -88,6 +88,7 @@ class TestGameExits(unittest.TestCase):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
         ):
+
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
             self.games_repo.save(self.game)
@@ -95,6 +96,7 @@ class TestGameExits(unittest.TestCase):
                 f"/api/lobby/{self.game.id}/exit",
                 json={"identifier": str(self.players[0].identifier)},
             )
+            print(rsp.json())
             self.assertEqual(rsp.status_code, 200)
             game = self.games_repo.get(self.game.id)
             assert game is not None
@@ -118,39 +120,46 @@ class TestGameExits(unittest.TestCase):
     def test_exit_player_in_game_ws(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ), self.client.websocket_connect(
-            f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
-        ) as ws:
+        ):
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
             self.games_repo.save(self.game)
-            rsp = self.client.post(
-                f"/api/lobby/{self.game.id}/exit",
-                json={"identifier": str(self.players[0].identifier)},
-            )
-            self.assertEqual(rsp.status_code, 200)
-            message = ws.receive_json()
-            print(message)
-            self.assertIn("players", message)
-            self.assertEqual(message.get("players"), [self.players[1].id])
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}?player_id={self.players[0].id}"
+            ) as ws:
+                try:
+                    rsp = self.client.post(
+                        f"/api/lobby/{self.game.id}/exit",
+                        json={"identifier": str(self.players[0].identifier)},
+                    )
+                    ws.send_json({"user_identifier": str(self.players[0].identifier)})
+                    self.assertEqual(rsp.status_code, 200)
+                    message = ws.receive_json()
+                    self.assertIn("players", message)
+                    assert message["players"] == [{'player_id': 3, 'player_name': 'Lou^2'}, {'player_id': 2, 'player_name': 'Lou'}]
+                finally:
+                    ws.close()
 
     def test_exit_winner_in_game_ws(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
-        ), self.client.websocket_connect(
-            f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
-        ) as ws:
+        ):
             self.game.add_player(self.players[0])
             self.game.add_player(self.players[1])
             self.game.started = True
             self.games_repo.save(self.game)
-            rsp = self.client.post(
-                f"/api/lobby/{self.game.id}/exit",
-                json={"identifier": str(self.players[1].identifier)},
-            )
+            
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
+            ) as ws:
+                try:
+                    rsp = self.client.post(
+                        f"/api/lobby/{self.game.id}/exit",
+                        json={"identifier": str(self.players[1].identifier)},
+                    )
 
-            self.assertEqual(rsp.status_code, 200)
-            message = ws.receive_json()
-            assert message is not None
-            print(message)
-            assert message["response"] == self.players[0].id
+                    self.assertEqual(rsp.status_code, 200)
+                    message = ws.receive_json()
+                    assert message["response"] == self.players[0].id
+                finally:
+                    ws.close()
