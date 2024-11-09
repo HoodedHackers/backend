@@ -3,13 +3,16 @@ from unittest.mock import patch
 
 from asserts import assert_equal, assert_raises
 
+from .board import Color
 from .exceptions import PreconditionsNotMet
+from .figure_search import CandidateShape, Figure
 from .game import Game, GameFull
 from .mov_cards import TOTAL_MOV
 from .player import Player
 from .board import Color
 from .figure_search import Figure, CandidateShape
 from unittest.mock import MagicMock, patch
+
 
 def test_add_player():
     g = Game(id=0, name="test game")
@@ -273,6 +276,7 @@ def test_distribute_deck():
     assert len(g.player_info[p0.id].fig) == 16
     assert len(g.player_info[p1.id].fig) == 16
     assert len(g.player_info[3].fig) == 16
+
 
 def test_ids_get_possible_figures():
     g = Game(name="test game")
