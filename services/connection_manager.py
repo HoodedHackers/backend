@@ -12,6 +12,7 @@ class ManagerTypes(Enum):
     BOARD_STATUS = 4
     CARDS_FIGURE = 5
     CARDS_MOV = 6
+    CHAT = 7
 
 
 @dataclass
