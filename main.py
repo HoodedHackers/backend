@@ -578,10 +578,7 @@ async def advance_game_turn(
     )
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game_id, game)
-    try:
-        game.advance_turn()
-    except:
-        raise HTTPException(status_code=401, detail="send help")
+    
     current_player = game.current_player()
     assert current_player is not None
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
