@@ -39,7 +39,7 @@ class Counter:
 
 
 class CounterManager:
-    lobbies: Dict[int, Counter]
+    lobbies: Dict[int, Counter] = {}
 
     @classmethod
     def get_counter(cls, game_id: int) -> Optional[Counter]:
