@@ -77,7 +77,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                 f"/ws/lobby/1/figs?player_id={player2.id}"
             ) as websocket2:
 
-                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
                 response = self.client.post(
                     f"/api/lobby/in-course/1/discard_figs",
                     json={"player_identifier": str(player3.identifier), "card_id": 1},
@@ -155,7 +155,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                 f"/ws/lobby/1/figs?player_id={player2.id}"
             ) as websocket2:
 
-                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
                 response = self.client.post(
                     f"/api/lobby/in-course/1/discard_figs",
                     json={"player_identifier": str(player2.identifier), "card_id": 3},
@@ -280,7 +280,7 @@ class TestDiscardCardFigure(unittest.TestCase):
             with client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={player1.id}"
             ) as websocket:
-                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
                 response = self.client.post(
                     "/api/lobby/in-course/1/discard_figs",
                     json={"player_identifier": str(player1.identifier), "card_id": 1},
@@ -355,7 +355,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                 f"/ws/lobby/1/figs?player_id={player2.id}"
             ) as websocket2:
 
-                self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+                self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
                 response = self.client.post(
                     f"/api/lobby/in-course/1/discard_figs",
                     json={"player_identifier": str(player2.identifier), "card_id": 4},
@@ -397,7 +397,7 @@ class TestDiscardCardFigure(unittest.TestCase):
             self.game.player_info[player1.id].hand_fig = [1, 2, 3]
             self.game.player_info[player1.id].hand_mov = [1, 2, 3]
             self.game.player_info[player1.id].mov_parcial = [1, 2]
-            self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+            self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
             response = self.client.post(
                 "/api/lobby/in-course/1/discard_figs",
                 json={"player_identifier": str(player1.identifier), "card_id": 1},

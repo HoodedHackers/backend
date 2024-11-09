@@ -221,11 +221,7 @@ class TestPlayCard(unittest.TestCase):
                         "player_id": self.players[0].id,
                         "len": 2,
                     }
-                    assert websocket.receive_json() == {
-                        "action": "use_card_single",
-                        "card_mov": [1, 2],  # hand_mov - mov_parcial
-                        "player_id": self.players[0].id,
-                    }
+                    
                     assert websocket2.receive_json() == {
                         "action": "use_card",
                         "player_id": self.players[0].id,

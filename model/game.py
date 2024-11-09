@@ -399,3 +399,6 @@ class Game(Base):
                     new_fig.append(card_fig)
             new_player_info.fig = new_fig
             self.player_info[players.id] = new_player_info
+
+    def ids_get_possible_figures(self, player_id: int) -> List[int]:
+        return [c.figure_id() for c in self.get_possible_figures(player_id)]

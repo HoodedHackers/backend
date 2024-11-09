@@ -473,15 +473,6 @@ async def exit_game(
         await Managers.disconnect_all(game.id)
         games_repo.delete(game)
         return {"status": "success"}
-    await leave_manager.broadcast(
-        {
-            "player_id": player.id,
-            "action": "leave",
-            "player_name": player.name,
-            "players": [player.id for player in game.players],
-        },
-        game.id,
-    )
 
     return {"status": "success"}
 
@@ -655,6 +646,9 @@ async def select_movement_card(
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
+    if player != game.current_player():
+        raise HTTPException(status_code=401, detail="It's not your turn")
+
     index = req.card_index
     current_card = req.card_id
     hand = game.get_player_hand_movs(player.id)
@@ -700,7 +694,7 @@ async def discard_hand_figure(
             status_code=404, detail="Carta no encontrada en la mano del jugador"
         )
 
-    figures = game.get_possible_figures(player.id)
+    figures = game.ids_get_possible_figures(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if player_ident.card_id not in figures:
         await manager.broadcast({"error": "Invalid figure"}, game_id)
@@ -960,6 +954,10 @@ class MovePlayer(BaseModel):
     index_hand: int
 
 
+class PlayResponseSingle(BaseModel):
+    card_mov: List[int]  # hand_mov - mov_parcial
+
+
 @app.post("/api/game/{game_id}/play_card")
 async def play_card_mov(
     req: MovePlayer,
@@ -1044,16 +1042,8 @@ async def play_card_mov(
         },
         game.id,
     )
-    await manager_card_mov.single_send(
-        {
-            "action": "use_card_single",
-            "card_mov": cards_left,  # hand_mov - mov_parcial
-            "player_id": player.id,
-        },
-        game.id,
-        player.id,
-    )
-    return {"status": "success!"}
+
+    return PlayResponseSingle(card_mov=cards_left)
 
 
 class UndoMoveRequest(BaseModel):
@@ -1123,16 +1113,7 @@ async def undo_move(
         game.id,
     )
 
-    await manager_card_mov.single_send(
-        {
-            "action": "recover_card_single",
-            "card_mov": cards_left,  # hand_mov - mov_parcial
-            "player_id": player.id,
-        },
-        game.id,
-        player.id,
-    )
-    return {"status": "success!"}
+    return PlayResponseSingle(card_mov=cards_left)
 
 
 @app.get("/api/history/{game_id}")
