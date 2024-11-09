@@ -214,7 +214,7 @@ async def notify_tick(game_id: int, time: float):
     manager = Managers.get_manager(ManagerTypes.GAME_CLOCK)
     await manager.broadcast(
         {
-            time: time,
+            "time": time,
         },
         game_id,
     )
@@ -366,9 +366,12 @@ async def start_game(
     async def notify(time):
         await notify_tick(selec_game.id, time)
 
+    async def force_advance():
+        await advance_turn_internal(selec_game)
+
     game_timer = Counter(
         tick_callback=(notify),
-        timeout_callback=(lambda: advance_turn_internal(selec_game)),
+        timeout_callback=(force_advance),
     )
     game_timer.start()
     CounterManager.add_counter(selec_game.id, game_timer)
@@ -535,7 +538,7 @@ async def advance_turn_internal(game: Game):
         },
         game.id,
     )
-    return {"status": "success"}
+    return
 
 
 @app.post("/api/lobby/{game_id}/movs", response_model=SetCardsResponse)

@@ -33,7 +33,7 @@ class Counter:
         self.scheduler.start()
 
     async def timeout_func(self):
-        self.stop_callback()
+        await self.stop_callback()
         self.count = 0
 
     async def stop(self):
