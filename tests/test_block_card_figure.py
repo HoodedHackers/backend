@@ -68,12 +68,12 @@ class TestBlockUnblockCard(unittest.TestCase):
             self.game.player_info[player1.id].hand_mov = [1, 2, 3]
             self.game.player_info[player1.id].mov_parcial = [1, 2]
 
-            self.game.get_id_possible_figures = MagicMock(return_value=[1, 2, 3])
+            self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
 
             with self.client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={id0}"
+                f"/ws/lobby/{self.game.id}/figs?player_id={id0}"
             ) as websocket0, self.client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={id1}"
+                f"/ws/lobby/{self.game.id}/figs?player_id={id1}"
             ) as websocket1:
                 result = self.client.post(
                     f"/api/lobby/{self.game.id}/block",
@@ -87,6 +87,7 @@ class TestBlockUnblockCard(unittest.TestCase):
                 assert result.status_code == 200
                 assert self.game.player_info[id0].hand_mov == [10]
                 assert self.game.player_info[id1].block_card == 2
+
                 assert websocket0.receive_json()["players"] == [
                     {
                         "player_id": id0,
@@ -137,7 +138,7 @@ class TestBlockUnblockCard(unittest.TestCase):
             self.game.player_info[id1].mov_parcial = [1, 2]
             self.game.player_info[id1].block_card = 3
 
-            self.game.get_possible_figures = MagicMock(return_value=[1, 2, 3])
+            self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
 
             with self.client.websocket_connect(
                 f"/ws/lobby/1/figs?player_id={id0}"
@@ -184,7 +185,7 @@ class TestBlockUnblockCard(unittest.TestCase):
                 self.games_repo.save(self.game)
 
                 self.game.player_info[player2.id].hand_fig = [2, 3, 4]
-                self.game.get_possible_figures = MagicMock(
+                self.game.ids_get_possible_figures = MagicMock(
                     return_value=[x for x in elems]
                 )
 
@@ -208,7 +209,6 @@ class TestBlockUnblockCard(unittest.TestCase):
 
                 assert response2.status_code == 200
 
-                print()
                 assert websocket1.receive_json()["players"] == [
                     {
                         "player_id": player1.id,

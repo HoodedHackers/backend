@@ -511,11 +511,11 @@ async def block_card(
             status_code=404, detail="The player has a card that is already blocked"
         )
 
-    figures = game.get_id_possible_figures(block_request.id_player_block)
+    figures = game.ids_get_possible_figures(block_request.id_player_block)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
 
     if block_request.id_card_block not in figures:
-        await manager.broadcast({"error": "Invalid figure"}, game_id)
+        raise HTTPException(status_code=404, detail="Invalid figure")
 
     game.block_card(block_request.id_player_block, block_request.id_card_block)
     game.discard_card_movement(player.id)

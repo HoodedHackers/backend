@@ -431,8 +431,8 @@ class TestDiscardCardFigure(unittest.TestCase):
                 self.games_repo.save(self.game)
 
                 self.game.player_info[player2.id].hand_fig = [2, 3, 4]
-                self.game.get_possible_figures = MagicMock(
-                    return_value=[x for x in elems]
+                self.game.ids_get_possible_figures = MagicMock(
+                    return_value=[1, 2, elems[0]]
                 )
 
                 response = self.client.post(
@@ -442,6 +442,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                         "card_id": elems[0],
                     },
                 )
+                print(response.json)
                 assert response.status_code == 200
 
                 assert len(self.game.get_player_hand_figures(player1.id)) == 0

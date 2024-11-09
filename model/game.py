@@ -371,15 +371,6 @@ class Game(Base):
             player_figures.append(new_figure)
         return find_figures(self.board, player_figures)
 
-    def get_id_possible_figures(self, player_id: int) -> List[int]:
-        candidate_shape = self.get_possible_figures(player_id)
-        list_id = []
-        for candidate in candidate_shape:
-            figure = candidate.figure
-            id_candidate = figure.id
-            list_id.append(id_candidate)
-        return list_id
-
     def block_card(self, other_player: int, card_block: int):
         new_player_info = self.player_info[other_player].copy()
         new_player_info.block_card = card_block
