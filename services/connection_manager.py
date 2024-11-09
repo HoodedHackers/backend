@@ -43,9 +43,6 @@ class ConnectionManager:
         if len(self.lobbies[lobby_id]) == 0:
             del self.lobbies[lobby_id]
 
-    def is_empty_empty(self, lobby_id):
-        return len(self.lobbies[lobby_id]) == 0
-
     async def disconnect_all(self, lobby_id: int):
         if lobby_id not in self.lobbies:
             return

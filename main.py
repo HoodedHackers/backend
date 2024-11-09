@@ -471,7 +471,7 @@ async def exit_game(
         games_repo.delete(game)
         await leave_manager.broadcast("el host ha abandonado la partida", game.id)
         await Managers.disconnect_all(game.id)
-        CounterManager.get_counter(game.id)
+        await CounterManager.delete_counter(game.id)
         return {"status": "success"}
 
     game.delete_player(player)
@@ -481,7 +481,7 @@ async def exit_game(
         winner = game.get_player_in_game(0)
         await leave_manager.broadcast({"response": winner.id}, game.id)
         await Managers.disconnect_all(game.id)
-        CounterManager.get_counter(game.id)
+        await CounterManager.delete_counter(game.id)
         games_repo.delete(game)
         return {"status": "success"}
 
