@@ -302,6 +302,11 @@ class Game(Base):
             aux_player_info.mov_parcial.remove(card)
         self.player_info[player_id] = aux_player_info
 
+    def clear_mov_parcial(self, player_id: int):
+        aux_player_info = self.player_info[player_id].copy()
+        aux_player_info.mov_parcial = []
+        self.player_info[player_id] = aux_player_info
+
     # falta verificar si el hand_fig es vacio o si fig es vacio (si es ambos en ese caso gana)
     def add_random_card(self, player_id: int):
         if len(self.player_info[player_id].hand_fig) == TOTAL_HAND_FIG:
