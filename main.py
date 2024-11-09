@@ -699,7 +699,7 @@ async def discard_hand_figure(
             status_code=404, detail="Carta no encontrada en la mano del jugador"
         )
 
-    figures = game.get_possible_figures(player.id)
+    figures = game.ids_get_possible_figures(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if player_ident.card_id not in figures:
         await manager.broadcast({"error": "Invalid figure"}, game_id)
