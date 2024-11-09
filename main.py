@@ -515,7 +515,7 @@ async def advance_turn_internal(game: Game):
     cards = game.add_random_card(player.id)
     game_repo.save(game)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await broadcast_players_and_cards(manager, game_id, game)
+    await broadcast_players_and_cards(manager, game.id, game)
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
 
     await turn_manager.broadcast(
