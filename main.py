@@ -563,8 +563,8 @@ async def advance_game_turn(
     
     cards_left = []
     for _ in range(len(game.player_info[player.id].mov_parcial)):
-        cards_left=module_undo_move(game, player, history_repo, game_repo)
-    assert cards_left == []
+        module_undo_move(game, player, history_repo, game_repo)
+    assert game.get_player_mov_parcial(player.id) == []
 
     game.deal_card_mov(player.id)
     handMov = game.get_player_hand_movs(player.id)
