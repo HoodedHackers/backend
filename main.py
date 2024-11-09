@@ -212,9 +212,12 @@ async def timer_websocket(websocket: WebSocket, game_id: int, player_id: int):
 
 async def notify_tick(game_id: int, time: float):
     manager = Managers.get_manager(ManagerTypes.GAME_CLOCK)
-    await manager.broadcast({
-        time: time,
-    }, game_id)
+    await manager.broadcast(
+        {
+            time: time,
+        },
+        game_id,
+    )
 
 
 @app.websocket("/ws/api/lobby")
@@ -361,7 +364,7 @@ async def start_game(
     games_repo.save(selec_game)
     game_timer = Counter(
         tick_callback=(lambda t: notify_tick(selec_game.id, t)),
-        timeout_callback=(lambda: advance_turn_internal(selec_game))
+        timeout_callback=(lambda: advance_turn_internal(selec_game)),
     )
     CounterManager.add_counter(selec_game.id, game_timer)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)

@@ -7,7 +7,11 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 class Counter:
     def __init__(
-        self, tick_callback, timeout_callback, tick_time: float = 0.5, timeout: float = 120
+        self,
+        tick_callback,
+        timeout_callback,
+        tick_time: float = 0.5,
+        timeout: float = 120,
     ):
         self.scheduler = AsyncIOScheduler()
         self.count = 0
