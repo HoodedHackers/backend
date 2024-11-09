@@ -1023,7 +1023,7 @@ async def play_card_mov(
         raise HTTPException(status_code=404, detail="Invalid move")
 
     game.swap_tiles(origin_x, origin_y, destination_x, destination_y)
-
+    
     history = History(
         game_id=game_id,
         player_id=player.id,
@@ -1038,6 +1038,7 @@ async def play_card_mov(
     cards_left = game.add_single_mov(player.id, req.card_mov_id)
     mov_parcial = game.get_player_mov_parcial(player.id)
     game_repo.save(game)
+    
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
 
@@ -1069,15 +1070,16 @@ def module_undo_move(game: Game, player: Player, history_repo: HistoryRepository
         raise HTTPException(status_code=404, detail="No history found")
     if last_play.player_id != player.id:
         raise HTTPException(status_code=404, detail="Nothing to undo")
-
+    
     game.swap_tiles(
         last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
     )
+    
     # recordar que aplica sobre la mano de movimientos parciales del jugador
     cards_left = game.remove_single_mov(player.id, last_play.fig_mov_id)
     
     game_repo.save(game)
-
+    
     history_repo.delete(last_play)
 
     return cards_left
@@ -1115,8 +1117,6 @@ async def undo_move(
 
     cards_left = module_undo_move(game, player, history_repo, games_repo)
 
-    game_repo.save(game)
-    
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
 

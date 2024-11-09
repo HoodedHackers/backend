@@ -347,8 +347,10 @@ class Game(Base):
         origin_color = self.board[origin_index]
         dest_color = self.board[dest_index]
 
-        self.board[origin_index] = dest_color
-        self.board[dest_index] = origin_color
+        aux = self.board.copy()
+        aux[origin_index] = dest_color
+        aux[dest_index] = origin_color
+        self.board = aux
 
     def discard_card_hand_figures(self, player_id: int, card: int):
         left_one = len(self.player_info[player_id].hand_fig) - 1
@@ -372,7 +374,7 @@ class Game(Base):
             else:
                 id_coord = fig_id % TOTAL_FIG_CARDS
             new_figure = Figure(fig_id, all_coord[id_coord])
-            print(new_figure)
+            print("NEW_FIGURES: ", new_figure)
             player_figures.append(new_figure)
         return find_figures(self.board, player_figures)
 
