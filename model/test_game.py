@@ -1,5 +1,5 @@
 import random
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from asserts import assert_equal, assert_raises
 
@@ -9,9 +9,6 @@ from .figure_search import CandidateShape, Figure
 from .game import Game, GameFull
 from .mov_cards import TOTAL_MOV
 from .player import Player
-from .board import Color
-from .figure_search import Figure, CandidateShape
-from unittest.mock import MagicMock, patch
 
 
 def test_add_player():

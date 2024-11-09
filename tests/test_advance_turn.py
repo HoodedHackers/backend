@@ -126,7 +126,6 @@ class TestAdvanceTurn(unittest.TestCase):
             current_player = self.game.current_player()
             assert current_player is not None
             assert message.get("player_id") == current_player.id
-            assert 1 == 2
             ws.close()
 
     def test_ws_message_hand_card_fig(self):
@@ -140,10 +139,6 @@ class TestAdvanceTurn(unittest.TestCase):
                     self.game.started = True
                     self.game.player_info[self.host.id].hand_fig = [1, 2]
                     self.game.player_info[self.host.id].fig = [3, 4, 5]
-                    print(self.game.player_info[self.host.id].fig)
-                    print(self.game.player_info[self.host.id].hand_fig)
-                    # self.game.add_random_card(self.host.id)
-                    self.games_repo.save(self.game)
 
                     response = self.client.post(
                         f"/api/lobby/{self.game.id}/advance",
@@ -151,10 +146,13 @@ class TestAdvanceTurn(unittest.TestCase):
                     )
                     ws.send_json({"receive": "cards"})
                     patos = self.game.get_player_hand_figures(self.host.id)
-                    # no anda el test
                     assert response.status_code == 200
                     message = ws.receive_json()
                     print(message)
+                    assert len(patos) == 3
+                    self.assertIsInstance(message["players"], list)
+                    assert len(message["players"]) == 1
+                    assert len(message["players"][0]["cards"]) == 3
                 finally:
                     ws.close()
 
@@ -169,11 +167,9 @@ class TestAdvanceTurn(unittest.TestCase):
                 new_cards = [1, 2]
                 discard = []
                 self.game.add_hand_mov(new_cards, discard, self.host.id)
-                print(self.game.player_info[self.host.id].hand_mov)
 
                 self.games_repo.save(self.game)
 
-                print(self.game.player_info[self.host.id].hand_mov)
                 response = self.client.post(
                     f"/api/lobby/{self.game.id}/advance",
                     json={"identifier": str(self.host.identifier)},

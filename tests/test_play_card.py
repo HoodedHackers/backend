@@ -221,7 +221,7 @@ class TestPlayCard(unittest.TestCase):
                         "player_id": self.players[0].id,
                         "len": 2,
                     }
-                    
+
                     assert websocket2.receive_json() == {
                         "action": "use_card",
                         "player_id": self.players[0].id,
