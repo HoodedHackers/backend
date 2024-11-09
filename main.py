@@ -563,7 +563,7 @@ async def advance_game_turn(
     
     cards_left = []
     for _ in range(len(game.player_info[player.id].mov_parcial)):
-        cards_left=module_undo_move(game, player, history_repo)
+        cards_left=module_undo_move(game, player, history_repo, game_repo)
     assert cards_left == []
 
     game.deal_card_mov(player.id)
@@ -1063,7 +1063,7 @@ class UndoMoveRequest(BaseModel):
     identifier: UUID = Field(UUID)
 
 
-def module_undo_move(game: Game, player: Player, history_repo: HistoryRepository):
+def module_undo_move(game: Game, player: Player, history_repo: HistoryRepository, game_repo: GameRepository = Depends(get_games_repo)):
     last_play = history_repo.get_last(game.id)
     if not last_play:
         raise HTTPException(status_code=404, detail="No history found")
@@ -1075,6 +1075,8 @@ def module_undo_move(game: Game, player: Player, history_repo: HistoryRepository
     )
     # recordar que aplica sobre la mano de movimientos parciales del jugador
     cards_left = game.remove_single_mov(player.id, last_play.fig_mov_id)
+    
+    game_repo.save(game)
 
     history_repo.delete(last_play)
 
@@ -1111,7 +1113,7 @@ async def undo_move(
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
 
-    cards_left = module_undo_move(game, player, history_repo)
+    cards_left = module_undo_move(game, player, history_repo, games_repo)
 
     game_repo.save(game)
     
