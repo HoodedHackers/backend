@@ -362,10 +362,15 @@ async def start_game(
     for player in selec_game.players:
         selec_game.add_random_card(player.id)
     games_repo.save(selec_game)
+
+    async def notify(time):
+        await notify_tick(selec_game.id, time)
+
     game_timer = Counter(
-        tick_callback=(lambda t: notify_tick(selec_game.id, t)),
+        tick_callback=(notify),
         timeout_callback=(lambda: advance_turn_internal(selec_game)),
     )
+    game_timer.start()
     CounterManager.add_counter(selec_game.id, game_timer)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, id_game, selec_game)

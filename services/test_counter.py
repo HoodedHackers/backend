@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -8,12 +8,12 @@ from .counter import Counter
 
 @pytest.fixture
 def tick_callback():
-    return Mock()
+    return AsyncMock()
 
 
 @pytest.fixture
 def timeout_callback():
-    return Mock()
+    return AsyncMock()
 
 
 @pytest.fixture
@@ -23,10 +23,8 @@ def counter(tick_callback, timeout_callback):
 
 @pytest.mark.asyncio
 async def test_counter_start_and_stop(counter, tick_callback, timeout_callback):
-    await counter.start()
-
+    counter.start()
     await asyncio.sleep(0.4)
-
     assert counter.count <= counter.timeout
     tick_callback.assert_called()
     timeout_callback.assert_called_once()
@@ -34,10 +32,8 @@ async def test_counter_start_and_stop(counter, tick_callback, timeout_callback):
 
 @pytest.mark.asyncio
 async def test_counter_tick(counter, tick_callback, timeout_callback):
-    await counter.start()
-
+    counter.start()
     await asyncio.sleep(0.4)
-
     assert counter.running
     tick_callback.assert_called()
     timeout_callback.assert_called_once()

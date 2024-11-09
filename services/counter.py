@@ -23,11 +23,11 @@ class Counter:
 
     async def count_up(self):
         self.count += self.tick_time
-        self.tick_callback(self.count)
+        await self.tick_callback(self.count)
         if self.count >= self.timeout:
             await self.timeout_func()
 
-    async def start(self):
+    def start(self):
         self.running = True
         self.scheduler.add_job(self.count_up, "interval", seconds=self.tick_time)
         self.scheduler.start()
