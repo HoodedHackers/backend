@@ -9,6 +9,7 @@ from .mov_cards import TOTAL_MOV
 from .player import Player
 from .board import Color
 from .figure_search import Figure, CandidateShape
+from unittest.mock import MagicMock, patch
 
 def test_add_player():
     g = Game(id=0, name="test game")
@@ -274,6 +275,10 @@ def test_distribute_deck():
     assert len(g.player_info[3].fig) == 16
 
 def test_ids_get_possible_figures():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+
     f = Figure(1, [(0, 0), (0, 1), (0, 2), (0, 3)])
     r = Color.RED
     fa = Figure(2, [(3, 1), (0, 1), (0, 2), (0, 3)])
@@ -283,4 +288,9 @@ def test_ids_get_possible_figures():
     a = CandidateShape(f, (0, 0), r)
     b = CandidateShape(fa, (0, 1), fav)
     c = CandidateShape(fb, (0, 2), fcb)
-    
+    g.get_possible_figures = MagicMock(return_value=[a, b, c])
+
+    g.player_info[1].hand_fig = [1, 2, 3]
+
+    result = g.ids_get_possible_figures(1)
+    assert result == [1, 2, 3]

@@ -319,16 +319,6 @@ class Game(Base):
                     fig=aux_fig,
                     mov_parcial=self.player_info[player_id].mov_parcial,
                 )
-            """
-            new_player_info = self.player_info[player_id].copy()
-            for _ in range(count):
-                if not new_player_info.fig:
-                    break
-                id = random.choice(new_player_info.fig)
-                new_player_info.fig.remove(id)
-                new_player_info.hand_fig.append(id)
-            self.player_info[player_id] = new_player_info
-            """
             return self.player_info[player_id].hand_fig
         else:
             return self.player_info[player_id].hand_fig
