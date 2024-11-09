@@ -358,8 +358,8 @@ async def start_game(
             player.id,
         )
     games_repo.save(selec_game)
-    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await broadcast_players_and_cards(manager, id_game, selec_game)
+    manager_card_fig = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await broadcast_players_and_cards(manager_card_fig, id_game, selec_game)
     await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
         {
             "game_id": id_game,
@@ -367,6 +367,13 @@ async def start_game(
         },
         id_game,
     )
+
+    manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    await manager_board.broadcast(
+        board_status_message(selec_game),
+        id_game,
+    )
+
     return {"status": "success!"}
 
 
