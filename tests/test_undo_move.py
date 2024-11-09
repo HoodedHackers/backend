@@ -188,8 +188,6 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                         },
                     )
 
-                    print(websocket.receive_json()["action"])
-
                     assert status.status_code == 200
                     assert websocket.receive_json() == {
                         "action": "recover_card",
