@@ -588,7 +588,7 @@ async def select_movement_card(
 
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
-    
+
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
 
@@ -842,6 +842,10 @@ class MovePlayer(BaseModel):
     index_hand: int
 
 
+class PlayResponseSingle(BaseModel):
+    card_mov: List[int]  # hand_mov - mov_parcial
+
+
 @app.post("/api/game/{game_id}/play_card")
 async def play_card_mov(
     req: MovePlayer,
@@ -927,16 +931,8 @@ async def play_card_mov(
         },
         game.id,
     )
-    await manager_card_mov.single_send(
-        {
-            "action": "use_card_single",
-            "card_mov": cards_left,  # hand_mov - mov_parcial
-            "player_id": player.id,
-        },
-        game.id,
-        player.id,
-    )
-    return {"status": "success!"}
+
+    return PlayResponseSingle(card_mov=cards_left)
 
 
 class UndoMoveRequest(BaseModel):

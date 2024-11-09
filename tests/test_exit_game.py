@@ -136,7 +136,10 @@ class TestGameExits(unittest.TestCase):
                     self.assertEqual(rsp.status_code, 200)
                     message = ws.receive_json()
                     self.assertIn("players", message)
-                    assert message["players"] == [{'player_id': 3, 'player_name': 'Lou^2'}, {'player_id': 2, 'player_name': 'Lou'}]
+                    assert message["players"] == [
+                        {"player_id": 3, "player_name": "Lou^2"},
+                        {"player_id": 2, "player_name": "Lou"},
+                    ]
                 finally:
                     ws.close()
 
@@ -148,7 +151,7 @@ class TestGameExits(unittest.TestCase):
             self.game.add_player(self.players[1])
             self.game.started = True
             self.games_repo.save(self.game)
-            
+
             with self.client.websocket_connect(
                 f"/ws/lobby/{self.game.id}?player_id={self.players[1].id}"
             ) as ws:
