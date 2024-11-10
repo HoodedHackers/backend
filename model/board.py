@@ -1,5 +1,5 @@
+import copy
 import itertools
-import copy 
 from enum import Enum
 from random import shuffle
 
@@ -60,5 +60,3 @@ class Board(TypeDecorator):
                 print(color_map[board[j]] + "■", end=" ")
             print(reset_color)
         print()
-
-    

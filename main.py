@@ -541,7 +541,7 @@ async def advance_game_turn(
     advance_request: AdvanceTurnRequest,
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
-    history_repo: HistoryRepository = Depends(get_history_repo)
+    history_repo: HistoryRepository = Depends(get_history_repo),
 ):
     player = player_repo.get_by_identifier(advance_request.identifier)
 
@@ -555,22 +555,27 @@ async def advance_game_turn(
         raise HTTPException(status_code=404, detail="Player is not in game")
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
-    
+
     try:
         game.advance_turn()
     except PreconditionsNotMet:
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
-    
-    cards_left = []
+
     for _ in range(len(game.player_info[player.id].mov_parcial)):
         module_undo_move(game, player, history_repo, game_repo)
     assert game.get_player_mov_parcial(player.id) == []
 
     game.deal_card_mov(player.id)
     handMov = game.get_player_hand_movs(player.id)
-    
-    cards = game.add_random_card(player.id)
+    game.add_random_card(player.id)
+
     game_repo.save(game)
+
+    manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    await manager_board.broadcast(
+        board_status_message(game),
+        game_id,
+    )
     await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
         {"action": "deal", "card_mov": handMov},
         game.id,
@@ -578,7 +583,7 @@ async def advance_game_turn(
     )
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game_id, game)
-    
+
     current_player = game.current_player()
     assert current_player is not None
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
@@ -1023,7 +1028,7 @@ async def play_card_mov(
         raise HTTPException(status_code=404, detail="Invalid move")
 
     game.swap_tiles(origin_x, origin_y, destination_x, destination_y)
-    
+
     history = History(
         game_id=game_id,
         player_id=player.id,
@@ -1038,7 +1043,7 @@ async def play_card_mov(
     cards_left = game.add_single_mov(player.id, req.card_mov_id)
     mov_parcial = game.get_player_mov_parcial(player.id)
     game_repo.save(game)
-    
+
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
 
@@ -1064,25 +1069,31 @@ class UndoMoveRequest(BaseModel):
     identifier: UUID = Field(UUID)
 
 
-def module_undo_move(game: Game, player: Player, history_repo: HistoryRepository, game_repo: GameRepository = Depends(get_games_repo)):
+def module_undo_move(
+    game: Game,
+    player: Player,
+    history_repo: HistoryRepository,
+    game_repo: GameRepository = Depends(get_games_repo),
+):
     last_play = history_repo.get_last(game.id)
     if not last_play:
         raise HTTPException(status_code=404, detail="No history found")
     if last_play.player_id != player.id:
         raise HTTPException(status_code=404, detail="Nothing to undo")
-    
+
     game.swap_tiles(
         last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
     )
-    
+
     # recordar que aplica sobre la mano de movimientos parciales del jugador
     cards_left = game.remove_single_mov(player.id, last_play.fig_mov_id)
-    
+
     game_repo.save(game)
-    
+
     history_repo.delete(last_play)
 
     return cards_left
+
 
 @app.post("/api/game/{game_id}/undo")
 async def undo_move(

@@ -183,7 +183,6 @@ class TestPlayCard(unittest.TestCase):
                     assert rsp["game_id"] == self.game.id
                     assert rsp["board"] == board
 
-
     def test_ws_hand_play(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
