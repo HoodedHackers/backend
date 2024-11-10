@@ -995,9 +995,12 @@ async def get_history(
 async def chat(websocket: WebSocket, game_id: int, player_id: int):
     """
     Este WS se encarga de enviar mensajes de chat a los jugadores conectados.
-    Retorna mensajes de la siguiente forma:
+    Se le debe enviar un mensaje de la siguiente forma:
         {
-            "player_name": str,
+            "message": str
+        }
+    Y el websocket retorna mensajes de la siguiente forma:
+        {
             "message": str
         }
     """
