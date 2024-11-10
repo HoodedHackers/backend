@@ -11,7 +11,6 @@ from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-import services.counter
 from database import Database
 from model import (BOARD_MAX_SIDE, BOARD_MIN_SIDE, TOTAL_FIG_CARDS,
                    TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, History, MoveCards,
@@ -19,6 +18,7 @@ from model import (BOARD_MAX_SIDE, BOARD_MIN_SIDE, TOTAL_FIG_CARDS,
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 from services import Managers, ManagerTypes
+from services.counter import Counter, CounterManager
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -200,10 +200,24 @@ async def start_timer():
 
 
 @app.websocket("/ws/timer")
-async def timer_websocket(websocket: WebSocket):
-    timer = services.counter.Counter()
+async def timer_websocket(websocket: WebSocket, game_id: int, player_id: int):
+    manager = Managers.get_manager(ManagerTypes.GAME_CLOCK)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            _ = await websocket.receive_json()
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
 
-    await timer.listen(websocket)
+
+async def notify_tick(game_id: int, time: float):
+    manager = Managers.get_manager(ManagerTypes.GAME_CLOCK)
+    await manager.broadcast(
+        {
+            "time": time,
+        },
+        game_id,
+    )
 
 
 @app.websocket("/ws/api/lobby")
@@ -364,6 +378,19 @@ async def start_game(
             player.id,
         )
     games_repo.save(selec_game)
+
+    async def notify(time):
+        await notify_tick(selec_game.id, time)
+
+    async def force_advance():
+        await advance_turn_internal(selec_game)
+
+    game_timer = Counter(
+        tick_callback=(notify),
+        timeout_callback=(force_advance),
+    )
+    game_timer.start()
+    CounterManager.add_counter(selec_game.id, game_timer)
     manager_card_fig = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager_card_fig, id_game, selec_game)
     await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
@@ -469,6 +496,7 @@ async def exit_game(
         games_repo.delete(game)
         await leave_manager.broadcast("el host ha abandonado la partida", game.id)
         await Managers.disconnect_all(game.id)
+        await CounterManager.delete_counter(game.id)
         return {"status": "success"}
 
     game.delete_player(player)
@@ -478,6 +506,7 @@ async def exit_game(
         winner = game.get_player_in_game(0)
         await leave_manager.broadcast({"response": winner.id}, game.id)
         await Managers.disconnect_all(game.id)
+        await CounterManager.delete_counter(game.id)
         games_repo.delete(game)
         return {"status": "success"}
 
@@ -555,7 +584,13 @@ async def advance_game_turn(
         raise HTTPException(status_code=404, detail="Player is not in game")
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
+    await advance_turn_internal(game)
+    return {"status": "success"}
 
+
+async def advance_turn_internal(game: Game):
+    player = game.current_player()
+    assert player is not None
     try:
         game.advance_turn()
     except PreconditionsNotMet:
@@ -574,7 +609,7 @@ async def advance_game_turn(
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     await manager_board.broadcast(
         board_status_message(game),
-        game_id,
+        game.id,
     )
     await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
         {"action": "deal", "card_mov": handMov},
@@ -582,7 +617,7 @@ async def advance_game_turn(
         player.id,
     )
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await broadcast_players_and_cards(manager, game_id, game)
+    await broadcast_players_and_cards(manager, game.id, game)
 
     current_player = game.current_player()
     assert current_player is not None
@@ -595,10 +630,9 @@ async def advance_game_turn(
             "player_id": current_player.id,
             "player_name": current_player.name,
         },
-        game_id,
+        game.id,
     )
-
-    return {"status": "success"}
+    return
 
 
 @app.websocket("/ws/lobby/{game_id}/movement_cards")
