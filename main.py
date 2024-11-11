@@ -528,6 +528,9 @@ async def advance_turn_internal(game: Game):
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game.id, game)
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
+    counter = CounterManager.get_counter(game.id)
+    if counter is not None:
+        counter.reset() # Tests don't have a timer
 
     await turn_manager.broadcast(
         {

@@ -36,6 +36,9 @@ class Counter:
         await self.stop_callback()
         self.count = 0
 
+    def reset(self):
+        self.count = 0
+
     async def stop(self):
         if self.running:
             self.running = False
