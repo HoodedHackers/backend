@@ -540,6 +540,11 @@ async def block_card(
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
+    if block_request.id_player_block == player.id:
+        raise HTTPException(
+            status_code=404, detail="The player cannot block his own card"
+        )
+    
     hand_figures_other_player = game.get_player_hand_figures(
         block_request.id_player_block
     )
