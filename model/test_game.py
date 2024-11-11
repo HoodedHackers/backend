@@ -1,10 +1,13 @@
+import json
 import random
 from unittest.mock import patch
 
 from asserts import assert_equal, assert_raises
 
+from model.board import Board
+
 from .exceptions import PreconditionsNotMet
-from .game import Game, GameFull
+from .game import Game, GameFull, PlayerInfo
 from .mov_cards import TOTAL_MOV
 from .player import Player
 
@@ -242,3 +245,22 @@ def test_distribute_deck():
     assert len(g.player_info[p0.id].fig) == 16
     assert len(g.player_info[p1.id].fig) == 16
     assert len(g.player_info[3].fig) == 16
+
+
+def test_manual():
+    pi = '{"2": {"player_id": 2, "turn_position": 0, "hand_fig": [18, 19, 10], "hand_mov": [10, 5, 8], "fig": [41, 12, 32, 31, 23, 14, 35, 38, 48, 4, 42, 47, 5, 13, 1, 49, 44, 50, 8, 3, 46], "mov_parcial": [], "block_card": 19}, "1": {"player_id": 1, "turn_position": 1, "hand_fig": [11, 6, 25], "hand_mov": [16, 42, 12], "fig": [15, 16, 27, 26, 24, 33, 36, 39, 45, 28, 34, 17, 7, 2, 20, 29, 21, 43, 37, 9, 30, 40], "mov_parcial": [], "block_card": 0}}'
+    player_info = {int(id): PlayerInfo.from_dict(v) for id, v in json.loads(pi).items()}
+    board = Board().process_result_value(
+        "111333211333333333333333333333333333",
+        None,  # type: ignore
+    )
+    p0 = Player(name="Player 0", id=1)
+    p1 = Player(name="Player 1", id=2)
+    g = Game(name="idk", board=board)
+    g.add_player(p0)
+    g.add_player(p1)
+    g.player_info = player_info
+    figs = g.get_possible_figures(p1.id)
+    assert len(figs) == 1
+    figs = g.get_possible_figures(p0.id)
+    assert len(figs) == 0
