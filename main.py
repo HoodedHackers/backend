@@ -756,7 +756,7 @@ async def discard_hand_figure(
         if player_ident.card_id in hand_figures:
             hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
             game.discard_card_movement(player.id)
-            
+
             game_repo.save(game)
         await broadcast_players_and_cards(manager, game_id, game)
         return {"status": "success"}

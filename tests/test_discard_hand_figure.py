@@ -390,6 +390,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                     },
                 ]
                 """
+
     def test_discard_cards_mov(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -406,7 +407,7 @@ class TestDiscardCardFigure(unittest.TestCase):
             )
             spect_hand_mov = self.game.player_info[player1.id].hand_mov
             assert response.status_code == 200
-            assert spect_hand_mov == [2, 3]
+            assert spect_hand_mov == [3]
 
     def test_unblock(self):
         with patch("main.game_repo", self.games_repo), patch(

@@ -279,41 +279,34 @@ class Game(Base):
         return mov_hand
 
     def add_single_mov(self, player_id, card_id):
-        cards_left = self.player_info[player_id].hand_mov
-        cards_left.remove(card_id)
         aux_parcial = self.player_info[player_id].copy()
         aux_parcial.mov_parcial.append(card_id)
         self.player_info[player_id] = aux_parcial
+        cards_left = [
+            x
+            for x in self.player_info[player_id].hand_mov
+            if x not in aux_parcial.mov_parcial
+        ]
         return cards_left
 
     def remove_single_mov(self, player_id: int, card_id: int):
-        cards_left = self.player_info[player_id].hand_mov
-        cards_left.append(card_id)
         aux_parcial = self.player_info[player_id].copy()
         aux_parcial.mov_parcial.remove(card_id)
         self.player_info[player_id] = aux_parcial
+        cards_left = [
+            x
+            for x in self.player_info[player_id].hand_mov
+            if x not in aux_parcial.mov_parcial
+        ]
         return cards_left
 
     def discard_card_movement(self, player_id: int):
         list_parcial = self.player_info[player_id].mov_parcial
-        #aux_player_info = self.player_info[player_id].copy()
-        aux_hand_mov = self.player_info[player_id].hand_mov
-        aux_mov_parcial = self.player_info[player_id].mov_parcial
+        aux_player_info = self.player_info[player_id].copy()
         for card in list_parcial:
-            #aux_player_info.hand_mov.remove(card)
-            #aux_hand_mov.remove(card)
-            #aux_player_info.mov_parcial.remove(card)
-            aux_mov_parcial.remove(card)
-        #self.player_info[player_id] = aux_player_info
-        self.player_info[player_id] = PlayerInfo(
-            player_id=player_id,
-            turn_position=self.player_info[player_id].turn_position,
-            hand_fig=self.player_info[player_id].hand_fig,
-            hand_mov=aux_hand_mov,
-            fig=self.player_info[player_id].fig,
-            mov_parcial=aux_mov_parcial,
-            block_card=self.player_info[player_id].block_card,
-        )
+            aux_player_info.hand_mov.remove(card)
+            aux_player_info.mov_parcial.remove(card)
+        self.player_info[player_id] = aux_player_info
 
     def clear_mov_parcial(self, player_id: int):
         aux_player_info = self.player_info[player_id].copy()
@@ -369,11 +362,11 @@ class Game(Base):
         left_one = len(self.player_info[player_id].hand_fig) - 1
         card_block = self.player_info[player_id].block_card
         if card in self.player_info[player_id].hand_fig:
-            #new_player_info = self.player_info[player_id].copy()
+            # new_player_info = self.player_info[player_id].copy()
             new_player_info = self.player_info[player_id].hand_fig
             new_player_info.remove(card)
             if card_block and (left_one == 0):
-                #new_player_info.block_card = 0
+                # new_player_info.block_card = 0
                 self.player_info[player_id] = PlayerInfo(
                     player_id=player_id,
                     turn_position=self.player_info[player_id].turn_position,
