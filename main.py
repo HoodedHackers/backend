@@ -587,6 +587,12 @@ async def advance_game_turn(
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
     await advance_turn_internal(game)
+
+    manager_clock = Managers.get_manager(ManagerTypes.GAME_CLOCK)
+    counter = CounterManager.get_counter(game.id)
+    if counter:
+        await counter.reset()
+
     return {"status": "success"}
 
 
