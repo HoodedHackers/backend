@@ -18,7 +18,7 @@ from services import Managers, ManagerTypes
 client = TestClient(app)
 
 
-class TestGameExits(unittest.TestCase):
+class TestDiscardCardFigure(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
         self.dbs = Database().session()
@@ -91,14 +91,44 @@ class TestGameExits(unittest.TestCase):
                 rsp2 = websocket1.receive_json()
                 print(rsp1)
                 assert rsp1["players"] == [
-                    {"player_id": 2, "cards": [1, 2, 3]},
-                    {"player_id": 3, "cards": [2, 3, 4]},
-                    {"player_id": 4, "cards": []},
+                    {
+                        "player_id": 2,
+                        "cards": [1, 2, 3],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 3,
+                        "cards": [2, 3, 4],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 4,
+                        "cards": [],
+                        "block_card": 0,
+                        "invisible_block": -1,
+                    },
                 ]
                 assert rsp2["players"] == [
-                    {"player_id": 2, "cards": [1, 2, 3]},
-                    {"player_id": 3, "cards": [2, 3, 4]},
-                    {"player_id": 4, "cards": []},
+                    {
+                        "player_id": 2,
+                        "cards": [1, 2, 3],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 3,
+                        "cards": [2, 3, 4],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 4,
+                        "cards": [],
+                        "block_card": 0,
+                        "invisible_block": -1,
+                    },
                 ]
 
     def test_discard_cards_figs(self):
@@ -137,14 +167,44 @@ class TestGameExits(unittest.TestCase):
                 rsp2 = websocket1.receive_json()
                 print(rsp1)
                 assert rsp1["players"] == [
-                    {"player_id": 2, "cards": [1, 2, 3]},
-                    {"player_id": 3, "cards": [2, 4]},
-                    {"player_id": 4, "cards": [1]},
+                    {
+                        "player_id": 2,
+                        "cards": [1, 2, 3],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 3,
+                        "cards": [2, 4],
+                        "block_card": 0,
+                        "invisible_block": 1,
+                    },
+                    {
+                        "player_id": 4,
+                        "cards": [1],
+                        "block_card": 0,
+                        "invisible_block": 0,
+                    },
                 ]
                 assert rsp2["players"] == [
-                    {"player_id": 2, "cards": [1, 2, 3]},
-                    {"player_id": 3, "cards": [2, 4]},
-                    {"player_id": 4, "cards": [1]},
+                    {
+                        "player_id": 2,
+                        "cards": [1, 2, 3],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 3,
+                        "cards": [2, 4],
+                        "block_card": 0,
+                        "invisible_block": 1,
+                    },
+                    {
+                        "player_id": 4,
+                        "cards": [1],
+                        "block_card": 0,
+                        "invisible_block": 0,
+                    },
                 ]
 
     def test_player_not_found(self):
@@ -228,7 +288,14 @@ class TestGameExits(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 websocket.send_json({"receive": "cards"})
                 rsp = websocket.receive_json()
-                assert rsp["players"] == [{"player_id": 2, "cards": [2, 3]}]
+                assert rsp["players"] == [
+                    {
+                        "player_id": 2,
+                        "cards": [2, 3],
+                        "block_card": 0,
+                        "invisible_block": 1,
+                    }
+                ]
 
     def test_card_not_in_hand(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -301,9 +368,24 @@ class TestGameExits(unittest.TestCase):
                 print(rsp1)
                 assert rsp1 == {"error": "Invalid figure"}
                 assert rsp2["players"] == [
-                    {"player_id": 2, "cards": [1, 2, 3]},
-                    {"player_id": 3, "cards": [2, 3, 4]},
-                    {"player_id": 4, "cards": [1]},
+                    {
+                        "player_id": 2,
+                        "cards": [1, 2, 3],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 3,
+                        "cards": [2, 3, 4],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                    {
+                        "player_id": 4,
+                        "cards": [1],
+                        "block_card": 0,
+                        "invisible_block": 0,
+                    },
                 ]
 
     def test_discard_cards_mov(self):
@@ -323,3 +405,58 @@ class TestGameExits(unittest.TestCase):
             spect_hand_mov = self.game.player_info[player1.id].hand_mov
             assert response.status_code == 200
             assert spect_hand_mov == [3]
+
+    def test_unblock(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            player1 = self.players[0]
+            player2 = self.players[1]
+
+            self.game.add_player(player1)
+            self.game.add_player(player2)
+
+            self.games_repo.save(self.game)
+            with client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player1.id}"
+            ) as websocket1, client.websocket_connect(
+                f"/ws/lobby/1/figs?player_id={player2.id}"
+            ) as websocket2:
+                self.game.distribute_deck()
+                elems = self.game.add_random_card(player1.id)
+                self.game.block_card(player1.id, elems[0])
+                self.game.discard_card_hand_figures(player1.id, elems[1])
+                self.game.discard_card_hand_figures(player1.id, elems[2])
+
+                self.games_repo.save(self.game)
+
+                self.game.player_info[player2.id].hand_fig = [2, 3, 4]
+                self.game.ids_get_possible_figures = MagicMock(
+                    return_value=[1, 2, elems[0]]
+                )
+
+                response = self.client.post(
+                    "/api/lobby/in-course/1/discard_figs",
+                    json={
+                        "player_identifier": str(player1.identifier),
+                        "card_id": elems[0],
+                    },
+                )
+                print(response.json)
+                assert response.status_code == 200
+
+                assert len(self.game.get_player_hand_figures(player1.id)) == 0
+                assert websocket1.receive_json()["players"] == [
+                    {
+                        "player_id": player1.id,
+                        "cards": self.game.get_player_hand_figures(player1.id),
+                        "block_card": 0,
+                        "invisible_block": -1,
+                    },
+                    {
+                        "player_id": 3,
+                        "cards": [2, 3, 4],
+                        "block_card": 0,
+                        "invisible_block": 2,
+                    },
+                ]

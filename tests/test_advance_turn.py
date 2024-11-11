@@ -184,3 +184,125 @@ class TestAdvanceTurn(unittest.TestCase):
                     "action": "deal",
                     "card_mov": self.game.player_info[self.host.id].hand_mov,
                 }
+
+    def test_block_invisible(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}/figs?player_id={self.host.id}"
+            ) as ws:
+                self.game.started = True
+                new_cards = [1, 2]
+                discard = []
+                self.game.add_hand_mov(new_cards, discard, self.host.id)
+                self.game.distribute_deck()
+                elems = self.game.add_random_card(self.host.id)
+                self.game.block_card(self.host.id, elems[0])
+                self.game.discard_card_hand_figures(self.host.id, elems[1])
+                self.games_repo.save(self.game)
+
+                response = self.client.post(
+                    f"/api/lobby/{self.game.id}/advance",
+                    json={"identifier": str(self.host.identifier)},
+                )
+                assert response.status_code == 200
+
+                assert len(self.game.all_movs) == 48
+                assert len(self.game.get_player_hand_figures(self.host.id)) == 2
+                assert ws.receive_json()["players"] == [
+                    {
+                        "player_id": self.host.id,
+                        "cards": self.game.get_player_hand_figures(self.host.id),
+                        "block_card": elems[0],
+                        "invisible_block": 1,
+                    }
+                ]
+
+    def test_block_visible(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}/figs?player_id={self.host.id}"
+            ) as ws:
+                self.game.started = True
+                new_cards = [1, 2]
+                discard = []
+                self.game.add_hand_mov(new_cards, discard, self.host.id)
+                self.game.distribute_deck()
+                elems = self.game.add_random_card(self.host.id)
+                self.game.block_card(self.host.id, elems[0])
+                self.game.discard_card_hand_figures(self.host.id, elems[1])
+                self.game.discard_card_hand_figures(self.host.id, elems[2])
+                self.games_repo.save(self.game)
+
+                response = self.client.post(
+                    f"/api/lobby/{self.game.id}/advance",
+                    json={"identifier": str(self.host.identifier)},
+                )
+                assert response.status_code == 200
+
+                assert len(self.game.all_movs) == 48
+                assert len(self.game.get_player_hand_figures(self.host.id)) == 1
+                assert ws.receive_json()["players"] == [
+                    {
+                        "player_id": self.host.id,
+                        "cards": self.game.get_player_hand_figures(self.host.id),
+                        "block_card": elems[0],
+                        "invisible_block": 0,
+                    }
+                ]
+
+    def test_undo_movs_board(self):
+        with patch("main.game_repo", self.games_repo), patch(
+            "main.player_repo", self.player_repo
+        ):
+            other_player = self.players[0]
+            self.game.add_player(other_player)
+            self.games_repo.save(self.game)
+            with self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}/board?player_id={self.host.id}"
+            ) as ws_host, self.client.websocket_connect(
+                f"/ws/lobby/{self.game.id}/board?player_id={self.players[0].id}"
+            ) as ws_other:
+                self.game.started = True
+                new_cards = [3, 10, 17]
+                discard = []
+                self.game.add_hand_mov(new_cards, discard, self.host.id)
+                self.game.distribute_deck()
+                elems = self.game.add_random_card(self.host.id)
+
+                self.games_repo.save(self.game)
+
+                board_before = [tile.value for tile in self.game.board]
+
+                origin = 0
+                dest = 1
+                assert self.game.started == True
+                for i in range(len(new_cards)):
+                    response = self.client.post(
+                        f"/api/game/{self.game.id}/play_card",
+                        json={
+                            "identifier": str(self.host.identifier),
+                            "origin_tile": origin,
+                            "dest_tile": dest,
+                            "card_mov_id": new_cards[i],
+                            "index_hand": 1,
+                        },
+                    )
+                    assert response.status_code == 200
+                    origin = origin + 2
+                    dest = dest + 2
+                    ws_host.receive_json()
+                    ws_other.receive_json()
+
+                response = self.client.post(
+                    f"/api/lobby/{self.game.id}/advance",
+                    json={"identifier": str(self.host.identifier)},
+                )
+
+                assert response.status_code == 200
+
+                board_after = [tile.value for tile in self.game.board]
+                assert board_after == board_before

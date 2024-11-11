@@ -214,8 +214,18 @@ class TestGameExits(unittest.TestCase):
                     self.assertIn("players", rsp1)
                     self.assertIsInstance(rsp1["players"], list)
                     assert rsp1["players"] == [
-                        {"player_id": 2, "cards": [1]},
-                        {"player_id": 3, "cards": [2, 3, 4]},
+                        {
+                            "player_id": 2,
+                            "cards": [1],
+                            "block_card": 0,
+                            "invisible_block": 0,
+                        },
+                        {
+                            "player_id": 3,
+                            "cards": [2, 3, 4],
+                            "block_card": 0,
+                            "invisible_block": 2,
+                        },
                     ]
 
                     rsp2 = websocket2.receive_json()

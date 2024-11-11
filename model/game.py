@@ -41,6 +41,7 @@ class PlayerInfo:
     hand_mov: List[int]
     fig: List[int]
     mov_parcial: List[int]
+    block_card: int
 
     def to_dict(self):
         return {
@@ -50,6 +51,7 @@ class PlayerInfo:
             "hand_mov": self.hand_mov,
             "fig": self.fig,
             "mov_parcial": self.mov_parcial,
+            "block_card": self.block_card,
         }
 
     @staticmethod
@@ -61,6 +63,7 @@ class PlayerInfo:
             hand_mov=data["hand_mov"],
             fig=data["fig"],
             mov_parcial=data["mov_parcial"],
+            block_card=data["block_card"],
         )
 
     def copy(self):
@@ -123,6 +126,7 @@ class Game(Base):
                     hand_mov=[],
                     fig=[],
                     mov_parcial=[],
+                    block_card=0,
                 )
 
     def __eq__(self, other):
@@ -180,6 +184,7 @@ class Game(Base):
             hand_mov=[],
             fig=[],
             mov_parcial=[],
+            block_card=0,
         )
 
     def count_players(self) -> int:
@@ -246,6 +251,9 @@ class Game(Base):
     def get_player_figures(self, player_id: int) -> List[int]:
         return self.player_info[player_id].fig
 
+    def get_card_block(self, other_player: int):
+        return self.player_info[other_player].block_card
+
     def add_hand_mov(self, new_cards, discard, id):
         self.player_info[id] = PlayerInfo(
             player_id=id,
@@ -254,6 +262,7 @@ class Game(Base):
             hand_mov=new_cards,
             fig=self.player_info[id].fig,
             mov_parcial=self.player_info[id].mov_parcial,
+            block_card=self.player_info[id].block_card,
         )
         self.all_movs = [x for x in self.all_movs if x not in discard]
 
@@ -293,12 +302,19 @@ class Game(Base):
             aux_player_info.mov_parcial.remove(card)
         self.player_info[player_id] = aux_player_info
 
+    def clear_mov_parcial(self, player_id: int):
+        aux_player_info = self.player_info[player_id].copy()
+        aux_player_info.mov_parcial = []
+        self.player_info[player_id] = aux_player_info
+
     # falta verificar si el hand_fig es vacio o si fig es vacio (si es ambos en ese caso gana)
     def add_random_card(self, player_id: int):
         if len(self.player_info[player_id].hand_fig) == TOTAL_HAND_FIG:
             return self.player_info[player_id].hand_fig
 
-        if len(self.player_info[player_id].fig) != 0:
+        if len(self.player_info[player_id].fig) and (
+            not self.player_info[player_id].block_card
+        ):
             cards_hand_fig = self.player_info[player_id].hand_fig
             needs_cards = len(cards_hand_fig)
             count = TOTAL_HAND_FIG - needs_cards
@@ -318,6 +334,7 @@ class Game(Base):
                     hand_mov=self.player_info[player_id].hand_mov,
                     fig=aux_fig,
                     mov_parcial=self.player_info[player_id].mov_parcial,
+                    block_card=self.player_info[player_id].block_card,
                 )
             return self.player_info[player_id].hand_fig
         else:
@@ -330,16 +347,19 @@ class Game(Base):
         origin_color = self.board[origin_index]
         dest_color = self.board[dest_index]
 
-        self.board[origin_index] = dest_color
-        self.board[dest_index] = origin_color
+        aux = self.board.copy()
+        aux[origin_index] = dest_color
+        aux[dest_index] = origin_color
+        self.board = aux
 
     def discard_card_hand_figures(self, player_id: int, card: int):
-        if (
-            self.player_info[player_id].hand_fig.count(card) != []
-            and card in self.player_info[player_id].hand_fig
-        ):
+        left_one = len(self.player_info[player_id].hand_fig) - 1
+        card_block = self.player_info[player_id].block_card
+        if card in self.player_info[player_id].hand_fig:
             new_player_info = self.player_info[player_id].copy()
             new_player_info.hand_fig.remove(card)
+            if card_block and (left_one == 0):
+                new_player_info.block_card = 0
             self.player_info[player_id] = new_player_info
             hand_fig = self.player_info[player_id].hand_fig
         else:
@@ -354,8 +374,14 @@ class Game(Base):
             else:
                 id_coord = fig_id % TOTAL_FIG_CARDS
             new_figure = Figure(fig_id, all_coord[id_coord])
+            print("NEW_FIGURES: ", new_figure)
             player_figures.append(new_figure)
         return find_figures(self.board, player_figures)
+
+    def block_card(self, other_player: int, card_block: int):
+        new_player_info = self.player_info[other_player].copy()
+        new_player_info.block_card = card_block
+        self.player_info[other_player] = new_player_info
 
     def distribute_deck(self):
         players = len(self.players)

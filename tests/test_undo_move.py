@@ -124,8 +124,10 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
                             "index_hand": 1,
                         },
                     )
-                    assert status.status_code == 200
 
+                    assert status.status_code == 200
+                    websocket.receive_json()
+                    websocket2.receive_json()
                     status = self.client.post(
                         f"/api/game/{self.game.id}/undo",
                         json={
@@ -135,7 +137,9 @@ class TestPlayCardAndUndoMove(unittest.TestCase):
 
                     g = self.games_repo.get(self.game.id)
                     assert g is not None
+
                     db_board = [tile.value for tile in g.board]
+
                     self.assertEqual(board_before, db_board)
 
                     assert status.status_code == 200

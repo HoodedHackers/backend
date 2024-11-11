@@ -1,3 +1,4 @@
+import copy
 import itertools
 from enum import Enum
 from random import shuffle
@@ -13,6 +14,9 @@ class Color(Enum):
     GREEN = 2
     BLUE = 3
     YELLOW = 4
+
+    def copy(self):
+        return copy.deepcopy(self)
 
 
 class Board(TypeDecorator):

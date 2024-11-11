@@ -314,9 +314,15 @@ async def join_game(
 
 
 def get_players_and_cards(game: Game):
-    # print(game.get_player_hand_figures(1))
+    # Si no hay carta bloqueada es 0, si hay es el id en cuestion
+    # len -1 = si es distinto de 0, es invisible, si no, es visible
     return [
-        {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
+        {
+            "player_id": p.id,
+            "cards": game.get_player_hand_figures(p.id),
+            "block_card": game.get_card_block(p.id),
+            "invisible_block": (len(game.get_player_hand_figures(p.id)) - 1),
+        }
         for p in game.players
     ]
 
@@ -387,8 +393,8 @@ async def start_game(
     )
     game_timer.start()
     CounterManager.add_counter(selec_game.id, game_timer)
-    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await broadcast_players_and_cards(manager, id_game, selec_game)
+    manager_card_fig = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    await broadcast_players_and_cards(manager_card_fig, id_game, selec_game)
     await Managers.get_manager(ManagerTypes.GAME_STATUS).broadcast(
         {
             "game_id": id_game,
@@ -509,6 +515,53 @@ async def exit_game(
     return {"status": "success"}
 
 
+class BlockCardRequest(BaseModel):
+    identifier: UUID = Field(UUID)
+    id_player_block: int
+    id_card_block: int
+
+
+@app.post("/api/lobby/{game_id}/block")
+async def block_card(
+    game_id: int,
+    block_request: BlockCardRequest,
+    player_repo: PlayerRepository = Depends(get_player_repo),
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game dont found!")
+    player = player_repo.get_by_identifier(block_request.identifier)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player dont found")
+    if player not in game.players:
+        raise HTTPException(status_code=404, detail="Player dont found in game!")
+
+    hand_figures_other_player = game.get_player_hand_figures(
+        block_request.id_player_block
+    )
+    if block_request.id_card_block not in hand_figures_other_player:
+        raise HTTPException(
+            status_code=404, detail="Wrong card, dont found in hand of player!"
+        )
+    if game.get_card_block(block_request.id_player_block):
+        raise HTTPException(
+            status_code=404, detail="The player has a card that is already blocked"
+        )
+
+    figures = game.ids_get_possible_figures(block_request.id_player_block)
+    manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+
+    if block_request.id_card_block not in figures:
+        raise HTTPException(status_code=404, detail="Invalid figure")
+
+    game.block_card(block_request.id_player_block, block_request.id_card_block)
+    game.discard_card_movement(player.id)
+    game_repo.save(game)
+    await broadcast_players_and_cards(manager, game_id, game)
+    return {"status": "success!"}
+
+
 class AdvanceTurnRequest(BaseModel):
     identifier: UUID = Field(UUID)
 
@@ -519,11 +572,14 @@ async def advance_game_turn(
     advance_request: AdvanceTurnRequest,
     player_repo: PlayerRepository = Depends(get_player_repo),
     game_repo: GameRepository = Depends(get_games_repo),
+    history_repo: HistoryRepository = Depends(get_history_repo),
 ):
     player = player_repo.get_by_identifier(advance_request.identifier)
+
     if player is None:
         raise HTTPException(status_code=404, detail="Player not found")
     game = game_repo.get(game_id)
+
     if game is None:
         raise HTTPException(status_code=404, detail="Game not found")
     if player not in game.players:
@@ -541,21 +597,32 @@ async def advance_turn_internal(game: Game):
         game.advance_turn()
     except PreconditionsNotMet:
         raise HTTPException(status_code=401, detail="Game hasn't started yet")
-    current_player = game.current_player()
-    assert current_player is not None
-    for player in game.players:
-        game.deal_card_mov(player.id)
-        game_repo.save(game)
-        handMov = game.get_player_hand_movs(player.id)
-        await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
-            {"action": "deal", "card_mov": handMov},
-            game.id,
-            player.id,
-        )
-    cards = game.add_random_card(player.id)
+
+    for _ in range(len(game.player_info[player.id].mov_parcial)):
+        module_undo_move(game, player, history_repo, game_repo)
+    assert game.get_player_mov_parcial(player.id) == []
+
+    game.deal_card_mov(player.id)
+    handMov = game.get_player_hand_movs(player.id)
+    game.add_random_card(player.id)
+
     game_repo.save(game)
+
+    manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    await manager_board.broadcast(
+        board_status_message(game),
+        game.id,
+    )
+    await Managers.get_manager(ManagerTypes.CARDS_MOV).single_send(
+        {"action": "deal", "card_mov": handMov},
+        game.id,
+        player.id,
+    )
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     await broadcast_players_and_cards(manager, game.id, game)
+
+    current_player = game.current_player()
+    assert current_player is not None
     turn_manager = Managers.get_manager(ManagerTypes.TURNS)
 
     await turn_manager.broadcast(
@@ -654,71 +721,6 @@ async def select_movement_card(
     return "success!"
 
 
-def board_status_message(game: Game):
-    board = [tile.value for tile in game.board]
-    possible_figures = [
-        {
-            "player_id": player.id,
-            "moves": [
-                {
-                    "tiles": move.true_positions_canonical(),
-                    "fig_id": move.figure_id(),
-                }
-                for move in game.get_possible_figures(player.id)
-            ],
-        }
-        for player in game.players
-    ]
-    return {
-        "game_id": game.id,
-        "board": board,
-        "possible_figures": possible_figures,
-    }
-
-
-@app.websocket("/ws/lobby/{game_id}/board")
-async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int):
-    """
-    Este WS se encarga de notificar el estado del tablero a los jugadores conectados.
-    Retorna mensajes de la siguiente forma:
-        {
-            "game_id": int,
-            "board": [int],
-            "possible_moves": [
-                {
-                    "player_id": int,
-                    "moves": [
-                        {
-                            "tiles": [int],
-                            "fig_id": int
-                        }
-                    ]
-                }
-            ]
-        }
-    Tambien se puede recibir pedidos del estado del tablero usando el siguiente mensaje:
-        {
-            "request": "status"
-        }
-    """
-    manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
-    await manager.connect(websocket, game_id, player_id)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            request = data.get("request")
-            if request is None or request != "status":
-                await websocket.send_json({"error": "invalid request"})
-                continue
-            game = game_repo.get(game_id)
-            if game is None:
-                await websocket.send_json({"error": "invalid game id"})
-                continue
-            await websocket.send_json(board_status_message(game))
-    except WebSocketDisconnect:
-        manager.disconnect(game_id, player_id)
-
-
 class InHandFigure(BaseModel):
     player_identifier: UUID = Field(UUID)
     card_id: int
@@ -751,14 +753,11 @@ async def discard_hand_figure(
     if player_ident.card_id not in figures:
         await manager.broadcast({"error": "Invalid figure"}, game_id)
     else:
-        hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
-        game.discard_card_movement(player.id)
-        players = [
-            {"player_id": p.id, "cards": game.get_player_hand_figures(p.id)}
-            for p in game.players
-        ]
-        await manager.broadcast({"players": players}, game_id)
-        game_repo.save(game)
+        if player_ident.card_id in game.get_player_hand_figures(player.id):
+            hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+            game.discard_card_movement(player.id)
+            game_repo.save(game)
+        await broadcast_players_and_cards(manager, game_id, game)
         return {"status": "success"}
 
 
@@ -878,6 +877,129 @@ async def lobby_notify_status(websocket: WebSocket, game_id: int, player_id: int
         manager.disconnect(game_id, player_id)
 
 
+@app.websocket("/ws/lobby/{game_id}/select")
+async def select_card_mov(
+    websocket: WebSocket,
+    game_id: int,
+    player_id: int,
+):
+    """
+    Este ws se encarga de recibir la selección de cartas de un jugador y notificar a los demás jugadores de la partida.
+
+    Se espera: {card_id: 'int', player_identifier: 'str', index: 'int'}
+
+    Se retorna: {action: 'select', player_id: 'int', card_id: 'int', index: 'int', len: 'int'}
+    """
+    game = game_repo.get(game_id)
+    if game is None:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    player = player_repo.get(player_id)
+    if player is None:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    manager = Managers.get_manager(ManagerTypes.CARDS_MOV)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            index = data.get("index")
+
+            current_card = data.get("card_id")
+
+            current_player_ident = data.get("player_identifier")
+            current_player = player_repo.get_by_identifier(UUID(current_player_ident))
+            if current_player is None:
+                await websocket.send_json({"error": "Player id is missing"})
+                continue
+            if current_player not in game.players:
+                await websocket.send_json({"error": "Player not in game"})
+                continue
+
+            hand = game.get_player_hand_movs(current_player.id)
+            if current_card not in hand:
+                await websocket.send_json({"error": "Card not in hand"})
+                continue
+
+            await manager.broadcast(
+                {
+                    "action": "select",
+                    "player_id": current_player.id,
+                    "card_id": current_card,
+                    "index": index,
+                    "len": len(hand),
+                },
+                game_id,
+            )
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
+def board_status_message(game: Game):
+    board = [tile.value for tile in game.board]
+    possible_figures = [
+        {
+            "player_id": player.id,
+            "moves": [
+                {
+                    "tiles": move.true_positions_canonical(),
+                    "fig_id": move.figure_id(),
+                }
+                for move in game.get_possible_figures(player.id)
+            ],
+        }
+        for player in game.players
+    ]
+    return {
+        "game_id": game.id,
+        "board": board,
+        "possible_figures": possible_figures,
+    }
+
+
+@app.websocket("/ws/lobby/{game_id}/board")
+async def lobby_notify_board(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de notificar el estado del tablero a los jugadores conectados.
+    Retorna mensajes de la siguiente forma:
+        {
+            "game_id": int,
+            "board": [int],
+            "possible_moves": [
+                {
+                    "player_id": int,
+                    "moves": [
+                        {
+                            "tiles": [int],
+                            "fig_id": int
+                        }
+                    ]
+                }
+            ]
+        }
+    Tambien se puede recibir pedidos del estado del tablero usando el siguiente mensaje:
+        {
+            "request": "status"
+        }
+    """
+    manager = Managers.get_manager(ManagerTypes.BOARD_STATUS)
+    await manager.connect(websocket, game_id, player_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            request = data.get("request")
+            if request is None or request != "status":
+                await websocket.send_json({"error": "invalid request"})
+                continue
+            game = game_repo.get(game_id)
+            if game is None:
+                await websocket.send_json({"error": "invalid game id"})
+                continue
+            await websocket.send_json(board_status_message(game))
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
+
+
 class MovePlayer(BaseModel):
     identifier: UUID
     origin_tile: int
@@ -939,7 +1061,6 @@ async def play_card_mov(
     tuples_valid = card.sum_dist(tuple_origin)
 
     if tuple_destination not in tuples_valid:
-        print("Invalid move")
         raise HTTPException(status_code=404, detail="Invalid move")
 
     game.swap_tiles(origin_x, origin_y, destination_x, destination_y)
@@ -958,6 +1079,7 @@ async def play_card_mov(
     cards_left = game.add_single_mov(player.id, req.card_mov_id)
     mov_parcial = game.get_player_mov_parcial(player.id)
     game_repo.save(game)
+
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
 
@@ -981,6 +1103,32 @@ async def play_card_mov(
 
 class UndoMoveRequest(BaseModel):
     identifier: UUID = Field(UUID)
+
+
+def module_undo_move(
+    game: Game,
+    player: Player,
+    history_repo: HistoryRepository,
+    game_repo: GameRepository = Depends(get_games_repo),
+):
+    last_play = history_repo.get_last(game.id)
+    if not last_play:
+        raise HTTPException(status_code=404, detail="No history found")
+    if last_play.player_id != player.id:
+        raise HTTPException(status_code=404, detail="Nothing to undo")
+
+    game.swap_tiles(
+        last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
+    )
+
+    # recordar que aplica sobre la mano de movimientos parciales del jugador
+    cards_left = game.remove_single_mov(player.id, last_play.fig_mov_id)
+
+    game_repo.save(game)
+
+    history_repo.delete(last_play)
+
+    return cards_left
 
 
 @app.post("/api/game/{game_id}/undo")
@@ -1014,20 +1162,7 @@ async def undo_move(
     if player != game.current_player():
         raise HTTPException(status_code=401, detail="It's not your turn")
 
-    last_play = history_repo.get_last(game_id)
-    if not last_play:
-        raise HTTPException(status_code=404, detail="No history found")
-    if last_play.player_id != player.id:
-        raise HTTPException(status_code=404, detail="Nothing to undo")
-
-    game.swap_tiles(
-        last_play.dest_x, last_play.dest_y, last_play.origin_x, last_play.origin_y
-    )
-    # recordar que aplica sobre la mano de movimientos parciales del jugador
-    cards_left = game.remove_single_mov(player.id, last_play.fig_mov_id)
-    game_repo.save(game)
-
-    history_repo.delete(last_play)
+    cards_left = module_undo_move(game, player, history_repo, games_repo)
 
     manager_board = Managers.get_manager(ManagerTypes.BOARD_STATUS)
     manager_card_mov = Managers.get_manager(ManagerTypes.CARDS_MOV)
