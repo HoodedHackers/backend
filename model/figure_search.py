@@ -94,7 +94,6 @@ class CandidateShape:
                     continue
                 if j in true_positions or j in positions:
                     continue
-                print(pos, direction, self.offset)
                 positions.append(j)
         return positions
 
@@ -112,7 +111,7 @@ def calculate_offsets(
 
 def coord_to_index(width: int, pos: Tuple[int, int]) -> int:
     x, y = pos
-    return x + y * width
+    return y + x * width
 
 
 def find_figures(board: List[Color], figures: List[Figure]) -> List[CandidateShape]:

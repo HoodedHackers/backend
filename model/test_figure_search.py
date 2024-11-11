@@ -115,3 +115,19 @@ class TestBoard(unittest.TestCase):
         offsets = calculate_offsets(2, 2, 1)
         expected = [(0, 0), (0, 1)]
         self.assertEqual(set(offsets), set(expected))
+
+
+class TestSearchRegressions(unittest.TestCase):
+    def setUp(self):
+        self.board = Board().process_result_value(
+            "121211334434213121142422432124333443",
+            None,  # type: ignore
+        )
+        self.tetris = Figure(22, [(1, 0), (1, 1), (1, 2), (0, 1)])
+        self.figures = list(self.tetris.rotations())
+
+    def test_find_figues(self):
+        res = find_figures(self.board, self.figures)
+        assert len(res) == 2
+        colors = set([f.color for f in res])
+        self.assertSetEqual(colors, {Color.BLUE, Color.GREEN})
