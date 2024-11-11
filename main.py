@@ -561,7 +561,14 @@ async def block_card(
     game.block_card(block_request.id_player_block, block_request.id_card_block)
     game.discard_card_movement(player.id)
     game_repo.save(game)
-    await broadcast_players_and_cards(manager, game_id, game)
+
+    players_cards = get_players_and_cards(game)
+    await manager.broadcast(
+        {"players": players_cards,
+         "id_card_block": block_request.id_card_block},
+        game_id,
+    )
+
     return {"status": "success!"}
 
 
