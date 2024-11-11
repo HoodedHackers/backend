@@ -1004,8 +1004,22 @@ async def chat(websocket: WebSocket, game_id: int, player_id: int):
             "message": str
         }
     """
+    game = game_repo.get(game_id)
+    if game is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Game not found"})
+        await websocket.close()
+        return
+    
     manager = Managers.get_manager(ManagerTypes.CHAT)
     await manager.connect(websocket, game_id, player_id)
+    player = player_repo.get(player_id)
+
+    if player is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not found"})
+        await websocket.close()
+        return
     try:
         while True:
             data = await websocket.receive_json()
@@ -1015,6 +1029,7 @@ async def chat(websocket: WebSocket, game_id: int, player_id: int):
                 continue
             await manager.broadcast(
                 {
+                    "name": player.name,
                     "message": message,
                 },
                 game_id,
