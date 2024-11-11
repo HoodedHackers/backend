@@ -279,19 +279,17 @@ class Game(Base):
         return mov_hand
 
     def add_single_mov(self, player_id, card_id):
-        cards_left = self.player_info[player_id].hand_mov
-        cards_left.remove(card_id)
         aux_parcial = self.player_info[player_id].copy()
         aux_parcial.mov_parcial.append(card_id)
         self.player_info[player_id] = aux_parcial
+        cards_left = [x for x in self.player_info[player_id].hand_mov if x not in aux_parcial.mov_parcial]
         return cards_left
 
     def remove_single_mov(self, player_id: int, card_id: int):
-        cards_left = self.player_info[player_id].hand_mov
-        cards_left.append(card_id)
         aux_parcial = self.player_info[player_id].copy()
         aux_parcial.mov_parcial.remove(card_id)
         self.player_info[player_id] = aux_parcial
+        cards_left = [x for x in self.player_info[player_id].hand_mov if x not in aux_parcial.mov_parcial]
         return cards_left
 
     def discard_card_movement(self, player_id: int):
