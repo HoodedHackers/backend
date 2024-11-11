@@ -756,7 +756,6 @@ async def discard_hand_figure(
             hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
             game.discard_card_movement(player.id)
             game_repo.save(game)
-            await manager.broadcast({"response": player.id}, game_id)
             if hand_fig == [] and figs == []:
                 exit_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
                 await exit_manager.broadcast({"winner": player.name}, game_id)
