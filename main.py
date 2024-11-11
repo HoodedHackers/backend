@@ -751,7 +751,7 @@ async def discard_hand_figure(
     figures = game.ids_get_possible_figures(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if player_ident.card_id not in figures:
-        await manager.broadcast({"error": "Invalid figure"}, game_id)
+        raise HTTPException(status_code=404, detail="Figura invalida")
     else:
         if player_ident.card_id in game.get_player_hand_figures(player.id):
             hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
