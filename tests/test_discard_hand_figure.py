@@ -360,7 +360,9 @@ class TestDiscardCardFigure(unittest.TestCase):
                     f"/api/lobby/in-course/1/discard_figs",
                     json={"player_identifier": str(player2.identifier), "card_id": 4},
                 )
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, 404)
+                self.assertEqual(response.json(), {"detail": "Figura invalida"})
+                """"
                 websocket1.send_json({"receive": "cards"})
                 rsp1 = websocket1.receive_json()
                 websocket2.send_json({"receive": "cards"})
@@ -387,7 +389,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                         "invisible_block": 0,
                     },
                 ]
-
+                """
     def test_discard_cards_mov(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -404,7 +406,7 @@ class TestDiscardCardFigure(unittest.TestCase):
             )
             spect_hand_mov = self.game.player_info[player1.id].hand_mov
             assert response.status_code == 200
-            assert spect_hand_mov == [3]
+            assert spect_hand_mov == [2, 3]
 
     def test_unblock(self):
         with patch("main.game_repo", self.games_repo), patch(

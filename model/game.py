@@ -296,11 +296,24 @@ class Game(Base):
 
     def discard_card_movement(self, player_id: int):
         list_parcial = self.player_info[player_id].mov_parcial
-        aux_player_info = self.player_info[player_id].copy()
+        #aux_player_info = self.player_info[player_id].copy()
+        aux_hand_mov = self.player_info[player_id].hand_mov
+        aux_mov_parcial = self.player_info[player_id].mov_parcial
         for card in list_parcial:
-            aux_player_info.hand_mov.remove(card)
-            aux_player_info.mov_parcial.remove(card)
-        self.player_info[player_id] = aux_player_info
+            #aux_player_info.hand_mov.remove(card)
+            aux_hand_mov.remove(card)
+            #aux_player_info.mov_parcial.remove(card)
+            aux_mov_parcial.remove(card)
+        #self.player_info[player_id] = aux_player_info
+        self.player_info[player_id] = PlayerInfo(
+            player_id=player_id,
+            turn_position=self.player_info[player_id].turn_position,
+            hand_fig=self.player_info[player_id].hand_fig,
+            hand_mov=aux_hand_mov,
+            fig=self.player_info[player_id].fig,
+            mov_parcial=aux_mov_parcial,
+            block_card=self.player_info[player_id].block_card,
+        )
 
     def clear_mov_parcial(self, player_id: int):
         aux_player_info = self.player_info[player_id].copy()
@@ -356,11 +369,29 @@ class Game(Base):
         left_one = len(self.player_info[player_id].hand_fig) - 1
         card_block = self.player_info[player_id].block_card
         if card in self.player_info[player_id].hand_fig:
-            new_player_info = self.player_info[player_id].copy()
-            new_player_info.hand_fig.remove(card)
+            #new_player_info = self.player_info[player_id].copy()
+            new_player_info = self.player_info[player_id].hand_fig
+            new_player_info.remove(card)
             if card_block and (left_one == 0):
-                new_player_info.block_card = 0
-            self.player_info[player_id] = new_player_info
+                #new_player_info.block_card = 0
+                self.player_info[player_id] = PlayerInfo(
+                    player_id=player_id,
+                    turn_position=self.player_info[player_id].turn_position,
+                    hand_fig=self.player_info[player_id].hand_fig,
+                    hand_mov=self.player_info[player_id].hand_mov,
+                    fig=self.player_info[player_id].fig,
+                    mov_parcial=self.player_info[player_id].mov_parcial,
+                    block_card=0,
+                )
+            self.player_info[player_id] = PlayerInfo(
+                player_id=player_id,
+                turn_position=self.player_info[player_id].turn_position,
+                hand_fig=new_player_info,
+                hand_mov=self.player_info[player_id].hand_mov,
+                fig=self.player_info[player_id].fig,
+                mov_parcial=self.player_info[player_id].mov_parcial,
+                block_card=self.player_info[player_id].block_card,
+            )
             hand_fig = self.player_info[player_id].hand_fig
         else:
             hand_fig = self.player_info[player_id].hand_fig
