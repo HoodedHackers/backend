@@ -301,7 +301,7 @@ class Game(Base):
         aux_mov_parcial = self.player_info[player_id].mov_parcial
         for card in list_parcial:
             #aux_player_info.hand_mov.remove(card)
-            aux_hand_mov.remove(card)
+            #aux_hand_mov.remove(card)
             #aux_player_info.mov_parcial.remove(card)
             aux_mov_parcial.remove(card)
         #self.player_info[player_id] = aux_player_info
