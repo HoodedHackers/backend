@@ -540,6 +540,11 @@ async def block_card(
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
+    if block_request.id_player_block == player.id:
+        raise HTTPException(
+            status_code=404, detail="The player cannot block his own card"
+        )
+
     hand_figures_other_player = game.get_player_hand_figures(
         block_request.id_player_block
     )
@@ -762,6 +767,11 @@ async def discard_hand_figure(
     if player_ident.card_id not in hand_figures:
         raise HTTPException(
             status_code=404, detail="Carta no encontrada en la mano del jugador"
+        )
+    
+    if player_ident.card_id == game.get_card_block(player.id) and len(game.get_player_hand_figures(player.id)) > 1:
+        raise HTTPException(
+            status_code=404, detail="No puedes descartar una carta bloqueada"
         )
 
     figures = game.ids_get_possible_figures(player.id)
