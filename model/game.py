@@ -398,7 +398,6 @@ class Game(Base):
             else:
                 id_coord = fig_id % TOTAL_FIG_CARDS
             new_figure = Figure(fig_id, all_coord[id_coord])
-            print("NEW_FIGURES: ", new_figure)
             player_figures.append(new_figure)
         return find_figures(self.board, player_figures)
 

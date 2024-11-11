@@ -227,11 +227,14 @@ async def notify_new_games(websocket: WebSocket):
 
     previous_lobbies = game_repo.get_available(10)
 
-    while True:
-        await asyncio.sleep(1)
-        current_lobbies = game_repo.get_available(10)
-        if previous_lobbies != current_lobbies:
-            await websocket.send_json({"message": "update"})
+    try:
+        while True:
+            await asyncio.sleep(1)
+            current_lobbies = game_repo.get_available(10)
+            if previous_lobbies != current_lobbies:
+                await websocket.send_json({"message": "update"})
+    except WebSocketDisconnect:
+        print("notify new games disconnected")
 
 
 @app.get("/api/lobby/{id}")
