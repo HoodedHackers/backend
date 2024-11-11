@@ -15,6 +15,7 @@ from database import Database
 from model import (BOARD_MAX_SIDE, BOARD_MIN_SIDE, TOTAL_FIG_CARDS,
                    TOTAL_HAND_FIG, TOTAL_HAND_MOV, Game, History, MoveCards,
                    Player)
+from model.board import Color
 from model.exceptions import GameStarted, PreconditionsNotMet
 from repositories import GameRepository, HistoryRepository, PlayerRepository
 from services import Managers, ManagerTypes
@@ -544,7 +545,7 @@ async def block_card(
         raise HTTPException(
             status_code=404, detail="The player cannot block his own card"
         )
-    
+
     hand_figures_other_player = game.get_player_hand_figures(
         block_request.id_player_block
     )
@@ -768,8 +769,7 @@ async def discard_hand_figure(
     if player_ident.card_id not in figures:
         raise HTTPException(status_code=404, detail="Figura invalida")
     else:
-
-        game.set_color_block(player_ident.color)
+        game.set_blocked_color(Color(player_ident.color))
         game_repo.save(game)
 
         if player_ident.card_id in hand_figures:
@@ -964,10 +964,10 @@ def board_status_message(game: Game):
                 {
                     "tiles": move.true_positions_canonical(),
                     "fig_id": move.figure_id(),
+                    "color": move.color.value,
                 }
                 for move in game.get_possible_figures(player.id)
             ],
-            "color_block": game.get_color_block(),
         }
         for player in game.players
     ]
@@ -975,6 +975,7 @@ def board_status_message(game: Game):
         "game_id": game.id,
         "board": board,
         "possible_figures": possible_figures,
+        "blocked_color": game.get_blocked_color().value,
     }
 
 
