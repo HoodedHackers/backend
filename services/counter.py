@@ -1,50 +1,63 @@
 import asyncio
+from typing import Dict, Optional
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import WebSocket, WebSocketDisconnect
 
 
 class Counter:
-    def __init__(self):
+    def __init__(
+        self,
+        tick_callback,
+        timeout_callback,
+        tick_time: float = 0.5,
+        timeout: float = 120,
+    ):
         self.scheduler = AsyncIOScheduler()
         self.count = 0
         self.running = False
-        self.websocket = None
-        self.timeout = 120
-
-    def set_timeout(self, timeout: int):
         self.timeout = timeout
+        self.tick_callback = tick_callback
+        self.stop_callback = timeout_callback
+        self.tick_time = tick_time
 
     async def count_up(self):
-        self.count += 0.5
+        self.count += self.tick_time
+        await self.tick_callback(self.count)
         if self.count >= self.timeout:
-            if self.websocket:
-                await self.websocket.send_json({"message": "Timeout"})
-            await self.stop()
+            await self.timeout_func()
 
-    async def start(self, websocket: WebSocket):
+    def start(self):
         self.running = True
-        self.websocket = websocket
-        self.scheduler.add_job(self.count_up, "interval", seconds=0.5)
+        self.scheduler.add_job(self.count_up, "interval", seconds=self.tick_time)
         self.scheduler.start()
+
+    async def timeout_func(self):
+        await self.stop_callback()
+        self.count = 0
 
     async def stop(self):
         if self.running:
             self.running = False
             self.scheduler.shutdown(wait=False)
-            if self.websocket:
-                await self.websocket.send_json({"message": "Timer stopped"})
 
-    async def listen(self, websocket: WebSocket):
-        await websocket.accept()
-        try:
-            while True:  # Escucha indefinidamente
-                message = await websocket.receive_json()
-                if message.get("action") == "start":
-                    await self.start(websocket)
-                elif message.get("action") == "stop":
-                    await self.stop()
-                else:
-                    await websocket.send_json({"error": "Unknown action"})
-        except WebSocketDisconnect:
-            await self.stop()
+    async def reset(self):
+        self.count = 0
+
+class CounterManager:
+    lobbies: Dict[int, Counter] = {}
+
+    @classmethod
+    def get_counter(cls, game_id: int) -> Optional[Counter]:
+        return CounterManager.lobbies.get(game_id)
+
+    @classmethod
+    async def delete_counter(cls, game_id: int):
+        if game_id in CounterManager.lobbies:
+            counter = CounterManager.lobbies[game_id]
+            await counter.stop()
+            del CounterManager.lobbies[game_id]
+
+    @classmethod
+    def add_counter(cls, game_id: int, counter: Counter):
+        CounterManager.lobbies[game_id] = counter
