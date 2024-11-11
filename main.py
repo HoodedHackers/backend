@@ -738,6 +738,7 @@ async def select_movement_card(
 class InHandFigure(BaseModel):
     player_identifier: UUID = Field(UUID)
     card_id: int
+    color: str
 
 
 @app.post("/api/lobby/in-course/{game_id}/discard_figs")
@@ -767,6 +768,10 @@ async def discard_hand_figure(
     if player_ident.card_id not in figures:
         raise HTTPException(status_code=404, detail="Figura invalida")
     else:
+
+        game.set_color_block(player_ident.color)
+        game_repo.save(game)
+
         if player_ident.card_id in hand_figures:
             hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
             game.discard_card_movement(player.id)
@@ -962,6 +967,7 @@ def board_status_message(game: Game):
                 }
                 for move in game.get_possible_figures(player.id)
             ],
+            "color_block": game.get_color_block(),
         }
         for player in game.players
     ]

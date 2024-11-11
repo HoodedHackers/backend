@@ -113,7 +113,7 @@ class Game(Base):
     all_movs: Mapped[List[int]] = mapped_column(IdMov, default=IdMov.total)
     is_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     password: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    bloqued_color: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    bloqued_color: Mapped[str] = mapped_column(String(64), default=0, nullable=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -424,3 +424,9 @@ class Game(Base):
 
     def ids_get_possible_figures(self, player_id: int) -> List[int]:
         return [c.figure_id() for c in self.get_possible_figures(player_id)]
+
+    def set_color_block(self, color: str):
+        self.bloqued_color = color
+
+    def get_color_block(self):
+        return self.bloqued_color
