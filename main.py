@@ -739,7 +739,7 @@ async def select_movement_card(
 class InHandFigure(BaseModel):
     player_identifier: UUID = Field(UUID)
     card_id: int
-    color: str
+    color: int
 
 
 @app.post("/api/lobby/in-course/{game_id}/discard_figs")

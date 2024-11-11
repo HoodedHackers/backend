@@ -113,10 +113,11 @@ class Game(Base):
     all_movs: Mapped[List[int]] = mapped_column(IdMov, default=IdMov.total)
     is_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     password: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    bloqued_color: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    blocked_color: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.blocked_color = Color.RED.value
         if self.player_info is None or self.player_info == {}:
             self.player_info = {}
             for index, player in enumerate(self.players):
@@ -426,7 +427,7 @@ class Game(Base):
         return [c.figure_id() for c in self.get_possible_figures(player_id)]
 
     def set_blocked_color(self, color: Color):
-        self.bloqued_color = color.value
+        self.blocked_color = color.value
 
     def get_blocked_color(self) -> Color:
-        return Color(self.bloqued_color)
+        return Color(self.blocked_color)
