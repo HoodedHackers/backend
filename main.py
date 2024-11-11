@@ -759,12 +759,10 @@ async def discard_hand_figure(
             await manager.broadcast({"response": player.id}, game_id)
             if hand_fig == [] and figs == []:
                 exit_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
-                await exit_manager.broadcast({"response": player.name, "ganador": "ganaste"}, game_id)
-                game.delete_player(player)
-                game_repo.save(game)
-                #await Managers.disconnect_all(game.id)
-                #await CounterManager.delete_counter(game.id)
-                #game_repo.delete(game)
+                await exit_manager.broadcast({"winner": player.name}, game_id)
+                await Managers.disconnect_all(game.id)
+                await CounterManager.delete_counter(game.id)
+                game_repo.delete(game)
                 return {"status": "success"}
                 
         await broadcast_players_and_cards(manager, game_id, game)
@@ -859,18 +857,7 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
             players_raw = game.players
             players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
-            await manager.broadcast({"players": players, "winner": "nadie"}, game_id)
-            if game.started:
-                while player in game.players:
-                    figs = game.get_player_figures(player.id)
-                    hand_figures = game.get_player_hand_figures(player.id)
-                    
-                    if figs == [] and hand_figures == []:
-                        await manager.broadcast({"players": players, "winner":player.name }, game_id)
-                        await Managers.disconnect_all(game.id)
-                        await CounterManager.delete_counter(game.id)
-                        game_repo.delete(game)
-                        break
+            await manager.broadcast({"players": players,}, game_id)
             continue
 
     except WebSocketDisconnect:

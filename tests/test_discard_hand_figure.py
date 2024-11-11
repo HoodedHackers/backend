@@ -165,7 +165,9 @@ class TestDiscardCardFigure(unittest.TestCase):
                 rsp1 = websocket1.receive_json()
                 websocket2.send_json({"receive": "cards"})
                 rsp2 = websocket1.receive_json()
+                print("rsp1")
                 print(rsp1)
+                print("aaah")
                 assert rsp1["players"] == [
                     {
                         "player_id": 2,
