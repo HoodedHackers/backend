@@ -535,6 +535,11 @@ async def block_card(
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Player dont found in game!")
 
+    if block_request.id_player_block == player.id:
+        raise HTTPException(
+            status_code=404, detail="The player cannot block his own card"
+        )
+
     hand_figures_other_player = game.get_player_hand_figures(
         block_request.id_player_block
     )
@@ -556,7 +561,13 @@ async def block_card(
     game.block_card(block_request.id_player_block, block_request.id_card_block)
     game.discard_card_movement(player.id)
     game_repo.save(game)
-    await broadcast_players_and_cards(manager, game_id, game)
+
+    players_cards = get_players_and_cards(game)
+    await manager.broadcast(
+        {"players": players_cards, "id_card_block": block_request.id_card_block},
+        game_id,
+    )
+
     return {"status": "success!"}
 
 
@@ -747,6 +758,14 @@ async def discard_hand_figure(
             status_code=404, detail="Carta no encontrada en la mano del jugador"
         )
 
+    if (
+        player_ident.card_id == game.get_card_block(player.id)
+        and len(game.get_player_hand_figures(player.id)) > 1
+    ):
+        raise HTTPException(
+            status_code=404, detail="No puedes descartar una carta bloqueada"
+        )
+
     figures = game.ids_get_possible_figures(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
     if player_ident.card_id not in figures:
@@ -763,7 +782,20 @@ async def discard_hand_figure(
                 await CounterManager.delete_counter(game.id)
                 game_repo.delete(game)
                 return {"status": "success"}
-                
+
+        if (
+            len(game.get_player_hand_figures(player.id)) == 1
+            and game.get_card_block(player.id)
+            == game.get_player_hand_figures(player.id)[0]
+        ):
+            players_cards = get_players_and_cards(game)
+            await manager.broadcast(
+                {
+                    "players": players_cards,
+                    "id_card_unlock": game.get_player_hand_figures(player.id)[0],
+                },
+                game_id,
+            )
         await broadcast_players_and_cards(manager, game_id, game)
         return {"status": "success"}
 

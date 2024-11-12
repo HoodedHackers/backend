@@ -44,6 +44,7 @@ class Counter:
     async def reset(self):
         self.count = 0
 
+
 class CounterManager:
     lobbies: Dict[int, Counter] = {}
 
