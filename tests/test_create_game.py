@@ -1,20 +1,16 @@
-from fastapi.testclient import TestClient
-from main import app
-import asserts
-from unittest.mock import MagicMock
-from fastapi import Request, Depends, HTTPException
-
-from main import get_games_repo
-
-from model import Game, Player
-from unittest.mock import AsyncMock, patch
-from fastapi import FastAPI, HTTPException, Depends
-from repositories import GameRepository, PlayerRepository
-from uuid import uuid4
-from repositories.player import PlayerRepository
 from os import getenv
+from unittest.mock import patch
+from uuid import uuid4
+
+import asserts
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.testclient import TestClient
+
 from database import Database
-from main import game_repo, player_repo
+from main import app, game_repo, get_games_repo, player_repo
+from model import Game, Player
+from repositories import GameRepository, PlayerRepository
+from repositories.player import PlayerRepository
 
 client = TestClient(app)
 
@@ -25,7 +21,7 @@ def test_create_game():
     host = Player(name="host", identifier=test_identifier)
     player_repo.save(host)
 
-    # Guarda al jugador usando el endpoint
+    # Crea una partida y unimos al host usando el endpoint
     response = client.post(
         "/api/lobby",
         json={
@@ -33,8 +29,10 @@ def test_create_game():
             "name": "partida1",
             "max_players": 4,
             "min_players": 2,
+            "is_private": False,
         },
     )
+    print(response.json())
 
     # Verifica el estado de la respuesta
     assert response.status_code == 200
@@ -44,8 +42,7 @@ def test_create_game():
     assert data["min_players"] == 2
     assert data["started"] is False
     assert isinstance(data["id"], int)
-    assert data["players"] == [{"name": "host"}]
-
+    assert data["players"] == [{"id_player": str(test_identifier)}]
     game = game_repo.get(data["id"])
     assert game is not None
     assert game.name == "partida1"
@@ -61,6 +58,7 @@ def test_crear_partida_error_min_mayor_max(mock_game_repo):
             "name": "partida1",
             "max_players": 3,
             "min_players": 4,
+            "is_private": True,
         },
     )
     assert response.status_code == 412
@@ -78,6 +76,7 @@ def test_crear_partida_error_min_jugadores_invalido(mock_game_repo):
             "name": "partida1",
             "max_players": 4,
             "min_players": 1,
+            "is_private": True,
         },
     )
     assert response.status_code == 422
@@ -92,6 +91,7 @@ def test_crear_partida_nombre_vacio(mock_game_repo):
             "name": "",
             "max_players": 4,
             "min_players": 2,
+            "is_private": True,
         },
     )
     assert response.status_code == 422
@@ -122,3 +122,19 @@ def test_crear_partida_error_brutal(mock_game_repo):
         },
     )
     assert response.status_code == 422
+
+
+def test_creaar_partida_jugador_no_encontrado():
+    non_existent_player = uuid4()
+    response = client.post(
+        "/api/lobby",
+        json={
+            "identifier": str(non_existent_player),
+            "name": "partida1",
+            "max_players": 4,
+            "min_players": 2,
+            "is_private": False,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Jugador no encontrado"}

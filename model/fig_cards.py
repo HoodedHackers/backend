@@ -1,13 +1,44 @@
-from sqlalchemy.orm import mapped_column, Mapped
-from sqlalchemy import Column
-from sqlalchemy.types import Integer, String
-from sqlalchemy.schema import ForeignKey, Table
+from typing import List
 
-from database import Base
+from pydantic import BaseModel
+
+TOTAL_FIG_CARDS = 25
+AVERAGE_COORD = 5
+BLUE_COORD = 4
+TOTAL_HAND_FIG = 3
 
 
-class FigCards(Base):
-    __tablename__ = "figCards"
+class FigCards(BaseModel):
+    id: int
+    coord: List[tuple[int, int]]
+    color: str
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(64))
+
+all_coord = {
+    1: [(0, 0), (0, 1), (0, 2), (1, 1), (2, 1)],
+    2: [(0, 0), (1, 0), (1, 1), (2, 1), (3, 1)],
+    3: [(0, 1), (1, 1), (2, 1), (2, 0), (3, 0)],
+    4: [(0, 0), (0, 1), (1, 1), (1, 2), (2, 2)],
+    5: [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)],
+    6: [(0, 0), (0, 1), (0, 2), (1, 2), (2, 2)],
+    7: [(0, 0), (1, 0), (2, 0), (3, 0), (3, 1)],
+    8: [(0, 1), (1, 1), (2, 1), (3, 1), (3, 0)],
+    9: [(0, 1), (1, 1), (2, 1), (1, 2), (2, 0)],
+    10: [(0, 1), (1, 1), (2, 1), (0, 2), (2, 0)],
+    11: [(0, 0), (0, 1), (1, 1), (1, 2), (2, 1)],
+    12: [(0, 0), (0, 1), (1, 1), (2, 1), (2, 2)],
+    13: [(0, 0), (1, 0), (2, 0), (3, 0), (2, 1)],
+    14: [(0, 1), (1, 1), (2, 1), (3, 1), (2, 0)],
+    15: [(0, 1), (1, 0), (2, 0), (1, 1), (2, 1)],
+    16: [(0, 0), (0, 1), (1, 1), (2, 0), (2, 1)],
+    17: [(0, 1), (1, 0), (1, 1), (2, 1), (1, 2)],
+    18: [(0, 0), (1, 0), (1, 1), (2, 1), (2, 0)],
+    #azules
+    19: [(0, 1), (1, 1), (1, 0), (2, 0)],
+    20: [(0, 0), (1, 0), (0, 1), (1, 1)],
+    21: [(0, 0), (1, 0), (1, 1), (2, 1)],
+    22: [(0, 1), (1, 0), (1, 1), (2, 1)],
+    23: [(0, 0), (1, 0), (2, 0), (2, 1)],
+    24: [(0, 0), (1, 0), (2, 0), (3, 0)],
+    25: [(0, 1), (1, 1), (2, 1), (2, 0)],
+}
