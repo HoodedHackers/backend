@@ -988,3 +988,51 @@ async def get_history(
 ):
     history = history_repo.get_all(game_id)
     return history
+
+
+
+@app.websocket("/ws/lobby/{game_id}/chat")
+async def chat(websocket: WebSocket, game_id: int, player_id: int):
+    """
+    Este WS se encarga de enviar mensajes de chat a los jugadores conectados.
+    Se le debe enviar un mensaje de la siguiente forma:
+        {
+            "message": str
+        }
+    Y el websocket retorna mensajes de la siguiente forma:
+        {
+            "message": str
+        }
+    """
+    game = game_repo.get(game_id)
+    if game is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Game not found"})
+        await websocket.close()
+        return
+    
+    manager = Managers.get_manager(ManagerTypes.CHAT)
+    await manager.connect(websocket, game_id, player_id)
+    player = player_repo.get(player_id)
+
+    if player is None:
+        await websocket.accept()
+        await websocket.send_json({"error": "Player not found"})
+        await websocket.close()
+        return
+    try:
+        while True:
+            data = await websocket.receive_json()
+            message = data.get("message")
+            if message is None:
+                await manager.broadcast({"error": "invalid message"}, game_id)
+                continue
+            await manager.broadcast(
+                {
+                    "name": player.name,
+                    "message": message,
+                },
+                game_id,
+            )
+    except WebSocketDisconnect:
+        manager.disconnect(game_id, player_id)
