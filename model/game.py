@@ -113,6 +113,7 @@ class Game(Base):
     all_movs: Mapped[List[int]] = mapped_column(IdMov, default=IdMov.total)
     is_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     password: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    forbidden_color: Mapped[int] = mapped_column(Integer, default=1)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

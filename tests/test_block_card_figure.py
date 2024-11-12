@@ -81,6 +81,7 @@ class TestBlockUnblockCard(unittest.TestCase):
                         "identifier": str(self.players[0].identifier),
                         "id_player_block": id1,
                         "id_card_block": 2,
+                        "color": 1,
                     },
                 )
                 print(result.json())
@@ -151,6 +152,7 @@ class TestBlockUnblockCard(unittest.TestCase):
                         "identifier": str(self.players[0].identifier),
                         "id_player_block": id1,
                         "id_card_block": 2,
+                        "color": 1,
                     },
                 )
                 print(result.json())
@@ -194,6 +196,7 @@ class TestBlockUnblockCard(unittest.TestCase):
                     json={
                         "player_identifier": str(player1.identifier),
                         "card_id": elems[0],
+                        "color": 1,
                     },
                 )
 

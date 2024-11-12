@@ -236,6 +236,7 @@ async def notify_new_games(websocket: WebSocket):
     except WebSocketDisconnect:
         print("Client disconnected to notify new games")
 
+
 @app.get("/api/lobby/{id}")
 def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
     lobby_query = repo.get(id)
@@ -519,6 +520,7 @@ class BlockCardRequest(BaseModel):
     identifier: UUID = Field(UUID)
     id_player_block: int
     id_card_block: int
+    color: int
 
 
 @app.post("/api/lobby/{game_id}/block")
@@ -562,6 +564,7 @@ async def block_card(
 
     game.block_card(block_request.id_player_block, block_request.id_card_block)
     game.discard_card_movement(player.id)
+    game.forbidden_color = block_request.color
     game_repo.save(game)
 
     players_cards = get_players_and_cards(game)
@@ -738,36 +741,37 @@ async def select_movement_card(
     return "success!"
 
 
-class InHandFigure(BaseModel):
+class DiscardFigureRequest(BaseModel):
     player_identifier: UUID = Field(UUID)
     card_id: int
+    color: int
 
 
 @app.post("/api/lobby/in-course/{game_id}/discard_figs")
 async def discard_hand_figure(
     game_id: int,
-    player_ident: InHandFigure,
+    discard_request: DiscardFigureRequest,
     game_repo: GameRepository = Depends(get_games_repo),
     player_repo: PlayerRepository = Depends(get_player_repo),
 ):
     game = game_repo.get(game_id)
     if game is None:
         raise HTTPException(status_code=404, detail="Partida no encontrada")
-    player = player_repo.get_by_identifier(player_ident.player_identifier)
+    player = player_repo.get_by_identifier(discard_request.player_identifier)
     if player is None:
         raise HTTPException(status_code=404, detail="Jugador no encontrade")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
-    
+
     figs = game.get_player_figures(player.id)
     hand_figures = game.get_player_hand_figures(player.id)
-    if player_ident.card_id not in hand_figures:
+    if discard_request.card_id not in hand_figures:
         raise HTTPException(
             status_code=404, detail="Carta no encontrada en la mano del jugador"
         )
 
     if (
-        player_ident.card_id == game.get_card_block(player.id)
+        discard_request.card_id == game.get_card_block(player.id)
         and len(game.get_player_hand_figures(player.id)) > 1
     ):
         raise HTTPException(
@@ -776,13 +780,18 @@ async def discard_hand_figure(
 
     figures = game.ids_get_possible_figures(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    
-    if player_ident.card_id not in figures:
+
+    if discard_request.card_id not in figures:
         raise HTTPException(status_code=404, detail="Figura invalida")
 
-    if player_ident.card_id in game.get_player_hand_figures(player.id):
-        hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+    if discard_request.card_id in game.get_player_hand_figures(player.id):
+        hand_fig = game.discard_card_hand_figures(player.id, discard_request.card_id)
         game.discard_card_movement(player.id)
+        game.forbidden_color = discard_request.color
+        await Managers.get_manager(ManagerTypes.BOARD_STATUS).broadcast(
+            board_status_message(game),
+            game_id,
+        )
         game_repo.save(game)
 
         if hand_fig == [] and figs == []:
@@ -795,8 +804,7 @@ async def discard_hand_figure(
 
     if (
         len(game.get_player_hand_figures(player.id)) == 1
-        and game.get_card_block(player.id)
-        == game.get_player_hand_figures(player.id)[0]
+        and game.get_card_block(player.id) == game.get_player_hand_figures(player.id)[0]
     ):
         players_cards = get_players_and_cards(game)
         await manager.broadcast(
@@ -899,7 +907,12 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
             players_raw = game.players
             players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
-            await manager.broadcast({"players": players,}, game_id)
+            await manager.broadcast(
+                {
+                    "players": players,
+                },
+                game_id,
+            )
             continue
 
     except WebSocketDisconnect:
@@ -995,6 +1008,7 @@ def board_status_message(game: Game):
                 {
                     "tiles": move.true_positions_canonical(),
                     "fig_id": move.figure_id(),
+                    "color": move.color.value,
                 }
                 for move in game.get_possible_figures(player.id)
             ],
@@ -1005,6 +1019,7 @@ def board_status_message(game: Game):
         "game_id": game.id,
         "board": board,
         "possible_figures": possible_figures,
+        "forbidden_color": game.forbidden_color,
     }
 
 
@@ -1243,7 +1258,6 @@ async def get_history(
     return history
 
 
-
 @app.websocket("/ws/lobby/{game_id}/chat")
 async def chat(websocket: WebSocket, game_id: int, player_id: int):
     """
@@ -1263,7 +1277,7 @@ async def chat(websocket: WebSocket, game_id: int, player_id: int):
         await websocket.send_json({"error": "Game not found"})
         await websocket.close()
         return
-    
+
     manager = Managers.get_manager(ManagerTypes.CHAT)
     await manager.connect(websocket, game_id, player_id)
     player = player_repo.get(player_id)

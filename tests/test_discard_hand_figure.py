@@ -54,7 +54,6 @@ class TestDiscardCardFigure(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-
     def test_discard_cards_figs(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -82,7 +81,11 @@ class TestDiscardCardFigure(unittest.TestCase):
                 self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
                 response = self.client.post(
                     f"/api/lobby/in-course/1/discard_figs",
-                    json={"player_identifier": str(player2.identifier), "card_id": 3},
+                    json={
+                        "player_identifier": str(player2.identifier),
+                        "card_id": 3,
+                        "color": 1,
+                    },
                 )
                 self.assertEqual(response.status_code, 200)
                 websocket1.send_json({"receive": "cards"})
@@ -139,7 +142,7 @@ class TestDiscardCardFigure(unittest.TestCase):
         ):
             response = self.client.post(
                 f"/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(uuid4()), "card_id": 1},
+                json={"player_identifier": str(uuid4()), "card_id": 1, "color": 1},
             )
             self.assertEqual(response.status_code, 404)
             self.assertEqual(response.json(), {"detail": "Jugador no encontrade"})
@@ -153,7 +156,11 @@ class TestDiscardCardFigure(unittest.TestCase):
         ):
             response = self.client.post(
                 f"/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(new_player.identifier), "card_id": 1},
+                json={
+                    "player_identifier": str(new_player.identifier),
+                    "card_id": 1,
+                    "color": 1,
+                },
             )
             self.assertEqual(response.status_code, 404)
             self.assertEqual(
@@ -183,7 +190,11 @@ class TestDiscardCardFigure(unittest.TestCase):
 
             response = self.client.post(
                 f"/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(player1.identifier), "card_id": 5},
+                json={
+                    "player_identifier": str(player1.identifier),
+                    "card_id": 5,
+                    "color": 1,
+                },
             )
             self.assertEqual(response.status_code, 404)
             self.assertEqual(
@@ -209,7 +220,11 @@ class TestDiscardCardFigure(unittest.TestCase):
                 self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
                 response = self.client.post(
                     "/api/lobby/in-course/1/discard_figs",
-                    json={"player_identifier": str(player1.identifier), "card_id": 1},
+                    json={
+                        "player_identifier": str(player1.identifier),
+                        "card_id": 1,
+                        "color": 1,
+                    },
                 )
                 self.assertEqual(response.status_code, 200)
                 websocket.send_json({"receive": "cards"})
@@ -235,7 +250,11 @@ class TestDiscardCardFigure(unittest.TestCase):
             ]
             response = self.client.post(
                 "/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(player1.identifier), "card_id": 1},
+                json={
+                    "player_identifier": str(player1.identifier),
+                    "card_id": 1,
+                    "color": 1,
+                },
             )
             self.assertEqual(response.status_code, 404)
             self.assertEqual(
@@ -252,6 +271,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                 json={
                     "player_identifier": str(self.players[0].identifier),
                     "card_id": 1,
+                    "color": 1,
                 },
             )
             self.assertEqual(response.status_code, 404)
@@ -284,11 +304,14 @@ class TestDiscardCardFigure(unittest.TestCase):
                 self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
                 response = self.client.post(
                     f"/api/lobby/in-course/1/discard_figs",
-                    json={"player_identifier": str(player2.identifier), "card_id": 4},
+                    json={
+                        "player_identifier": str(player2.identifier),
+                        "card_id": 4,
+                        "color": 1,
+                    },
                 )
                 self.assertEqual(response.status_code, 404)
                 self.assertEqual(response.json(), {"detail": "Figura invalida"})
-               
 
     def test_discard_cards_mov(self):
         with patch("main.game_repo", self.games_repo), patch(
@@ -302,7 +325,11 @@ class TestDiscardCardFigure(unittest.TestCase):
             self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
             response = self.client.post(
                 "/api/lobby/in-course/1/discard_figs",
-                json={"player_identifier": str(player1.identifier), "card_id": 1},
+                json={
+                    "player_identifier": str(player1.identifier),
+                    "card_id": 1,
+                    "color": 1,
+                },
             )
             spect_hand_mov = self.game.player_info[player1.id].hand_mov
             assert response.status_code == 200
@@ -342,6 +369,7 @@ class TestDiscardCardFigure(unittest.TestCase):
                     json={
                         "player_identifier": str(player1.identifier),
                         "card_id": elems[0],
+                        "color": 1,
                     },
                 )
                 print(response.json)
