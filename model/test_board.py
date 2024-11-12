@@ -38,7 +38,7 @@ class TestCommaSeparatedListType(unittest.TestCase):
         self.assertEqual(board, result.board)
 
     def test_representation(self):
-        board = "111324"
+        board = "111432"
         mem_board = [
             Color.RED,
             Color.RED,

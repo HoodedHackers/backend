@@ -194,6 +194,7 @@ class TestBlockUnblockCard(unittest.TestCase):
                     json={
                         "player_identifier": str(player1.identifier),
                         "card_id": elems[0],
+                        "color": 1,
                     },
                 )
 
