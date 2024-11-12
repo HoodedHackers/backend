@@ -234,8 +234,7 @@ async def notify_new_games(websocket: WebSocket):
             if previous_lobbies != current_lobbies:
                 await websocket.send_json({"message": "update"})
     except WebSocketDisconnect:
-        print("notify new games disconnected")
-
+        print("Client disconnected to notify new games")
 
 @app.get("/api/lobby/{id}")
 def get_game(id: int, repo: GameRepository = Depends(get_games_repo)):
@@ -381,8 +380,6 @@ async def start_game(
             player.id,
         )
     games_repo.save(selec_game)
-    manager_card_fig = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
-    await broadcast_players_and_cards(manager_card_fig, id_game, selec_game)
 
     async def notify(time):
         await notify_tick(selec_game.id, time)
@@ -761,7 +758,8 @@ async def discard_hand_figure(
         raise HTTPException(status_code=404, detail="Jugador no encontrade")
     if player not in game.players:
         raise HTTPException(status_code=404, detail="Jugador no presente en la partida")
-
+    
+    figs = game.get_player_figures(player.id)
     hand_figures = game.get_player_hand_figures(player.id)
     if player_ident.card_id not in hand_figures:
         raise HTTPException(
@@ -778,31 +776,39 @@ async def discard_hand_figure(
 
     figures = game.ids_get_possible_figures(player.id)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
+    
     if player_ident.card_id not in figures:
         raise HTTPException(status_code=404, detail="Figura invalida")
-    else:
-        if player_ident.card_id in hand_figures:
-            hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
-            game.discard_card_movement(player.id)
 
-            game_repo.save(game)
+    if player_ident.card_id in game.get_player_hand_figures(player.id):
+        hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
+        game.discard_card_movement(player.id)
+        game_repo.save(game)
 
-        if (
-            len(game.get_player_hand_figures(player.id)) == 1
-            and game.get_card_block(player.id)
-            == game.get_player_hand_figures(player.id)[0]
-        ):
-            players_cards = get_players_and_cards(game)
-            await manager.broadcast(
-                {
-                    "players": players_cards,
-                    "id_card_unlock": game.get_player_hand_figures(player.id)[0],
-                },
-                game_id,
-            )
+        if hand_fig == [] and figs == []:
+            exit_manager = Managers.get_manager(ManagerTypes.JOIN_LEAVE)
+            await exit_manager.broadcast({"winner": player.name}, game_id)
+            await Managers.disconnect_all(game.id)
+            await CounterManager.delete_counter(game.id)
+            game_repo.delete(game)
+            return {"status": "success"}
 
-        await broadcast_players_and_cards(manager, game_id, game)
-        return {"status": "success"}
+    if (
+        len(game.get_player_hand_figures(player.id)) == 1
+        and game.get_card_block(player.id)
+        == game.get_player_hand_figures(player.id)[0]
+    ):
+        players_cards = get_players_and_cards(game)
+        await manager.broadcast(
+            {
+                "players": players_cards,
+                "id_card_unlock": game.get_player_hand_figures(player.id)[0],
+            },
+            game_id,
+        )
+
+    await broadcast_players_and_cards(manager, game_id, game)
+    return {"status": "success"}
 
 
 @app.websocket("/ws/lobby/{game_id}/turns")
@@ -893,7 +899,8 @@ async def lobby_notify_inout(websocket: WebSocket, game_id: int, player_id: int)
 
             players_raw = game.players
             players = [{"player_id": p.id, "player_name": p.name} for p in players_raw]
-            await manager.broadcast({"players": players}, game_id)
+            await manager.broadcast({"players": players,}, game_id)
+            continue
 
     except WebSocketDisconnect:
         manager.disconnect(game_id, player_id)
