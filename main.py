@@ -569,8 +569,7 @@ async def block_card(
 
     players_cards = get_players_and_cards(game)
     await manager.broadcast(
-        {"players": players_cards,
-         "id_card_block": block_request.id_card_block},
+        {"players": players_cards, "id_card_block": block_request.id_card_block},
         game_id,
     )
 
@@ -768,8 +767,11 @@ async def discard_hand_figure(
         raise HTTPException(
             status_code=404, detail="Carta no encontrada en la mano del jugador"
         )
-    
-    if player_ident.card_id == game.get_card_block(player.id) and len(game.get_player_hand_figures(player.id)) > 1:
+
+    if (
+        player_ident.card_id == game.get_card_block(player.id)
+        and len(game.get_player_hand_figures(player.id)) > 1
+    ):
         raise HTTPException(
             status_code=404, detail="No puedes descartar una carta bloqueada"
         )
@@ -784,6 +786,21 @@ async def discard_hand_figure(
             game.discard_card_movement(player.id)
 
             game_repo.save(game)
+
+        if (
+            len(game.get_player_hand_figures(player.id)) == 1
+            and game.get_card_block(player.id)
+            == game.get_player_hand_figures(player.id)[0]
+        ):
+            players_cards = get_players_and_cards(game)
+            await manager.broadcast(
+                {
+                    "players": players_cards,
+                    "id_card_block": game.get_player_hand_figures(player.id)[0],
+                },
+                game_id,
+            )
+
         await broadcast_players_and_cards(manager, game_id, game)
         return {"status": "success"}
 
