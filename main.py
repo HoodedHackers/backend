@@ -770,9 +770,6 @@ async def discard_hand_figure(
     if player_ident.card_id not in figures:
         raise HTTPException(status_code=404, detail="Figura invalida")
     else:
-        #game.set_blocked_color(Color(player_ident.color))
-        #game_repo.save(game)
-
         if player_ident.card_id in hand_figures:
             game.set_blocked_color(Color(player_ident.color))
             hand_fig = game.discard_card_hand_figures(player.id, player_ident.card_id)
