@@ -796,7 +796,7 @@ async def discard_hand_figure(
             await manager.broadcast(
                 {
                     "players": players_cards,
-                    "id_card_block": game.get_player_hand_figures(player.id)[0],
+                    "id_card_unlock": game.get_player_hand_figures(player.id)[0],
                 },
                 game_id,
             )
