@@ -1,9 +1,11 @@
 import random
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from asserts import assert_equal, assert_raises
 
+from .board import Color
 from .exceptions import PreconditionsNotMet
+from .figure_search import CandidateShape, Figure
 from .game import Game, GameFull
 from .mov_cards import TOTAL_MOV
 from .player import Player
@@ -222,6 +224,35 @@ def test_get_player_hand_movs():
     assert hand_mov == [1, 2, 3]
 
 
+def test_discard_card_hand_figures():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+    g.player_info[p0.id].hand_fig = [1, 2, 3]
+    g.discard_card_hand_figures(p0.id, 2)
+    assert len(g.player_info[p0.id].hand_fig) == 2
+    assert g.player_info[p0.id].hand_fig == [1, 3]
+
+
+def test_discard_card_hand_figures_empty():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+    g.player_info[p0.id].hand_fig = []
+    g.discard_card_hand_figures(p0.id, 2)
+    assert len(g.player_info[p0.id].hand_fig) == 0
+
+
+def test_discard_card_hand_figures2():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+    g.player_info[p0.id].hand_fig = [1, 2, 3]
+    g.discard_card_hand_figures(p0.id, 4)
+    assert len(g.player_info[p0.id].hand_fig) == 3
+    assert g.player_info[p0.id].hand_fig == [1, 2, 3]
+
+
 def test_get_player_in_game():
     g = Game(name="test game")
     p0 = Player(name="Player 0", id=1)
@@ -242,3 +273,25 @@ def test_distribute_deck():
     assert len(g.player_info[p0.id].fig) == 16
     assert len(g.player_info[p1.id].fig) == 16
     assert len(g.player_info[3].fig) == 16
+
+
+def test_ids_get_possible_figures():
+    g = Game(name="test game")
+    p0 = Player(name="Player 0", id=1)
+    g.add_player(p0)
+
+    f = Figure(1, [(0, 0), (0, 1), (0, 2), (0, 3)])
+    r = Color.RED
+    fa = Figure(2, [(3, 1), (0, 1), (0, 2), (0, 3)])
+    fav = Color.GREEN
+    fb = Figure(3, [(0, 4), (0, 1), (0, 2), (0, 3)])
+    fcb = Color.BLUE
+    a = CandidateShape(f, (0, 0), r)
+    b = CandidateShape(fa, (0, 1), fav)
+    c = CandidateShape(fb, (0, 2), fcb)
+    g.get_possible_figures = MagicMock(return_value=[a, b, c])
+
+    g.player_info[1].hand_fig = [1, 2, 3]
+
+    result = g.ids_get_possible_figures(1)
+    assert result == [1, 2, 3]

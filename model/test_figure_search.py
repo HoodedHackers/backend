@@ -90,6 +90,7 @@ class TestBoard(unittest.TestCase):
     def setUp(self):
         self.board = Board().process_result_value(
             # Hay una figura ╦ te lo prometo
+            # gracias
             "323111424414433343121211222143323143",
             None,  # type: ignore
         )
@@ -99,7 +100,8 @@ class TestBoard(unittest.TestCase):
     def test_find_figures(self):
         figures = find_figures(self.board, self.figures)
         Board.draw(self.board)
-        self.assertEqual(len(figures), 1)
+        print(figures)
+        self.assertEqual(len(figures), 4)  # aca iba 1 pero ahora 4 por las rotaciones
 
     def test_offsets_sanity(self):
         offsets = calculate_offsets(1, 1, 1)

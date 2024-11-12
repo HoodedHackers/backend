@@ -41,6 +41,9 @@ class Counter:
             self.running = False
             self.scheduler.shutdown(wait=False)
 
+    async def reset(self):
+        self.count = 0
+
 
 class CounterManager:
     lobbies: Dict[int, Counter] = {}
