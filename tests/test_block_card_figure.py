@@ -83,7 +83,6 @@ class TestBlockUnblockCard(unittest.TestCase):
                         "id_card_block": 2,
                     },
                 )
-                print(result.json())
                 assert result.status_code == 200
                 assert self.game.player_info[id0].hand_mov == [10]
                 assert self.game.player_info[id1].block_card == 2
@@ -153,7 +152,6 @@ class TestBlockUnblockCard(unittest.TestCase):
                         "id_card_block": 2,
                     },
                 )
-                print(result.json())
                 assert result.status_code == 404
                 assert result.json() == {
                     "detail": "The player has a card that is already blocked"

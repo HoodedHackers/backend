@@ -92,9 +92,6 @@ class TestDiscardCardFigure(unittest.TestCase):
                 rsp1 = websocket1.receive_json()
                 websocket2.send_json({"receive": "cards"})
                 rsp2 = websocket1.receive_json()
-                print("rsp1")
-                print(rsp1)
-                print("aaah")
                 assert rsp1["players"] == [
                     {
                         "player_id": 2,
@@ -372,7 +369,6 @@ class TestDiscardCardFigure(unittest.TestCase):
                         "color": 1,
                     },
                 )
-                print(response.json)
                 assert response.status_code == 200
 
                 assert len(self.game.get_player_hand_figures(player1.id)) == 0

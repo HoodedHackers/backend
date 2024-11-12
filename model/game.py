@@ -364,11 +364,9 @@ class Game(Base):
         left_one = len(self.player_info[player_id].hand_fig) - 1
         card_block = self.player_info[player_id].block_card
         if card in self.player_info[player_id].hand_fig:
-            # new_player_info = self.player_info[player_id].copy()
             new_player_info = self.player_info[player_id].hand_fig
             new_player_info.remove(card)
             if card_block and (left_one == 0):
-                # new_player_info.block_card = 0
                 self.player_info[player_id] = PlayerInfo(
                     player_id=player_id,
                     turn_position=self.player_info[player_id].turn_position,

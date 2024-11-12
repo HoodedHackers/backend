@@ -148,7 +148,6 @@ class TestAdvanceTurn(unittest.TestCase):
                     patos = self.game.get_player_hand_figures(self.host.id)
                     assert response.status_code == 200
                     message = ws.receive_json()
-                    print(message)
                     assert len(patos) == 3
                     self.assertIsInstance(message["players"], list)
                     assert len(message["players"]) == 1

@@ -11,9 +11,9 @@ SIZE_BOARD = 36
 
 class Color(Enum):
     RED = 1
-    YELLOW = 2
-    GREEN = 3
-    BLUE = 4
+    GREEN = 2
+    BLUE = 3
+    YELLOW = 4
 
     def copy(self):
         return copy.deepcopy(self)

@@ -778,7 +778,6 @@ async def discard_hand_figure(
         )
 
     figures = game.ids_get_possible_figures(player.id)
-    print(figures)
     manager = Managers.get_manager(ManagerTypes.CARDS_FIGURE)
 
     if player_ident.card_id not in figures:
