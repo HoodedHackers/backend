@@ -117,6 +117,9 @@ def coord_to_index(width: int, pos: Tuple[int, int]) -> int:
 
 def find_figures(board: List[Color], figures: List[Figure]) -> List[CandidateShape]:
     candidate_shapes: List[CandidateShape] = []
+
+    figures = [f for fig in figures for f in fig.rotations()]
+
     for fig in figures:
         offsets = calculate_offsets(6, fig.width(), fig.height())
         for offset in offsets:

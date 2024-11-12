@@ -101,7 +101,7 @@ class TestBoard(unittest.TestCase):
         figures = find_figures(self.board, self.figures)
         Board.draw(self.board)
         print(figures)
-        self.assertEqual(len(figures), 1)  # aca iba 1
+        self.assertEqual(len(figures), 4)  # aca iba 1 pero ahora 4 por las rotaciones
 
     def test_offsets_sanity(self):
         offsets = calculate_offsets(1, 1, 1)

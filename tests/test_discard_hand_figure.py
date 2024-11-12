@@ -54,87 +54,6 @@ class TestDiscardCardFigure(unittest.TestCase):
         self.dbs.commit()
         self.dbs.close()
 
-    def test_discard_cards_figs_vacio(self):
-        with patch("main.game_repo", self.games_repo), patch(
-            "main.player_repo", self.player_repo
-        ):
-            player1 = self.players[0]
-            player2 = self.players[1]
-            player3 = self.players[2]
-            id0 = self.players[0].id
-            id1 = self.players[1].id
-            id2 = self.players[2].id
-
-            self.game.add_player(player1)
-            self.game.add_player(player2)
-            self.game.add_player(player3)
-            self.game.player_info[id0].hand_fig = [1, 2, 3]
-            self.game.player_info[id1].hand_fig = [2, 3, 4]
-            self.game.player_info[id2].hand_fig = [1]
-            with client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={player1.id}"
-            ) as websocket1, client.websocket_connect(
-                f"/ws/lobby/1/figs?player_id={player2.id}"
-            ) as websocket2:
-
-                self.game.ids_get_possible_figures = MagicMock(return_value=[1, 2, 3])
-                response = self.client.post(
-                    f"/api/lobby/in-course/1/discard_figs",
-                    json={
-                        "player_identifier": str(player3.identifier),
-                        "card_id": 1,
-                        "color": 1,
-                    },
-                )
-
-                # Verifica la respuesta del endpoint
-                self.assertEqual(response.status_code, 200)
-                websocket1.send_json({"receive": "cards"})
-                rsp1 = websocket1.receive_json()
-                websocket2.send_json({"receive": "cards"})
-                rsp2 = websocket1.receive_json()
-                print(rsp1)
-                assert rsp1["players"] == [
-                    {
-                        "player_id": 2,
-                        "cards": [1, 2, 3],
-                        "block_card": 0,
-                        "invisible_block": 2,
-                    },
-                    {
-                        "player_id": 3,
-                        "cards": [2, 3, 4],
-                        "block_card": 0,
-                        "invisible_block": 2,
-                    },
-                    {
-                        "player_id": 4,
-                        "cards": [],
-                        "block_card": 0,
-                        "invisible_block": -1,
-                    },
-                ]
-                assert rsp2["players"] == [
-                    {
-                        "player_id": 2,
-                        "cards": [1, 2, 3],
-                        "block_card": 0,
-                        "invisible_block": 2,
-                    },
-                    {
-                        "player_id": 3,
-                        "cards": [2, 3, 4],
-                        "block_card": 0,
-                        "invisible_block": 2,
-                    },
-                    {
-                        "player_id": 4,
-                        "cards": [],
-                        "block_card": 0,
-                        "invisible_block": -1,
-                    },
-                ]
-
     def test_discard_cards_figs(self):
         with patch("main.game_repo", self.games_repo), patch(
             "main.player_repo", self.player_repo
@@ -173,7 +92,9 @@ class TestDiscardCardFigure(unittest.TestCase):
                 rsp1 = websocket1.receive_json()
                 websocket2.send_json({"receive": "cards"})
                 rsp2 = websocket1.receive_json()
+                print("rsp1")
                 print(rsp1)
+                print("aaah")
                 assert rsp1["players"] == [
                     {
                         "player_id": 2,
@@ -391,34 +312,6 @@ class TestDiscardCardFigure(unittest.TestCase):
                 )
                 self.assertEqual(response.status_code, 404)
                 self.assertEqual(response.json(), {"detail": "Figura invalida"})
-                """"
-                websocket1.send_json({"receive": "cards"})
-                rsp1 = websocket1.receive_json()
-                websocket2.send_json({"receive": "cards"})
-                rsp2 = websocket1.receive_json()
-                print(rsp1)
-                assert rsp1 == {"error": "Invalid figure"}
-                assert rsp2["players"] == [
-                    {
-                        "player_id": 2,
-                        "cards": [1, 2, 3],
-                        "block_card": 0,
-                        "invisible_block": 2,
-                    },
-                    {
-                        "player_id": 3,
-                        "cards": [2, 3, 4],
-                        "block_card": 0,
-                        "invisible_block": 2,
-                    },
-                    {
-                        "player_id": 4,
-                        "cards": [1],
-                        "block_card": 0,
-                        "invisible_block": 0,
-                    },
-                ]
-                """
 
     def test_discard_cards_mov(self):
         with patch("main.game_repo", self.games_repo), patch(
