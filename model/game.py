@@ -113,9 +113,11 @@ class Game(Base):
     all_movs: Mapped[List[int]] = mapped_column(IdMov, default=IdMov.total)
     is_private: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     password: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    blocked_color: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.blocked_color = Color.RED.value
         if self.player_info is None or self.player_info == {}:
             self.player_info = {}
             for index, player in enumerate(self.players):
@@ -362,11 +364,9 @@ class Game(Base):
         left_one = len(self.player_info[player_id].hand_fig) - 1
         card_block = self.player_info[player_id].block_card
         if card in self.player_info[player_id].hand_fig:
-            # new_player_info = self.player_info[player_id].copy()
             new_player_info = self.player_info[player_id].hand_fig
             new_player_info.remove(card)
             if card_block and (left_one == 0):
-                # new_player_info.block_card = 0
                 self.player_info[player_id] = PlayerInfo(
                     player_id=player_id,
                     turn_position=self.player_info[player_id].turn_position,
@@ -423,3 +423,9 @@ class Game(Base):
 
     def ids_get_possible_figures(self, player_id: int) -> List[int]:
         return [c.figure_id() for c in self.get_possible_figures(player_id)]
+
+    def set_blocked_color(self, color: Color):
+        self.blocked_color = color.value
+
+    def get_blocked_color(self) -> Color:
+        return Color(self.blocked_color)
